@@ -1,5 +1,3 @@
-<!-- PROJECT-INTRO:START -->
-
 # Bainder
 
 AI-powered document binder that turns receipts, contracts, and PDFs into
@@ -23,8 +21,6 @@ your documents.
 
 **For**: individuals and small teams managing personal and professional
 document collections.
-
-<!-- PROJECT-INTRO:END -->
 
 ## Architecture
 

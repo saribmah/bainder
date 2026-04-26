@@ -9,8 +9,6 @@
 - `CLAUDE.md` is a symlink to `AGENTS.md`.
 - Do not maintain a second divergent copy of agent policy.
 
-<!-- PROJECT-CONTEXT:START -->
-
 ## About this project
 
 Bainder is a personal document binder powered by AI. Drop in any PDF,
@@ -32,8 +30,6 @@ document collections.
 
 See [`.agents/PROJECT.md`](./.agents/PROJECT.md) for the full project identity
 (name, scope, current focus, notes).
-
-<!-- PROJECT-CONTEXT:END -->
 
 ## Stack overview
 
