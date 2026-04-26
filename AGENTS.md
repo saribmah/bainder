@@ -3,51 +3,33 @@
 > Canonical agent policy file for this repo. Read top-to-bottom on first run,
 > consult per-section thereafter. `CLAUDE.md` is a symlink to this file.
 
-## SETUP — IF THIS TEMPLATE IS UNINITIALIZED
-
-If you find placeholders like `{{APP_NAME}}` or `@app` anywhere in this repo
-(or the "About this project" section below still says _Uninitialized_), the
-template hasn't been set up yet. Before doing anything else:
-
-> **Ask your AI agent**: _"Initialize this template for my project."_
-
-The agent will read [`.agents/init.md`](./.agents/init.md), open with one
-question — _"what are you building?"_ — and use your answer to write a
-real project description into `README.md`, this file, and
-`.agents/PROJECT.md`. Then it'll handle the mechanical setup (package scope,
-Cloudflare worker name, etc.), substitute placeholders, install
-dependencies, and run all the checks.
-
-If you'd rather initialize manually, follow the recipe in `.agents/init.md`
-step-by-step.
-
-> **Agents reading this file**: if placeholders or the _Uninitialized_
-> marker still exist, follow `.agents/init.md` immediately. Do not attempt
-> feature work first — the project description is the foundation everything
-> else relies on.
-
----
-
 ## Canonical Instruction Source
 
 - `AGENTS.md` is the single canonical agent policy file for this repository.
 - `CLAUDE.md` is a symlink to `AGENTS.md`.
 - Do not maintain a second divergent copy of agent policy.
 
-<!-- PROJECT-CONTEXT:START -->
-
 ## About this project
 
-> 🟡 **Uninitialized.** Run `.agents/init.md` to populate this section with a
-> description of what this project is, who it's for, and what it does. Until
-> then, treat this repo as the bare `cf-bun-template` skeleton — patterns are
-> in place, no product logic yet.
+Bainder is a personal document binder powered by AI. Drop in any PDF,
+receipt, invoice, statement, contract, manual, screenshot, or book —
+Bainder extracts structured data, organizes it, and makes it queryable in
+plain English. It's not a PDF chat app; it's long-term, AI-ready memory for
+your documents.
 
-<!-- PROJECT-CONTEXT:END -->
+**What it does**:
 
-For the canonical project identity (name, scope, capabilities, current
-focus), see [`.agents/PROJECT.md`](./.agents/PROJECT.md). Treat that file as
-the source of truth — keep it up to date as the project evolves.
+- Ingest mixed document types (PDFs, images, receipts, contracts, manuals, books)
+- Extract structured data and metadata from each document
+- Organize documents into a searchable, browsable binder
+- Answer natural-language questions across the full corpus ("find my Apple receipt", "what does the lease say about pets")
+- Summarize long documents and chapters on demand
+
+**For**: individuals and small teams managing personal and professional
+document collections.
+
+See [`.agents/PROJECT.md`](./.agents/PROJECT.md) for the full project identity
+(name, scope, current focus, notes).
 
 ## Stack overview
 
@@ -59,7 +41,7 @@ A Bun monorepo on Cloudflare Workers with:
 - **`packages/sdk/`** — TypeScript SDK auto-generated from the API OpenAPI
   spec via `@hey-api/openapi-ts`. Publishable to npm.
 - **`packages/web/`** — React 19 + Vite + TailwindCSS v4 frontend. Consumes
-  the API exclusively through `@app/sdk`. Served as static assets by
+  the API exclusively through `@bainder/sdk`. Served as static assets by
   the same Worker in production.
 
 Tooling: `oxlint` + `oxfmt` + `tsgo` + `husky` + `lint-staged`.
@@ -91,7 +73,7 @@ When asked to do specific kinds of work, read the matching recipe first:
   OpenAPI spec. External consumers (and `packages/web/`) integrate through
   this package. Never edit `packages/sdk/src/v1/gen/*` by hand.
 - `packages/web/` is a first-party UI client. It consumes
-  `@app/sdk` and MUST NOT import backend internals from
+  `@bainder/sdk` and MUST NOT import backend internals from
   `packages/api/`.
 
 ### Backend layering (`packages/api`)
@@ -187,7 +169,7 @@ When asked to do specific kinds of work, read the matching recipe first:
 - Update SDK consumers (`packages/web`, downstream apps) in the same change
   when generated types/contracts shift.
 - Never manually edit `packages/sdk/src/v1/gen/*` or `packages/sdk/lib/*`.
-- `packages/web/` consumes the API exclusively via `@app/sdk`. Do
+- `packages/web/` consumes the API exclusively via `@bainder/sdk`. Do
   not import directly from `packages/api/` or hand-roll `fetch` calls.
 - See [`.agents/regenerate-sdk.md`](./.agents/regenerate-sdk.md) for the
   regeneration recipe.

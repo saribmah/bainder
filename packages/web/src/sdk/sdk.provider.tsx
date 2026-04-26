@@ -5,7 +5,7 @@ import {
   type PropsWithChildren,
   type ReactElement,
 } from "react";
-import { createApiClient, type ApiClient } from "@app/sdk";
+import { createApiClient, type ApiClient } from "@bainder/sdk";
 
 type SDKContextValue = {
   baseUrl: string;

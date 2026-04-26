@@ -1,8 +1,8 @@
 {
-  "name": "{{APP_NAME}}",
+  "name": "bainder",
   "version": "0.0.0",
   "private": true,
-  "description": "{{DESCRIPTION}}",
+  "description": "AI-powered document binder that turns receipts, contracts, and PDFs into searchable, queryable memory.",
   "workspaces": {
     "packages": [
       "packages/api",

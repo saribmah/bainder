@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "{{APP_NAME}}",
+      "name": "bainder",
       "devDependencies": {
         "@typescript/native-preview": "7.0.0-dev.20260226.1",
         "husky": "^9.1.7",
@@ -13,7 +13,7 @@
       },
     },
     "packages/api": {
-      "name": "@app/api",
+      "name": "@bainder/api",
       "version": "0.0.0",
       "dependencies": {
         "@hono/standard-validator": "^0.2.2",
@@ -31,17 +31,17 @@
       },
     },
     "packages/sdk": {
-      "name": "@app/sdk",
+      "name": "@bainder/sdk",
       "version": "0.0.1",
       "devDependencies": {
         "@hey-api/openapi-ts": "^0.93.1",
       },
     },
     "packages/web": {
-      "name": "@app/web",
+      "name": "@bainder/web",
       "version": "0.0.0",
       "dependencies": {
-        "@app/sdk": "*",
+        "@bainder/sdk": "*",
         "react": "^19.2.4",
         "react-dom": "^19.2.4",
         "react-router-dom": "^6.19.0",
@@ -60,12 +60,6 @@
     },
   },
   "packages": {
-    "@app/api": ["@app/api@workspace:packages/api"],
-
-    "@app/sdk": ["@app/sdk@workspace:packages/sdk"],
-
-    "@app/web": ["@app/web@workspace:packages/web"],
-
     "@babel/code-frame": ["@babel/code-frame@7.29.0", "", { "dependencies": { "@babel/helper-validator-identifier": "^7.28.5", "js-tokens": "^4.0.0", "picocolors": "^1.1.1" } }, "sha512-9NhCeYjq9+3uxgdtp20LSiJXJvN0FeCtNGpJxuMFZ1Kv3cWUNb6DOhJwUvcVCzKGR66cw4njwM6hrJLqgOwbcw=="],
 
     "@babel/compat-data": ["@babel/compat-data@7.29.0", "", {}, "sha512-T1NCJqT/j9+cn8fvkt7jtwbLBfLC/1y1c7NtCeXFRgzGTsafi68MRv8yzkYSapBnFA6L3U2VSc02ciDzoAJhJg=="],
@@ -103,6 +97,12 @@
     "@babel/traverse": ["@babel/traverse@7.29.0", "", { "dependencies": { "@babel/code-frame": "^7.29.0", "@babel/generator": "^7.29.0", "@babel/helper-globals": "^7.28.0", "@babel/parser": "^7.29.0", "@babel/template": "^7.28.6", "@babel/types": "^7.29.0", "debug": "^4.3.1" } }, "sha512-4HPiQr0X7+waHfyXPZpWPfWL/J7dcN1mx9gL6WdQVMbPnF3+ZhSMs8tCxN7oHddJE9fhNE7+lxdnlyemKfJRuA=="],
 
     "@babel/types": ["@babel/types@7.29.0", "", { "dependencies": { "@babel/helper-string-parser": "^7.27.1", "@babel/helper-validator-identifier": "^7.28.5" } }, "sha512-LwdZHpScM4Qz8Xw2iKSzS+cfglZzJGvofQICy7W7v4caru4EaAmyUuO6BGrbyQ2mYV11W0U8j5mBhd14dd3B0A=="],
+
+    "@bainder/api": ["@bainder/api@workspace:packages/api"],
+
+    "@bainder/sdk": ["@bainder/sdk@workspace:packages/sdk"],
+
+    "@bainder/web": ["@bainder/web@workspace:packages/web"],
 
     "@cloudflare/kv-asset-handler": ["@cloudflare/kv-asset-handler@0.4.2", "", {}, "sha512-SIOD2DxrRRwQ+jgzlXCqoEFiKOFqaPjhnNTGKXSRLvp1HiOvapLaFG2kEr9dYQTYe8rKrd9uvDUzmAITeNyaHQ=="],
 

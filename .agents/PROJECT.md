@@ -10,31 +10,34 @@ and maintained by the team thereafter.
 
 ## Identity
 
-- **Name**: _filled by init_
-- **Scope**: _filled by init_
-- **Description**: _filled by init_ <!-- one-line elevator pitch, ≤120 chars -->
-- **Worker name**: _filled by init_
-- **Production domain**: _filled by init_
-- **Web frontend**: _filled by init_
-- **Initialized at**: _filled by init_
+- **Name**: Bainder
+- **Scope**: `@bainder`
+- **Description**: AI-powered document binder that turns receipts, contracts, and PDFs into searchable, queryable memory.
+- **Worker name**: `bainder` (dev: `bainder-dev`)
+- **Production domain**: _not yet configured — falls back to `bainder.workers.dev`_
+- **Web frontend**: yes (`packages/web`)
+- **Initialized at**: 2026-04-26
 
 ## What it is
 
-_2–3 sentence "About" paragraph. Filled by init from the user's free-form
-description. This is the first thing future AI agents read when getting
-oriented — make it count._
+Bainder is a personal document binder powered by AI. Drop in any PDF,
+receipt, invoice, statement, contract, manual, screenshot, or book —
+Bainder extracts structured data, organizes it, and makes it queryable in
+plain English. It's not a PDF chat app; it's long-term, AI-ready memory for
+your documents.
 
 ## What it does
 
-_3–5 bullet points of primary capabilities. Filled by init._
-
-- _capability 1_
-- _capability 2_
-- _capability 3_
+- Ingest mixed document types (PDFs, images, receipts, contracts, manuals, books)
+- Extract structured data and metadata from each document
+- Organize documents into a searchable, browsable binder
+- Answer natural-language questions across the full corpus ("find my Apple receipt", "what does the lease say about pets")
+- Summarize long documents and chapters on demand
 
 ## Who it's for
 
-_Target audience or user. Filled by init._
+Individuals and small teams managing personal and professional document
+collections.
 
 ## Current focus
 
