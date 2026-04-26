@@ -1,0 +1,26 @@
+{
+  "categories": {
+    "correctness": "off",
+    "suspicious": "off",
+    "pedantic": "off",
+    "perf": "off",
+    "style": "off",
+    "restriction": "off",
+    "nursery": "off"
+  },
+  "ignorePatterns": [
+    "**/*.generated.ts",
+    "**/bundle/*.js",
+    "**/lib/**"
+  ],
+  "rules": {
+    "no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          "@app/*/src/**"
+        ]
+      }
+    ]
+  }
+}

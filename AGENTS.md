@@ -1,0 +1,293 @@
+# AGENTS.md
+
+> Canonical agent policy file for this repo. Read top-to-bottom on first run,
+> consult per-section thereafter. `CLAUDE.md` is a symlink to this file.
+
+## SETUP — IF THIS TEMPLATE IS UNINITIALIZED
+
+If you find placeholders like `{{APP_NAME}}` or `@app` anywhere in this repo
+(or the "About this project" section below still says _Uninitialized_), the
+template hasn't been set up yet. Before doing anything else:
+
+> **Ask your AI agent**: _"Initialize this template for my project."_
+
+The agent will read [`.agents/init.md`](./.agents/init.md), open with one
+question — _"what are you building?"_ — and use your answer to write a
+real project description into `README.md`, this file, and
+`.agents/PROJECT.md`. Then it'll handle the mechanical setup (package scope,
+Cloudflare worker name, etc.), substitute placeholders, install
+dependencies, and run all the checks.
+
+If you'd rather initialize manually, follow the recipe in `.agents/init.md`
+step-by-step.
+
+> **Agents reading this file**: if placeholders or the _Uninitialized_
+> marker still exist, follow `.agents/init.md` immediately. Do not attempt
+> feature work first — the project description is the foundation everything
+> else relies on.
+
+---
+
+## Canonical Instruction Source
+
+- `AGENTS.md` is the single canonical agent policy file for this repository.
+- `CLAUDE.md` is a symlink to `AGENTS.md`.
+- Do not maintain a second divergent copy of agent policy.
+
+<!-- PROJECT-CONTEXT:START -->
+
+## About this project
+
+> 🟡 **Uninitialized.** Run `.agents/init.md` to populate this section with a
+> description of what this project is, who it's for, and what it does. Until
+> then, treat this repo as the bare `cf-bun-template` skeleton — patterns are
+> in place, no product logic yet.
+
+<!-- PROJECT-CONTEXT:END -->
+
+For the canonical project identity (name, scope, capabilities, current
+focus), see [`.agents/PROJECT.md`](./.agents/PROJECT.md). Treat that file as
+the source of truth — keep it up to date as the project evolves.
+
+## Stack overview
+
+A Bun monorepo on Cloudflare Workers with:
+
+- **`packages/api/`** — Hono + hono-openapi backend. OpenAPI spec generated
+  from route definitions. Uses an `AsyncLocalStorage`-based per-request
+  `Instance` for `env` and `auth` injection.
+- **`packages/sdk/`** — TypeScript SDK auto-generated from the API OpenAPI
+  spec via `@hey-api/openapi-ts`. Publishable to npm.
+- **`packages/web/`** — React 19 + Vite + TailwindCSS v4 frontend. Consumes
+  the API exclusively through `@app/sdk`. Served as static assets by
+  the same Worker in production.
+
+Tooling: `oxlint` + `oxfmt` + `tsgo` + `husky` + `lint-staged`.
+
+## Agent-friendly recipes
+
+When asked to do specific kinds of work, read the matching recipe first:
+
+- [`.agents/add-feature.md`](./.agents/add-feature.md) — add a domain feature module
+- [`.agents/add-route.md`](./.agents/add-route.md) — add a route to an existing feature
+- [`.agents/regenerate-sdk.md`](./.agents/regenerate-sdk.md) — refresh the SDK after API changes
+- [`.agents/add-storage-prisma.md`](./.agents/add-storage-prisma.md) — wire Prisma + Postgres
+- [`.agents/add-storage-d1.md`](./.agents/add-storage-d1.md) — wire Cloudflare D1
+- [`.agents/add-auth-provider.md`](./.agents/add-auth-provider.md) — add SIWE/Privy/OAuth
+- [`.agents/PROJECT.md`](./.agents/PROJECT.md) — project-level context (read for orientation)
+
+## Tooling Rules
+
+- Use **Bun only**. Allowed: `bun`, `bun run`, `bun add`, `bun remove`, `bunx`.
+- Do not use `npm`, `pnpm`, `yarn`, or `npx`.
+
+## Architecture (hard rules)
+
+### Package responsibilities
+
+- `packages/api/` is the backend service and domain core. It owns business
+  capabilities and transport adapters, but not frontend concerns.
+- `packages/sdk/` is the public integration contract, generated from the API
+  OpenAPI spec. External consumers (and `packages/web/`) integrate through
+  this package. Never edit `packages/sdk/src/v1/gen/*` by hand.
+- `packages/web/` is a first-party UI client. It consumes
+  `@app/sdk` and MUST NOT import backend internals from
+  `packages/api/`.
+
+### Backend layering (`packages/api`)
+
+- HTTP/app transport wiring: `src/app/*`, `src/server/server.ts`, `src/server/routes/*`.
+- Cross-cutting middleware: `src/middleware/*`.
+- Domain features: `src/<feature>/*` (one directory per business capability).
+- Persistence and DB mapping: feature-local storage modules
+  (`src/<feature>/storage.ts`).
+- Dependency direction is one-way: `server/routes → feature → storage`.
+- Do not introduce reverse dependencies (storage importing routes, routes
+  importing storage from unrelated features).
+- Storage modules MAY use joins/nested selects across related tables to build
+  their own typed result. Reading across tables at the query level is allowed.
+- Storage modules MUST NOT import or call peer storage namespaces directly.
+  Express cross-table reads in the query itself.
+- Direct `Instance.env` / `Instance.db` access is allowed only inside
+  `src/config/` and `src/<feature>/storage.ts` respectively. Routes and
+  feature modules go through `Config.*` accessors / their own storage module.
+- Only storage modules may perform persistence operations and DB transactions.
+- Storage modules contain only persistence: queries, inserts, updates,
+  deletes, row→entity mapping, transactions. Business logic — validation,
+  authorization, cross-entity orchestration — belongs in feature modules.
+
+### Entity & storage pattern
+
+- Every domain feature module defines a `<Module>.Entity` zod schema (the
+  canonical domain shape). Storage returns `Entity` (or `Entity | null`).
+- Every storage module defines:
+  - `entitySelect` — the columns/select shape it reads
+  - `EntityRow` — the raw DB row type
+  - `toEntity(row): <Module>.Entity` — the row→domain mapper
+  - Query functions that call `toEntity` internally and return `Entity` types,
+    not raw `EntityRow`.
+
+### Route–feature boundary
+
+- Feature modules MUST remain transport-agnostic. They MUST NOT depend on
+  routes, request params, query strings, headers, or HTTP context.
+- Route handlers parse + validate + authorize + map errors. They convert HTTP
+  payloads to feature-domain inputs and feature outputs to HTTP responses.
+- Do not pass HTTP/DTO types into feature functions.
+- Do not return HTTP/DTO types from feature functions.
+
+### Error handling
+
+- Domain failures use typed `NamedError` variants. Each error condition gets
+  its own class — no single error with a `code` enum discriminant.
+- Errors live INSIDE the feature namespace, not in a separate `errors.ts`.
+- Each error has both `const` and `type` exports with the same name:
+  ```ts
+  export const NotFoundError = NamedError.create("NotFoundError", z.object({
+    id: z.string(),
+    message: z.string().optional(),
+  }));
+  export type NotFoundError = InstanceType<typeof NotFoundError>;
+  ```
+- Error names must be globally unique (used by `isInstance` matching). Prefix
+  with the domain when names would collide (e.g. `NoteNotFoundError`).
+- Errors belong to the feature that owns them. Do not introduce a
+  `src/shared/` (or similar global) errors module — if two features need to
+  raise the same condition, define the error in the feature that conceptually
+  owns it and import from there. Shared error dumps are an anti-pattern that
+  hide ownership and grow into kitchen sinks.
+- Route handlers map errors via `createErrorMapper`:
+  ```ts
+  const mapError = createErrorMapper([
+    { error: Note.NotFoundError, status: 404 },
+    { error: Note.NotOwnedError, status: 403 },
+  ]);
+  ```
+- Infrastructure/config errors (missing keys, RPC URLs) map to **500**, not
+  4xx. Check config errors before domain errors in catch chains.
+
+### Schema discipline (drives generated OpenAPI + SDK)
+
+- Backend schemas are the source of truth for the public contract.
+- Reuse feature/domain schemas in routes — don't redefine duplicate route-local
+  enums/contracts.
+- Author schemas with downstream codegen in mind: optional / nullable / default
+  semantics affect generated SDK types.
+- Avoid unsafe assertions (`as unknown as`, `as any`). Fix the schema instead.
+- For reusable OpenAPI components, add `meta({ ref: "ComponentName" })`.
+- `operationId` becomes the SDK method name. Use `<feature>.<verb>` form
+  (e.g. `note.list`, `note.create`, `note.update`).
+
+### SDK policy
+
+- The SDK contract is breaking-change-allowed during initial development —
+  bump versions before publishing as the API stabilizes.
+- Every API contract change in `packages/api` MUST regenerate SDK artifacts in
+  the same change: `bun run --filter '*/sdk' build`.
+- Update SDK consumers (`packages/web`, downstream apps) in the same change
+  when generated types/contracts shift.
+- Never manually edit `packages/sdk/src/v1/gen/*` or `packages/sdk/lib/*`.
+- `packages/web/` consumes the API exclusively via `@app/sdk`. Do
+  not import directly from `packages/api/` or hand-roll `fetch` calls.
+- See [`.agents/regenerate-sdk.md`](./.agents/regenerate-sdk.md) for the
+  regeneration recipe.
+
+## Workspace commands
+
+From repo root:
+
+- `bun run build` — build all packages
+- `bun run lint` / `bun run lint:fix`
+- `bun run format` / `bun run format:fix`
+- `bun run ts-check`
+- `bun run test`
+
+API only:
+
+- `bun run --filter '*/api' dev`
+- `bun run --filter '*/api' deploy`
+- `bun run --filter '*/api' cf-typegen`
+- `bun run --filter '*/api' openapi:generate`
+
+SDK only:
+
+- `bun run --filter '*/sdk' build` — regenerate from API OpenAPI spec
+- `bun run --filter '*/sdk' compile` — build for npm publishing
+- `bun run --filter '*/sdk' prepare-publish` — rewrite package.json for publish
+
+Web only:
+
+- `bun run --filter '*/web' dev`
+- `bun run --filter '*/web' build`
+
+## Required verification
+
+After every code change, run from repo root:
+
+- `bun run lint`
+- `bun run format`
+- `bun run ts-check`
+
+You may run `bun run lint:fix` and `bun run format:fix` first. If a check
+fails, fix the underlying issue and re-run all three until clean.
+
+If you changed routes or schemas, also:
+
+- `bun run --filter '*/sdk' build` — regenerates the OpenAPI spec AND the SDK,
+  then re-runs SDK lint/format/ts-check. Update SDK consumers in the same
+  change. See [`.agents/regenerate-sdk.md`](./.agents/regenerate-sdk.md).
+
+## Code style
+
+- TypeScript strict mode is required.
+- Avoid `any`; use explicit types.
+- Modules are ESM (`"type": "module"`).
+- Default to no comments. Add a comment only when the WHY is non-obvious.
+
+## Import conventions
+
+Order:
+1. Framework/runtime imports (`hono`, `hono/*`, `react`)
+2. External dependencies
+3. Internal absolute aliases (if introduced)
+4. Relative imports (`./`, `../`)
+
+Side-effect imports grouped at the top. Prefer `import type` for type-only
+imports. Remove unused imports.
+
+## Secrets
+
+- Local development secrets live in `.env` in the service directory.
+- Do not put development secrets into `wrangler.jsonc → vars`.
+- Limit direct env reads to `src/config/`. Feature/route modules consume
+  typed `Config.*` accessors.
+
+## Testing policy
+
+- New backend feature logic should have at least one happy-path test and one
+  domain-error-path test (`bun test`, files under `src/<feature>/__tests__/`).
+- New or changed route behavior should have at least one contract-level test
+  validating request parsing and response/error mapping.
+- Bug fixes should add or update a test that would have failed before the fix.
+
+## Utils
+
+- Shared utilities live in `src/utils/*`.
+- Use responsibility-specific files (`context.ts`, `log.ts`, `error.ts`,
+  `crypto.ts`).
+- Do not create a catch-all `utils.ts`.
+- Keep feature-specific helpers inside the feature namespace. Move them to
+  `src/utils/*` only when intentionally shared.
+
+## Feature namespacing
+
+- Organize backend code by feature namespace (`example`, `note`, `order`, ...).
+- Each feature is self-contained under its own directory.
+- No global cross-feature folders for feature logic.
+- Feature-local helpers stay inside the namespace (non-exported by default).
+
+## Types
+
+- Keep types encapsulated within each feature namespace.
+- No shared top-level `types` file for feature-specific types.
+- Export types from a feature namespace only when other modules need them.

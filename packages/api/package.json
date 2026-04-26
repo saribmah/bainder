@@ -1,0 +1,33 @@
+{
+  "name": "@app/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings",
+    "dev": "wrangler dev --env dev",
+    "build": "bunx --bun tsgo",
+    "deploy": "wrangler deploy --env production",
+    "openapi:generate": "bun run ./scripts/generate-openapi.ts",
+    "ts-check": "tsgo --noEmit -p tsconfig.json",
+    "lint": "oxlint ./src",
+    "lint:fix": "oxlint --fix --quiet ./src",
+    "format": "oxfmt --check --no-error-on-unmatched-pattern \"./src/**/*.{js,jsx,ts,tsx,mjs,cjs}\"",
+    "format:fix": "oxfmt --write --no-error-on-unmatched-pattern \"./src/**/*.{js,jsx,ts,tsx,mjs,cjs}\"",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@hono/standard-validator": "^0.2.2",
+    "@standard-community/standard-json": "^0.3.5",
+    "@standard-community/standard-openapi": "^0.2.9",
+    "hono": "^4.10.4",
+    "hono-openapi": "^1.2.0",
+    "jose": "^6.1.3",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260101.0",
+    "@types/bun": "^1.3.9",
+    "wrangler": "^4.69.0"
+  }
+}

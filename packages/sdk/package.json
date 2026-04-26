@@ -1,0 +1,50 @@
+{
+  "name": "@app/sdk",
+  "version": "0.0.1",
+  "description": "TypeScript SDK for the {{APP_NAME}} API",
+  "license": "MIT",
+  "files": ["lib", "README.md", "LICENSE"],
+  "type": "module",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "types": "./src/*",
+      "default": "./src/*"
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      "./package.json": "./package.json",
+      ".": {
+        "types": "./lib/index.d.ts",
+        "default": "./lib/index.js"
+      },
+      "./*": {
+        "types": "./lib/*.d.ts",
+        "default": "./lib/*.js"
+      }
+    },
+    "main": "./lib/index.js",
+    "module": "./lib/index.js",
+    "types": "./lib/index.d.ts"
+  },
+  "scripts": {
+    "build": "./script/build.ts",
+    "compile": "rm -rf lib && bunx --bun tsgo",
+    "prepare-publish": "./script/prepare-publish.ts",
+    "ts-check": "bunx --bun tsgo --noEmit -p tsconfig.json",
+    "lint": "oxlint ./src",
+    "lint:fix": "oxlint --fix --quiet ./src",
+    "format": "oxfmt --check --no-error-on-unmatched-pattern \"./src/**/*.{js,jsx,ts,tsx,mjs,cjs}\"",
+    "format:fix": "oxfmt --write --no-error-on-unmatched-pattern \"./src/**/*.{js,jsx,ts,tsx,mjs,cjs}\"",
+    "prepublishOnly": "bun run compile"
+  },
+  "devDependencies": {
+    "@hey-api/openapi-ts": "^0.93.1"
+  }
+}

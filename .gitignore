@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Bun
+bun.lockb
+
+# Build outputs
+dist/
+build/
+lib/
+coverage/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor files
+.DS_Store
+.idea/
+.vscode/
+
+# Cloudflare
+.wrangler
+
+# Husky internals
+.husky/_/
+
+# Generated
+packages/api/openapi.generated.json
+packages/sdk/lib/
