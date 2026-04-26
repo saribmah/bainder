@@ -4,11 +4,11 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"compatibility_flags": ["nodejs_compat"],
 	"compatibility_date": "2026-02-27",
-	"name": "{{WORKER_NAME}}",
+	"name": "bainder",
 	"main": "src/index.ts",
 	"env": {
 		"dev": {
-			"name": "{{WORKER_NAME}}-dev",
+			"name": "bainder-dev",
 			"vars": {
 				"API_PUBLIC_HOST": "",
 				"WEB_PUBLIC_HOST": "",
@@ -26,8 +26,8 @@
 		"production": {
 			"workers_dev": false,
 			"routes": [
-				// { "pattern": "{{APP_DOMAIN}}", "custom_domain": true },
-				// { "pattern": "api.{{APP_DOMAIN}}", "custom_domain": true }
+				// { "pattern": "bainder.app", "custom_domain": true },
+				// { "pattern": "api.bainder.app", "custom_domain": true }
 			],
 			"assets": {
 				// Serves the built web frontend as static assets at the root domain.

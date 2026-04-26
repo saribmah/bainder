@@ -1,7 +1,7 @@
 {
-  "name": "@app/sdk",
+  "name": "@bainder/sdk",
   "version": "0.0.1",
-  "description": "TypeScript SDK for the {{APP_NAME}} API",
+  "description": "TypeScript SDK for the bainder API",
   "license": "MIT",
   "files": ["lib", "README.md", "LICENSE"],
   "type": "module",

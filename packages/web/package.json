@@ -1,5 +1,5 @@
 {
-  "name": "@app/web",
+  "name": "@bainder/web",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -14,7 +14,7 @@
     "ts-check": "bunx --bun tsgo --noEmit"
   },
   "dependencies": {
-    "@app/sdk": "*",
+    "@bainder/sdk": "*",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router-dom": "^6.19.0"

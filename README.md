@@ -1,104 +1,30 @@
-<!--
-  This README has TWO modes.
-
-  • Pre-init (template state): describes the template itself.
-  • Post-init: describes YOUR project. The init recipe (see `.agents/init.md`)
-    rewrites the PROJECT-INTRO block with the user's product description and
-    deletes everything inside TEMPLATE-ONLY blocks.
-
-  Sections outside both blocks (Architecture, Local development, Deploy,
-  Common tasks, Customizing, License) are preserved as-is — they're useful
-  in both modes.
--->
-
 <!-- PROJECT-INTRO:START -->
 
-# cf-bun-template
+# Bainder
 
-A Bun monorepo template for Cloudflare Workers + React. Opinionated about
-**how** code is organized (namespaces, typed errors, OpenAPI from routes),
-unopinionated about **what** you build (no DB locked in, no auth provider
-locked in beyond JWT bearer).
+AI-powered document binder that turns receipts, contracts, and PDFs into
+searchable, queryable memory.
 
-> 🟡 **This template is uninitialized.** Open the directory in your AI agent
-> and say _"Initialize this template for my project."_ The agent will
-> interview you about what you're building and rewrite this section.
+## About
+
+Bainder is a personal document binder powered by AI. Drop in any PDF,
+receipt, invoice, statement, contract, manual, screenshot, or book —
+Bainder extracts structured data, organizes it, and makes it queryable in
+plain English. It's not a PDF chat app; it's long-term, AI-ready memory for
+your documents.
+
+## What it does
+
+- Ingest mixed document types (PDFs, images, receipts, contracts, manuals, books)
+- Extract structured data and metadata from each document
+- Organize documents into a searchable, browsable binder
+- Answer natural-language questions across the full corpus ("find my Apple receipt", "what does the lease say about pets")
+- Summarize long documents and chapters on demand
+
+**For**: individuals and small teams managing personal and professional
+document collections.
 
 <!-- PROJECT-INTRO:END -->
-
-<!-- TEMPLATE-ONLY:START -->
-
-## What you get
-
-- **Backend** (`packages/api/`) — Cloudflare Worker on Hono + hono-openapi.
-  Auto-generated OpenAPI spec, typed errors with `NamedError`,
-  `AsyncLocalStorage`-based per-request `Instance` context.
-- **SDK** (`packages/sdk/`) — TypeScript SDK auto-generated from the API
-  OpenAPI spec via `@hey-api/openapi-ts`. Publishable to npm; consumed by the
-  web frontend.
-- **Frontend** (`packages/web/`) — React 19 + Vite + TailwindCSS v4. Talks to
-  the API exclusively through the generated SDK. Served as static assets by
-  the same Worker in production.
-- **Tooling** — `oxlint` (linting), `oxfmt` (formatting), `tsgo` (fast
-  typecheck), `husky` + `lint-staged` (pre-commit).
-- **CI** — GitHub Actions for lint/format/typecheck/test/build, Cloudflare
-  deploy, and npm SDK publishing.
-- **Agent recipes** — `.agents/*.md` files that walk an AI agent through
-  initializing the template, adding features, wiring storage, regenerating
-  the SDK, etc.
-
-## Quick start
-
-### With an AI agent (recommended)
-
-```bash
-git clone <this-template> my-app
-cd my-app
-```
-
-Open the directory in your favourite agentic IDE / CLI (Claude Code, Cursor,
-etc.) and say:
-
-> Initialize this template for my project.
-
-The agent will read [`.agents/init.md`](./.agents/init.md), ask you what
-you're building (in your own words), then capture the mechanical setup
-details, substitute placeholders, install deps, and run all the checks.
-
-### Manually
-
-```bash
-git clone <this-template> my-app
-cd my-app
-
-# Replace tokens. Example values shown — pick your own:
-APP_NAME=my-app
-PKG_SCOPE='@my-app'
-WORKER_NAME=my-app
-DESCRIPTION='My new app'
-
-# Use sed (BSD on macOS — drop the empty '' after -i for GNU sed):
-find . -type f \
-  -not -path './node_modules/*' -not -path './.git/*' -not -path './.agents/*' \
-  -exec sed -i '' \
-    -e "s|{{APP_NAME}}|$APP_NAME|g" \
-    -e "s|@app|$PKG_SCOPE|g" \
-    -e "s|{{WORKER_NAME}}|$WORKER_NAME|g" \
-    -e "s|{{DESCRIPTION}}|$DESCRIPTION|g" \
-    {} +
-
-bun install
-bun run --filter '*/api' cf-typegen
-bun run --filter '*/sdk' build
-bun run lint && bun run ts-check && bun run test
-rm .agents/init.md   # only useful pre-init
-```
-
-Manual mode skips writing the product description — fill in the
-PROJECT-INTRO block above and `.agents/PROJECT.md` yourself if you want AI
-agents to have project context later.
-
-<!-- TEMPLATE-ONLY:END -->
 
 ## Architecture
 

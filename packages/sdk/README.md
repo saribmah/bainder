@@ -1,22 +1,22 @@
-# @app/sdk
+# @bainder/sdk
 
-TypeScript SDK for the {{APP_NAME}} API. Auto-generated from the API's
+TypeScript SDK for the bainder API. Auto-generated from the API's
 OpenAPI spec via [`@hey-api/openapi-ts`](https://heyapi.dev/).
 
 ## Install
 
 ```bash
-bun add @app/sdk
-# or: npm install @app/sdk
+bun add @bainder/sdk
+# or: npm install @bainder/sdk
 ```
 
 ## Usage
 
 ```ts
-import { createApiClient } from "@app/sdk";
+import { createApiClient } from "@bainder/sdk";
 
 const api = createApiClient({
-  baseUrl: "https://api.{{APP_DOMAIN}}",
+  baseUrl: "https://api.bainder.app",
   // Optional: bearer-token auth
   auth: () => localStorage.getItem("accessToken") ?? undefined,
   security: [{ type: "http", scheme: "bearer" }],
@@ -33,7 +33,7 @@ const created = await api.example.create({ name: "hello" });
 After backend route or schema changes, regenerate the SDK from repo root:
 
 ```bash
-bun run --filter '@app/sdk' build
+bun run --filter '@bainder/sdk' build
 ```
 
 This:
@@ -46,8 +46,8 @@ The `src/v1/gen/` directory is generated — never edit it manually.
 ## Build for publishing
 
 ```bash
-bun run --filter '@app/sdk' compile         # outputs to lib/
-bun run --filter '@app/sdk' prepare-publish # rewrites package.json exports → lib/*
+bun run --filter '@bainder/sdk' compile         # outputs to lib/
+bun run --filter '@bainder/sdk' prepare-publish # rewrites package.json exports → lib/*
 npm publish --access public --ignore-scripts
 ```
 
