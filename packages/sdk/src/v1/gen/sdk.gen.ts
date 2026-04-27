@@ -8,6 +8,17 @@ import {
 } from "./client";
 import { client } from "./client.gen";
 import type {
+  EpubDeleteErrors,
+  EpubDeleteResponses,
+  EpubGetChapterErrors,
+  EpubGetChapterResponses,
+  EpubGetContextErrors,
+  EpubGetContextResponses,
+  EpubGetDetailErrors,
+  EpubGetDetailResponses,
+  EpubIngestErrors,
+  EpubIngestResponses,
+  EpubListResponses,
   ExampleCreateErrors,
   ExampleCreateResponses,
   ExampleGetErrors,
@@ -118,6 +129,159 @@ export class Example extends HeyApiClient {
   }
 }
 
+export class Epub extends HeyApiClient {
+  /**
+   * List ingested EPUBs
+   */
+  public list<ThrowOnError extends boolean = false>(options?: Options<never, ThrowOnError>) {
+    return (options?.client ?? this.client).get<EpubListResponses, unknown, ThrowOnError>({
+      url: "/epubs",
+      ...options,
+    });
+  }
+
+  /**
+   * Ingest an EPUB file
+   *
+   * Upload the raw EPUB bytes (Content-Type: application/epub+zip). Parses metadata, chapters, and TOC; returns book metadata.
+   */
+  public ingest<ThrowOnError extends boolean = false>(
+    parameters: {
+      body: Blob | File;
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams([parameters], [{ args: [{ key: "body", map: "body" }] }]);
+    return (options?.client ?? this.client).post<
+      EpubIngestResponses,
+      EpubIngestErrors,
+      ThrowOnError
+    >({
+      bodySerializer: null,
+      url: "/epubs",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/epub+zip",
+        ...options?.headers,
+        ...params.headers,
+      },
+    });
+  }
+
+  /**
+   * Delete an ingested EPUB
+   */
+  public delete<ThrowOnError extends boolean = false>(
+    parameters: {
+      id: string;
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams([parameters], [{ args: [{ in: "path", key: "id" }] }]);
+    return (options?.client ?? this.client).delete<
+      EpubDeleteResponses,
+      EpubDeleteErrors,
+      ThrowOnError
+    >({
+      url: "/epubs/{id}",
+      ...options,
+      ...params,
+    });
+  }
+
+  /**
+   * Get an EPUB with its TOC and chapter summaries
+   */
+  public getDetail<ThrowOnError extends boolean = false>(
+    parameters: {
+      id: string;
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams([parameters], [{ args: [{ in: "path", key: "id" }] }]);
+    return (options?.client ?? this.client).get<
+      EpubGetDetailResponses,
+      EpubGetDetailErrors,
+      ThrowOnError
+    >({
+      url: "/epubs/{id}",
+      ...options,
+      ...params,
+    });
+  }
+
+  /**
+   * Get a single chapter by linear order
+   */
+  public getChapter<ThrowOnError extends boolean = false>(
+    parameters: {
+      id: string;
+      order: string;
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "id" },
+            { in: "path", key: "order" },
+          ],
+        },
+      ],
+    );
+    return (options?.client ?? this.client).get<
+      EpubGetChapterResponses,
+      EpubGetChapterErrors,
+      ThrowOnError
+    >({
+      url: "/epubs/{id}/chapters/{order}",
+      ...options,
+      ...params,
+    });
+  }
+
+  /**
+   * Assemble AI-ready context across one or more chapters
+   *
+   * Returns concatenated chapter text suitable for an LLM prompt. Default range is the entire book.
+   */
+  public getContext<ThrowOnError extends boolean = false>(
+    parameters: {
+      id: string;
+      from?: number;
+      to?: number;
+      format?: "text" | "markdown";
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "id" },
+            { in: "query", key: "from" },
+            { in: "query", key: "to" },
+            { in: "query", key: "format" },
+          ],
+        },
+      ],
+    );
+    return (options?.client ?? this.client).get<
+      EpubGetContextResponses,
+      EpubGetContextErrors,
+      ThrowOnError
+    >({
+      url: "/epubs/{id}/context",
+      ...options,
+      ...params,
+    });
+  }
+}
+
 export class Health extends HeyApiClient {
   /**
    * Health check
@@ -143,6 +307,11 @@ export class ApiClient extends HeyApiClient {
   private _example?: Example;
   get example(): Example {
     return (this._example ??= new Example({ client: this.client }));
+  }
+
+  private _epub?: Epub;
+  get epub(): Epub {
+    return (this._epub ??= new Epub({ client: this.client }));
   }
 
   private _health?: Health;

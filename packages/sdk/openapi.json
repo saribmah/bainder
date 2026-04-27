@@ -32,6 +32,304 @@
           "name",
           "createdAt"
         ]
+      },
+      "Epub": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "authors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "language": {
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "publisher": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "publishedDate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "identifiers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "chapterCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "wordCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "authors",
+          "language",
+          "description",
+          "publisher",
+          "publishedDate",
+          "identifiers",
+          "subjects",
+          "chapterCount",
+          "wordCount",
+          "createdAt"
+        ]
+      },
+      "EpubTocItem": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "parent": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "depth": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "title": {
+            "type": "string"
+          },
+          "href": {
+            "type": "string"
+          },
+          "fileHref": {
+            "type": "string"
+          },
+          "anchor": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "index",
+          "parent",
+          "depth",
+          "title",
+          "href",
+          "fileHref",
+          "anchor"
+        ]
+      },
+      "EpubChapterSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "bookId": {
+            "type": "string"
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "href": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "wordCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "id",
+          "bookId",
+          "order",
+          "href",
+          "title",
+          "wordCount"
+        ]
+      },
+      "EpubDetail": {
+        "type": "object",
+        "properties": {
+          "book": {
+            "$ref": "#/components/schemas/Epub"
+          },
+          "toc": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EpubTocItem"
+            }
+          },
+          "chapters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EpubChapterSummary"
+            }
+          }
+        },
+        "required": [
+          "book",
+          "toc",
+          "chapters"
+        ]
+      },
+      "EpubChapter": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "bookId": {
+            "type": "string"
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "href": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "html": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "wordCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "id",
+          "bookId",
+          "order",
+          "href",
+          "title",
+          "html",
+          "text",
+          "wordCount"
+        ]
+      },
+      "EpubContext": {
+        "type": "object",
+        "properties": {
+          "bookId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "authors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "from": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "to": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "chapterCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "wordCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "text",
+              "markdown"
+            ]
+          },
+          "context": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "bookId",
+          "title",
+          "authors",
+          "from",
+          "to",
+          "chapterCount",
+          "wordCount",
+          "format",
+          "context"
+        ]
       }
     }
   },
@@ -124,6 +422,231 @@
           }
         },
         "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ]
+      }
+    },
+    "/epubs": {
+      "post": {
+        "operationId": "epub.ingest",
+        "summary": "Ingest an EPUB file",
+        "description": "Upload the raw EPUB bytes (Content-Type: application/epub+zip). Parses metadata, chapters, and TOC; returns book metadata.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/epub+zip": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Book ingested",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Epub"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or unsupported EPUB"
+          },
+          "413": {
+            "description": "Upload exceeds size limit"
+          },
+          "422": {
+            "description": "EPUB had no readable chapters"
+          }
+        }
+      },
+      "get": {
+        "operationId": "epub.list",
+        "summary": "List ingested EPUBs",
+        "responses": {
+          "200": {
+            "description": "All ingested books",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Epub"
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/epubs/{id}": {
+      "get": {
+        "operationId": "epub.getDetail",
+        "summary": "Get an EPUB with its TOC and chapter summaries",
+        "responses": {
+          "200": {
+            "description": "Book detail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EpubDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "epub.delete",
+        "summary": "Delete an ingested EPUB",
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ]
+      }
+    },
+    "/epubs/{id}/chapters/{order}": {
+      "get": {
+        "operationId": "epub.getChapter",
+        "summary": "Get a single chapter by linear order",
+        "responses": {
+          "200": {
+            "description": "Chapter content (cleaned HTML and plain text)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EpubChapter"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Book or chapter not found"
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "order",
+            "required": true
+          }
+        ]
+      }
+    },
+    "/epubs/{id}/context": {
+      "get": {
+        "operationId": "epub.getContext",
+        "summary": "Assemble AI-ready context across one or more chapters",
+        "description": "Returns concatenated chapter text suitable for an LLM prompt. Default range is the entire book.",
+        "responses": {
+          "200": {
+            "description": "Assembled context",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EpubContext"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Book or chapter range not found"
+          }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "from",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "in": "query",
+            "name": "format",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "text",
+                "markdown"
+              ]
+            }
+          },
           {
             "schema": {
               "type": "string"
