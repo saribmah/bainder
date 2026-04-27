@@ -10,6 +10,69 @@ export type Example = {
   createdAt: string;
 };
 
+export type Epub = {
+  id: string;
+  title: string;
+  authors: Array<string>;
+  language: string;
+  description: string | null;
+  publisher: string | null;
+  publishedDate: string | null;
+  identifiers: Array<string>;
+  subjects: Array<string>;
+  chapterCount: number;
+  wordCount: number;
+  createdAt: string;
+};
+
+export type EpubTocItem = {
+  index: number;
+  parent: number | null;
+  depth: number;
+  title: string;
+  href: string;
+  fileHref: string;
+  anchor: string;
+};
+
+export type EpubChapterSummary = {
+  id: string;
+  bookId: string;
+  order: number;
+  href: string;
+  title: string;
+  wordCount: number;
+};
+
+export type EpubDetail = {
+  book: Epub;
+  toc: Array<EpubTocItem>;
+  chapters: Array<EpubChapterSummary>;
+};
+
+export type EpubChapter = {
+  id: string;
+  bookId: string;
+  order: number;
+  href: string;
+  title: string;
+  html: string;
+  text: string;
+  wordCount: number;
+};
+
+export type EpubContext = {
+  bookId: string;
+  title: string;
+  authors: Array<string>;
+  from: number;
+  to: number;
+  chapterCount: number;
+  wordCount: number;
+  format: "text" | "markdown";
+  context: string;
+};
+
 export type ExampleListData = {
   body?: never;
   path?: never;
@@ -77,6 +140,160 @@ export type ExampleGetResponses = {
 };
 
 export type ExampleGetResponse = ExampleGetResponses[keyof ExampleGetResponses];
+
+export type EpubListData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/epubs";
+};
+
+export type EpubListResponses = {
+  /**
+   * All ingested books
+   */
+  200: {
+    items: Array<Epub>;
+  };
+};
+
+export type EpubListResponse = EpubListResponses[keyof EpubListResponses];
+
+export type EpubIngestData = {
+  body: Blob | File;
+  path?: never;
+  query?: never;
+  url: "/epubs";
+};
+
+export type EpubIngestErrors = {
+  /**
+   * Invalid or unsupported EPUB
+   */
+  400: unknown;
+  /**
+   * Upload exceeds size limit
+   */
+  413: unknown;
+  /**
+   * EPUB had no readable chapters
+   */
+  422: unknown;
+};
+
+export type EpubIngestResponses = {
+  /**
+   * Book ingested
+   */
+  201: Epub;
+};
+
+export type EpubIngestResponse = EpubIngestResponses[keyof EpubIngestResponses];
+
+export type EpubDeleteData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/epubs/{id}";
+};
+
+export type EpubDeleteErrors = {
+  /**
+   * Not found
+   */
+  404: unknown;
+};
+
+export type EpubDeleteResponses = {
+  /**
+   * Deleted
+   */
+  204: void;
+};
+
+export type EpubDeleteResponse = EpubDeleteResponses[keyof EpubDeleteResponses];
+
+export type EpubGetDetailData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/epubs/{id}";
+};
+
+export type EpubGetDetailErrors = {
+  /**
+   * Not found
+   */
+  404: unknown;
+};
+
+export type EpubGetDetailResponses = {
+  /**
+   * Book detail
+   */
+  200: EpubDetail;
+};
+
+export type EpubGetDetailResponse = EpubGetDetailResponses[keyof EpubGetDetailResponses];
+
+export type EpubGetChapterData = {
+  body?: never;
+  path: {
+    id: string;
+    order: string;
+  };
+  query?: never;
+  url: "/epubs/{id}/chapters/{order}";
+};
+
+export type EpubGetChapterErrors = {
+  /**
+   * Book or chapter not found
+   */
+  404: unknown;
+};
+
+export type EpubGetChapterResponses = {
+  /**
+   * Chapter content (cleaned HTML and plain text)
+   */
+  200: EpubChapter;
+};
+
+export type EpubGetChapterResponse = EpubGetChapterResponses[keyof EpubGetChapterResponses];
+
+export type EpubGetContextData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: {
+    from?: number;
+    to?: number;
+    format?: "text" | "markdown";
+  };
+  url: "/epubs/{id}/context";
+};
+
+export type EpubGetContextErrors = {
+  /**
+   * Book or chapter range not found
+   */
+  404: unknown;
+};
+
+export type EpubGetContextResponses = {
+  /**
+   * Assembled context
+   */
+  200: EpubContext;
+};
+
+export type EpubGetContextResponse = EpubGetContextResponses[keyof EpubGetContextResponses];
 
 export type HealthGetData = {
   body?: never;

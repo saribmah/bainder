@@ -41,9 +41,15 @@ collections.
 
 ## Current focus
 
-_What's actively being worked on right now. Update this as priorities shift —
-future agent runs will use it to understand context that isn't yet expressed
-in code or git history._
+- **EPUB ingest scaffold** (`packages/api/src/epub/`): in-memory `Epub` feature
+  that parses EPUB bytes (fflate + fast-xml-parser) into book metadata,
+  ordered chapters (cleaned HTML + plain text), and a flat TOC, plus a
+  `getContext` op that assembles AI-ready text across a chapter range.
+  Routes mounted at `/epubs`. Storage is in-memory — wire to R2 (chapter
+  blobs) + Postgres/D1 (rows + metadata) when persistence is needed.
+- Planned siblings: `pdf`, `receipt`, `image` features — each its own
+  self-contained module following the same Entity/storage pattern. A future
+  cross-corpus binder/search feature will compose across them.
 
 ## Notes
 
