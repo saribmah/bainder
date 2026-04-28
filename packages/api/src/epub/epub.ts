@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { NamedError } from "../utils/error";
+import { EpubAssetStore } from "./asset-store";
 import { parseEpubBytes, ParseFailure, type ParsedTocEntry } from "./parser";
 import { EpubStorage } from "./storage";
 
@@ -64,6 +65,10 @@ export namespace Epub {
       publishedDate: z.string().nullable(),
       identifiers: z.array(z.string()),
       subjects: z.array(z.string()),
+      // Token URL for the cover image, or null. After Phase 2 lands this is
+      // an `assets/{name}` token resolvable via the asset route; Phase 1b
+      // stores the raw OPF-relative href as a transient placeholder.
+      coverImage: z.string().nullable(),
       chapterCount: z.number().int().nonnegative(),
       wordCount: z.number().int().nonnegative(),
       createdAt: z.string(),
@@ -79,6 +84,7 @@ export namespace Epub {
       href: z.string(),
       title: z.string(),
       wordCount: z.number().int().nonnegative(),
+      linear: z.boolean(),
     })
     .meta({ ref: "EpubChapterSummary" });
   export type ChapterSummary = z.infer<typeof ChapterSummary>;
@@ -93,6 +99,7 @@ export namespace Epub {
       html: z.string(),
       text: z.string(),
       wordCount: z.number().int().nonnegative(),
+      linear: z.boolean(),
     })
     .meta({ ref: "EpubChapter" });
   export type Chapter = z.infer<typeof Chapter>;
@@ -151,7 +158,7 @@ export namespace Epub {
     if (parsed.chapters.length === 0) {
       throw new EpubEmptyError({ message: "EPUB contained no readable chapters" });
     }
-    return EpubStorage.create({
+    const entity = await EpubStorage.create({
       userId,
       metadata: {
         title: parsed.metadata.title,
@@ -162,6 +169,7 @@ export namespace Epub {
         publishedDate: parsed.metadata.publishedDate,
         identifiers: parsed.metadata.identifiers,
         subjects: parsed.metadata.subjects,
+        coverImage: parsed.metadata.coverImage,
       },
       chapters: parsed.chapters.map((c) => ({
         order: c.order,
@@ -170,9 +178,26 @@ export namespace Epub {
         html: c.html,
         text: c.text,
         wordCount: c.wordCount,
+        linear: c.linear,
       })),
       toc: flattenToc(parsed.toc),
     });
+
+    // Upload images after the DB write so chapter HTML's `assets/{name}`
+    // tokens have a backing object. If R2 fails partway, roll back both R2
+    // (best-effort prefix sweep) and the D1 row so the user can retry —
+    // partial books would otherwise be silently broken.
+    try {
+      for (const img of parsed.images) {
+        await EpubAssetStore.put(entity.id, img.name, img.bytes, img.contentType);
+      }
+    } catch (e) {
+      await EpubAssetStore.removeAll(entity.id).catch(() => {});
+      await EpubStorage.remove(entity.id, userId).catch(() => {});
+      throw e;
+    }
+
+    return entity;
   };
 
   export const list = async (userId: string): Promise<Entity[]> => EpubStorage.list(userId);
@@ -184,8 +209,23 @@ export namespace Epub {
   };
 
   export const remove = async (userId: string, id: string): Promise<void> => {
-    const existed = await EpubStorage.remove(id, userId);
-    if (!existed) throw new EpubNotFoundError({ id });
+    // Verify ownership before any destructive work — also lets us 404 cleanly.
+    const book = await EpubStorage.get(id, userId);
+    if (!book) throw new EpubNotFoundError({ id });
+    // R2 first: if asset cleanup fails, the book is still listable and the
+    // user can retry. D1-first would orphan assets we could no longer find.
+    await EpubAssetStore.removeAll(id);
+    await EpubStorage.remove(id, userId);
+  };
+
+  export const getAsset = async (
+    userId: string,
+    bookId: string,
+    name: string,
+  ): Promise<EpubAssetStore.Asset | null> => {
+    const owned = await EpubStorage.get(bookId, userId);
+    if (!owned) return null;
+    return EpubAssetStore.get(bookId, name);
   };
 
   export const getDetail = async (userId: string, id: string): Promise<Detail> => {

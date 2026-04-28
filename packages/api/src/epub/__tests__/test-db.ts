@@ -39,7 +39,7 @@ export const createTestRuntime = (users: TestUser[]) => {
       .run();
   }
 
-  const env = { DB: {} as unknown } as RuntimeEnv;
+  const env = { DB: {} as unknown, BUCKET: createFakeR2Bucket() } as RuntimeEnv;
 
   const runAs = <R>(userId: string, fn: () => R): R => {
     const auth: AuthContext = {
@@ -54,4 +54,60 @@ export const createTestRuntime = (users: TestUser[]) => {
   const close = () => sqlite.close();
 
   return { runAs, close };
+};
+
+// In-memory R2Bucket fake. Implements only the surface our storage actually
+// uses (put/get/list/delete). The cast at return widens to the full R2Bucket
+// type — calling any other method in tests would throw.
+const createFakeR2Bucket = (): R2Bucket => {
+  const store = new Map<string, { bytes: Uint8Array; contentType: string }>();
+
+  const buildObject = (key: string, item: { bytes: Uint8Array; contentType: string }) => ({
+    key,
+    version: "v1",
+    size: item.bytes.byteLength,
+    etag: "etag",
+    httpEtag: '"etag"',
+    uploaded: new Date(),
+    httpMetadata: { contentType: item.contentType },
+    customMetadata: {},
+    body: new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(item.bytes);
+        controller.close();
+      },
+    }),
+    bodyUsed: false,
+    arrayBuffer: async () => item.bytes.buffer,
+    text: async () => new TextDecoder().decode(item.bytes),
+  });
+
+  const fake = {
+    put: async (
+      key: string,
+      value: ArrayBuffer | Uint8Array,
+      options?: { httpMetadata?: { contentType?: string } },
+    ) => {
+      const bytes = value instanceof Uint8Array ? value : new Uint8Array(value);
+      const contentType = options?.httpMetadata?.contentType ?? "application/octet-stream";
+      store.set(key, { bytes, contentType });
+      return { key, size: bytes.byteLength };
+    },
+    get: async (key: string) => {
+      const item = store.get(key);
+      return item ? buildObject(key, item) : null;
+    },
+    list: async (opts?: { prefix?: string; cursor?: string }) => {
+      const prefix = opts?.prefix ?? "";
+      const objects = [...store.entries()]
+        .filter(([k]) => k.startsWith(prefix))
+        .map(([k, v]) => ({ key: k, size: v.bytes.byteLength }));
+      return { objects, truncated: false, delimitedPrefixes: [] };
+    },
+    delete: async (keys: string | string[]) => {
+      const arr = typeof keys === "string" ? [keys] : keys;
+      for (const k of arr) store.delete(k);
+    },
+  };
+  return fake as unknown as R2Bucket;
 };

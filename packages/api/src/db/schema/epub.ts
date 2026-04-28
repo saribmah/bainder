@@ -21,6 +21,7 @@ export const epubBook = sqliteTable(
     identifiers: text("identifiers", { mode: "json" }).$type<string[]>().notNull(),
     subjects: text("subjects", { mode: "json" }).$type<string[]>().notNull(),
     toc: text("toc", { mode: "json" }).$type<EpubTocItem[]>().notNull(),
+    coverImage: text("cover_image"),
     chapterCount: integer("chapter_count").notNull(),
     wordCount: integer("word_count").notNull(),
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
@@ -45,6 +46,7 @@ export const epubChapter = sqliteTable(
     html: text("html").notNull(),
     text: text("text").notNull(),
     wordCount: integer("word_count").notNull(),
+    linear: integer("linear", { mode: "boolean" }).notNull().default(true),
   },
   (table) => [uniqueIndex("epub_chapter_book_order_uq").on(table.bookId, table.order)],
 );

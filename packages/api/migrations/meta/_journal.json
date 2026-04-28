@@ -15,6 +15,13 @@
       "when": 1777349444754,
       "tag": "0001_thick_living_tribunal",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1777384476593,
+      "tag": "0002_tidy_viper",
+      "breakpoints": true
     }
   ]
 }

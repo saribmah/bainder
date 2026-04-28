@@ -20,6 +20,7 @@ export type Epub = {
   publishedDate: string | null;
   identifiers: Array<string>;
   subjects: Array<string>;
+  coverImage: string | null;
   chapterCount: number;
   wordCount: number;
   createdAt: string;
@@ -42,6 +43,7 @@ export type EpubChapterSummary = {
   href: string;
   title: string;
   wordCount: number;
+  linear: boolean;
 };
 
 export type EpubDetail = {
@@ -59,6 +61,7 @@ export type EpubChapter = {
   html: string;
   text: string;
   wordCount: number;
+  linear: boolean;
 };
 
 export type EpubContext = {
@@ -298,6 +301,36 @@ export type EpubGetChapterResponses = {
 };
 
 export type EpubGetChapterResponse = EpubGetChapterResponses[keyof EpubGetChapterResponses];
+
+export type EpubGetAssetData = {
+  body?: never;
+  path: {
+    id: string;
+    name: string;
+  };
+  query?: never;
+  url: "/epubs/{id}/assets/{name}";
+};
+
+export type EpubGetAssetErrors = {
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * Book or asset not found
+   */
+  404: unknown;
+};
+
+export type EpubGetAssetResponses = {
+  /**
+   * Asset bytes
+   */
+  200: Blob | File;
+};
+
+export type EpubGetAssetResponse = EpubGetAssetResponses[keyof EpubGetAssetResponses];
 
 export type EpubGetContextData = {
   body?: never;
