@@ -25,6 +25,10 @@ import type {
   ExampleGetResponses,
   ExampleListResponses,
   HealthGetResponses,
+  UserMeErrors,
+  UserMeResponses,
+  UserUpdateErrors,
+  UserUpdateResponses,
 } from "./types.gen";
 
 export type Options<
@@ -282,6 +286,55 @@ export class Epub extends HeyApiClient {
   }
 }
 
+export class User extends HeyApiClient {
+  /**
+   * Get the authenticated user
+   */
+  public me<ThrowOnError extends boolean = false>(options?: Options<never, ThrowOnError>) {
+    return (options?.client ?? this.client).get<UserMeResponses, UserMeErrors, ThrowOnError>({
+      url: "/user/me",
+      ...options,
+    });
+  }
+
+  /**
+   * Update the authenticated user's profile
+   */
+  public update<ThrowOnError extends boolean = false>(
+    parameters?: {
+      name?: string;
+      image?: string | null;
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "body", key: "name" },
+            { in: "body", key: "image" },
+          ],
+        },
+      ],
+    );
+    return (options?.client ?? this.client).patch<
+      UserUpdateResponses,
+      UserUpdateErrors,
+      ThrowOnError
+    >({
+      url: "/user/me",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    });
+  }
+}
+
 export class Health extends HeyApiClient {
   /**
    * Health check
@@ -312,6 +365,11 @@ export class ApiClient extends HeyApiClient {
   private _epub?: Epub;
   get epub(): Epub {
     return (this._epub ??= new Epub({ client: this.client }));
+  }
+
+  private _user?: User;
+  get user(): User {
+    return (this._user ??= new User({ client: this.client }));
   }
 
   private _health?: Health;

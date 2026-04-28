@@ -1,14 +1,19 @@
-import type { JWTPayload } from "jose";
-
 type RuntimeEnv = Cloudflare.DevEnv | Cloudflare.ProductionEnv;
 
-type AuthMethod = "jwt";
+type AuthMethod = "session";
+
+type SessionUser = {
+  id: string;
+  email: string;
+  name: string;
+  emailVerified: boolean;
+  image: string | null;
+};
 
 type AuthContext = {
   isAuthenticated: boolean;
-  token: string | null;
   userId: string | null;
-  claims: JWTPayload | null;
+  user: SessionUser | null;
   authMethod: AuthMethod | null;
 };
 
@@ -16,4 +21,4 @@ type AppEnv = {
   Bindings: RuntimeEnv;
 };
 
-export type { AppEnv, AuthContext, AuthMethod, RuntimeEnv };
+export type { AppEnv, AuthContext, AuthMethod, RuntimeEnv, SessionUser };
