@@ -12,10 +12,17 @@ export const openApiDocumentation = {
   },
   components: {
     securitySchemes: {
+      // Browsers send the cookie automatically; non-browser callers send the
+      // same session token via Authorization: Bearer <token> (Better Auth's
+      // bearer plugin). Either is sufficient for routes behind requireAuth.
+      sessionCookie: {
+        type: "apiKey" as const,
+        in: "cookie" as const,
+        name: "better-auth.session_token",
+      },
       bearerAuth: {
         type: "http" as const,
         scheme: "bearer" as const,
-        bearerFormat: "JWT",
       },
     },
   },

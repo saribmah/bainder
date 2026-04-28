@@ -2,14 +2,21 @@ import { Hono } from "hono";
 import { describeRoute, resolver } from "hono-openapi";
 import type { AppEnv } from "../app/context";
 import { Health } from "../health/health";
+import { createAuth } from "../user/auth";
 import epubRouter from "./routes/epub";
 import exampleRouter from "./routes/example";
+import userRouter from "./routes/user";
 
 const server = new Hono<AppEnv>();
+
+// Better Auth's auto-generated routes (sign-in, sign-up, OAuth callbacks,
+// email-OTP, sessions, …). basePath in createAuth() must match this prefix.
+server.on(["GET", "POST"], "/auth/*", (c) => createAuth(c.env).handler(c.req.raw));
 
 // Mount feature routers here. Match feature path prefixes to feature names.
 server.route("/example", exampleRouter);
 server.route("/epubs", epubRouter);
+server.route("/user", userRouter);
 
 server.get(
   "/health",

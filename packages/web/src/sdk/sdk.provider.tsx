@@ -25,9 +25,9 @@ export const SDKProvider = ({ children }: PropsWithChildren): ReactElement => {
   const value = useMemo<SDKContextValue>(() => {
     const client = createApiClient({
       baseUrl,
-      // Add auth here once you have a token store, for example:
-      // auth: () => localStorage.getItem("accessToken") ?? undefined,
-      // security: [{ type: "http", scheme: "bearer" }],
+      // Send Better Auth's session cookie with every request. Required for
+      // any route guarded by requireAuth.
+      credentials: "include",
     });
 
     return { baseUrl, client };

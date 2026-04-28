@@ -1,15 +1,22 @@
 {
   "name": "bainder",
   "version": "0.0.0",
-  "private": true,
+  "devDependencies": {
+    "@typescript/native-preview": "7.0.0-dev.20260226.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "oxfmt": "0.35.0",
+    "oxlint": "1.50.0"
+  },
   "description": "AI-powered document binder that turns receipts, contracts, and PDFs into searchable, queryable memory.",
-  "workspaces": {
-    "packages": [
-      "packages/api",
-      "packages/sdk",
-      "packages/web"
+  "lint-staged": {
+    "packages/**/*.{js,jsx,ts,tsx,mjs,cjs}": [
+      "oxlint --fix --quiet",
+      "oxfmt --write"
     ]
   },
+  "packageManager": "bun@1.3.10",
+  "private": true,
   "scripts": {
     "build": "bun run --workspaces --if-present build",
     "lint": "bun run --workspaces --if-present lint",
@@ -21,18 +28,11 @@
     "tsgo:version": "tsgo --version",
     "prepare": "husky"
   },
-  "devDependencies": {
-    "@typescript/native-preview": "7.0.0-dev.20260226.1",
-    "husky": "^9.1.7",
-    "lint-staged": "^16.4.0",
-    "oxfmt": "0.35.0",
-    "oxlint": "1.50.0"
-  },
-  "lint-staged": {
-    "packages/**/*.{js,jsx,ts,tsx,mjs,cjs}": [
-      "oxlint --fix --quiet",
-      "oxfmt --write"
+  "workspaces": {
+    "packages": [
+      "packages/api",
+      "packages/sdk",
+      "packages/web"
     ]
-  },
-  "packageManager": "bun@1.3.10"
+  }
 }

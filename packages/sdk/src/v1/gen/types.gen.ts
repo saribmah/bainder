@@ -73,6 +73,16 @@ export type EpubContext = {
   context: string;
 };
 
+export type User = {
+  id: string;
+  email: string;
+  name: string;
+  emailVerified: boolean;
+  image: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type ExampleListData = {
   body?: never;
   path?: never;
@@ -294,6 +304,63 @@ export type EpubGetContextResponses = {
 };
 
 export type EpubGetContextResponse = EpubGetContextResponses[keyof EpubGetContextResponses];
+
+export type UserMeData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/user/me";
+};
+
+export type UserMeErrors = {
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * User row missing
+   */
+  404: unknown;
+};
+
+export type UserMeResponses = {
+  /**
+   * Current user
+   */
+  200: User;
+};
+
+export type UserMeResponse = UserMeResponses[keyof UserMeResponses];
+
+export type UserUpdateData = {
+  body: {
+    name?: string;
+    image?: string | null;
+  };
+  path?: never;
+  query?: never;
+  url: "/user/me";
+};
+
+export type UserUpdateErrors = {
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * User row missing
+   */
+  404: unknown;
+};
+
+export type UserUpdateResponses = {
+  /**
+   * Updated user
+   */
+  200: User;
+};
+
+export type UserUpdateResponse = UserUpdateResponses[keyof UserUpdateResponses];
 
 export type HealthGetData = {
   body?: never;

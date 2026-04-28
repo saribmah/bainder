@@ -12,16 +12,29 @@
 			"vars": {
 				"API_PUBLIC_HOST": "",
 				"WEB_PUBLIC_HOST": "",
-				"WORKER_URL": "http://localhost:8787"
+				"WORKER_URL": "http://localhost:8787",
+				"BETTER_AUTH_URL": "http://localhost:8787",
+				"TRUSTED_ORIGINS": "http://localhost:3002"
 			},
+			"d1_databases": [
+				{
+					"binding": "DB",
+					"database_name": "bainder-dev",
+					"database_id": "00000000-0000-0000-0000-000000000000",
+					"migrations_dir": "migrations"
+				}
+			],
+			"send_email": [{ "name": "EMAIL" }],
 			"secrets": {
-				"required": ["JWT_SECRET"]
+				"required": [
+					"BETTER_AUTH_SECRET",
+					"GOOGLE_CLIENT_ID",
+					"GOOGLE_CLIENT_SECRET",
+					"APPLE_CLIENT_ID",
+					"APPLE_CLIENT_SECRET",
+					"EMAIL_FROM"
+				]
 			}
-			// Uncomment as needed:
-			// "kv_namespaces": [{ "binding": "MY_KV", "id": "<kv-id>" }],
-			// "r2_buckets": [{ "binding": "MY_BUCKET", "bucket_name": "<bucket-name>" }],
-			// "d1_databases": [{ "binding": "DB", "database_name": "<db-name>", "database_id": "<db-id>" }],
-			// "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "<hyperdrive-id>" }]
 		},
 		"production": {
 			"workers_dev": false,
@@ -43,10 +56,28 @@
 			"vars": {
 				"API_PUBLIC_HOST": "",
 				"WEB_PUBLIC_HOST": "",
-				"WORKER_URL": ""
+				"WORKER_URL": "",
+				"BETTER_AUTH_URL": "",
+				"TRUSTED_ORIGINS": ""
 			},
+			"d1_databases": [
+				{
+					"binding": "DB",
+					"database_name": "bainder",
+					"database_id": "00000000-0000-0000-0000-000000000000",
+					"migrations_dir": "migrations"
+				}
+			],
+			"send_email": [{ "name": "EMAIL" }],
 			"secrets": {
-				"required": ["JWT_SECRET"]
+				"required": [
+					"BETTER_AUTH_SECRET",
+					"GOOGLE_CLIENT_ID",
+					"GOOGLE_CLIENT_SECRET",
+					"APPLE_CLIENT_ID",
+					"APPLE_CLIENT_SECRET",
+					"EMAIL_FROM"
+				]
 			}
 		}
 	}
