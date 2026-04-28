@@ -1,9 +1,67 @@
+import { and, asc, desc, eq, gte, lte } from "drizzle-orm";
+import { epubBook, epubChapter } from "../db/schema";
+import { Instance } from "../instance";
 import type { Epub } from "./epub";
 
-// In-memory EPUB store. Holds book metadata, full chapter rows, and TOC tree.
-// Replace with R2 (chapter html/text) + Postgres or D1 (rows + metadata) when
-// wiring real persistence — keep the same exported surface.
+// D1-backed EPUB store. Books are scoped by userId at every read/write — a
+// row whose user_id doesn't match the caller is treated identically to a
+// missing row (returns null/false), so callers don't need to distinguish
+// "not yours" from "not found".
 export namespace EpubStorage {
+  export const entitySelect = {
+    id: epubBook.id,
+    userId: epubBook.userId,
+    title: epubBook.title,
+    authors: epubBook.authors,
+    language: epubBook.language,
+    description: epubBook.description,
+    publisher: epubBook.publisher,
+    publishedDate: epubBook.publishedDate,
+    identifiers: epubBook.identifiers,
+    subjects: epubBook.subjects,
+    toc: epubBook.toc,
+    chapterCount: epubBook.chapterCount,
+    wordCount: epubBook.wordCount,
+    createdAt: epubBook.createdAt,
+  } as const;
+
+  export type EntityRow = {
+    id: string;
+    userId: string;
+    title: string;
+    authors: string[];
+    language: string;
+    description: string | null;
+    publisher: string | null;
+    publishedDate: string | null;
+    identifiers: string[];
+    subjects: string[];
+    toc: Epub.TocItem[];
+    chapterCount: number;
+    wordCount: number;
+    createdAt: Date;
+  };
+
+  export const chapterSelect = {
+    id: epubChapter.id,
+    bookId: epubChapter.bookId,
+    order: epubChapter.order,
+    href: epubChapter.href,
+    title: epubChapter.title,
+    html: epubChapter.html,
+    text: epubChapter.text,
+    wordCount: epubChapter.wordCount,
+  } as const;
+
+  export const chapterSummarySelect = {
+    id: epubChapter.id,
+    bookId: epubChapter.bookId,
+    order: epubChapter.order,
+    href: epubChapter.href,
+    title: epubChapter.title,
+    wordCount: epubChapter.wordCount,
+  } as const;
+
   export type ChapterRow = {
     id: string;
     bookId: string;
@@ -15,45 +73,7 @@ export namespace EpubStorage {
     wordCount: number;
   };
 
-  // Internal nested shape mirrors the parsed EPUB TOC. Exposed as a flat list
-  // via `flattenToc` so the public schema stays non-recursive.
-  export type TocRow = {
-    title: string;
-    href: string;
-    fileHref: string;
-    anchor: string;
-    children: TocRow[];
-  };
-
-  export type EntityRow = {
-    id: string;
-    title: string;
-    authors: string[];
-    language: string;
-    description: string | null;
-    publisher: string | null;
-    publishedDate: string | null;
-    identifiers: string[];
-    subjects: string[];
-    chapterCount: number;
-    wordCount: number;
-    createdAt: Date;
-  };
-
-  export const entitySelect = {
-    id: true,
-    title: true,
-    authors: true,
-    language: true,
-    description: true,
-    publisher: true,
-    publishedDate: true,
-    identifiers: true,
-    subjects: true,
-    chapterCount: true,
-    wordCount: true,
-    createdAt: true,
-  } as const;
+  export type ChapterSummaryRow = Omit<ChapterRow, "html" | "text">;
 
   export const toEntity = (row: EntityRow): Epub.Entity => ({
     id: row.id,
@@ -81,7 +101,7 @@ export namespace EpubStorage {
     wordCount: row.wordCount,
   });
 
-  export const toChapterSummary = (row: ChapterRow): Epub.ChapterSummary => ({
+  export const toChapterSummary = (row: ChapterSummaryRow): Epub.ChapterSummary => ({
     id: row.id,
     bookId: row.bookId,
     order: row.order,
@@ -90,103 +110,161 @@ export namespace EpubStorage {
     wordCount: row.wordCount,
   });
 
-  export const flattenToc = (rows: TocRow[]): Epub.TocItem[] => {
-    const out: Epub.TocItem[] = [];
-    const visit = (entries: TocRow[], depth: number, parent: number | null): void => {
-      for (const entry of entries) {
-        const index = out.length;
-        out.push({
-          index,
-          parent,
-          depth,
-          title: entry.title,
-          href: entry.href,
-          fileHref: entry.fileHref,
-          anchor: entry.anchor,
-        });
-        if (entry.children.length > 0) visit(entry.children, depth + 1, index);
-      }
-    };
-    visit(rows, 0, null);
-    return out;
-  };
-
-  // ---- In-memory store --------------------------------------------------
-  const books = new Map<string, EntityRow>();
-  const chaptersByBook = new Map<string, ChapterRow[]>();
-  const tocByBook = new Map<string, TocRow[]>();
-
   export type CreateInput = {
-    metadata: Omit<EntityRow, "id" | "chapterCount" | "wordCount" | "createdAt">;
+    userId: string;
+    metadata: {
+      title: string;
+      authors: string[];
+      language: string;
+      description: string | null;
+      publisher: string | null;
+      publishedDate: string | null;
+      identifiers: string[];
+      subjects: string[];
+    };
     chapters: Array<Omit<ChapterRow, "id" | "bookId">>;
-    toc: TocRow[];
+    toc: Epub.TocItem[];
   };
 
   export const create = async (input: CreateInput): Promise<Epub.Entity> => {
     const id = crypto.randomUUID();
     const wordCount = input.chapters.reduce((sum, c) => sum + c.wordCount, 0);
-    const row: EntityRow = {
+    const createdAt = new Date();
+    const bookRow: EntityRow = {
       id,
-      ...input.metadata,
+      userId: input.userId,
+      title: input.metadata.title,
+      authors: input.metadata.authors,
+      language: input.metadata.language,
+      description: input.metadata.description,
+      publisher: input.metadata.publisher,
+      publishedDate: input.metadata.publishedDate,
+      identifiers: input.metadata.identifiers,
+      subjects: input.metadata.subjects,
+      toc: input.toc,
       chapterCount: input.chapters.length,
       wordCount,
-      createdAt: new Date(),
+      createdAt,
     };
-    const chapters: ChapterRow[] = input.chapters.map((c) => ({
-      ...c,
-      bookId: id,
+    const chapterRows = input.chapters.map((c) => ({
       id: `${id}:${c.order}`,
+      bookId: id,
+      order: c.order,
+      href: c.href,
+      title: c.title,
+      html: c.html,
+      text: c.text,
+      wordCount: c.wordCount,
     }));
-    books.set(id, row);
-    chaptersByBook.set(id, chapters);
-    tocByBook.set(id, input.toc);
-    return toEntity(row);
+
+    const db = Instance.db;
+    await db.insert(epubBook).values(bookRow);
+    if (chapterRows.length > 0) {
+      await db.insert(epubChapter).values(chapterRows);
+    }
+    return toEntity(bookRow);
   };
 
-  export const get = async (id: string): Promise<Epub.Entity | null> => {
-    const row = books.get(id);
+  export const get = async (id: string, userId: string): Promise<Epub.Entity | null> => {
+    const rows = await Instance.db
+      .select(entitySelect)
+      .from(epubBook)
+      .where(and(eq(epubBook.id, id), eq(epubBook.userId, userId)))
+      .limit(1);
+    const row = rows[0];
     return row ? toEntity(row) : null;
   };
 
-  export const list = async (): Promise<Epub.Entity[]> => {
-    return Array.from(books.values())
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-      .map(toEntity);
+  export const list = async (userId: string): Promise<Epub.Entity[]> => {
+    const rows = await Instance.db
+      .select(entitySelect)
+      .from(epubBook)
+      .where(eq(epubBook.userId, userId))
+      .orderBy(desc(epubBook.createdAt));
+    return rows.map(toEntity);
   };
 
-  export const remove = async (id: string): Promise<boolean> => {
-    const existed = books.delete(id);
-    chaptersByBook.delete(id);
-    tocByBook.delete(id);
-    return existed;
+  export const remove = async (id: string, userId: string): Promise<boolean> => {
+    const rows = await Instance.db
+      .delete(epubBook)
+      .where(and(eq(epubBook.id, id), eq(epubBook.userId, userId)))
+      .returning({ id: epubBook.id });
+    return rows.length > 0;
   };
 
   export const listChapterSummaries = async (
     bookId: string,
+    userId: string,
   ): Promise<Epub.ChapterSummary[] | null> => {
-    const chapters = chaptersByBook.get(bookId);
-    return chapters ? chapters.map(toChapterSummary) : null;
+    const owned = await isOwned(bookId, userId);
+    if (!owned) return null;
+    const rows = await Instance.db
+      .select(chapterSummarySelect)
+      .from(epubChapter)
+      .where(eq(epubChapter.bookId, bookId))
+      .orderBy(asc(epubChapter.order));
+    return rows.map(toChapterSummary);
   };
 
-  export const getChapter = async (bookId: string, order: number): Promise<Epub.Chapter | null> => {
-    const chapters = chaptersByBook.get(bookId);
-    if (!chapters) return null;
-    const chapter = chapters[order];
-    return chapter ? toChapter(chapter) : null;
+  export const getChapter = async (
+    bookId: string,
+    order: number,
+    userId: string,
+  ): Promise<Epub.Chapter | null> => {
+    const rows = await Instance.db
+      .select(chapterSelect)
+      .from(epubChapter)
+      .innerJoin(epubBook, eq(epubBook.id, epubChapter.bookId))
+      .where(
+        and(
+          eq(epubChapter.bookId, bookId),
+          eq(epubChapter.order, order),
+          eq(epubBook.userId, userId),
+        ),
+      )
+      .limit(1);
+    const row = rows[0];
+    return row ? toChapter(row) : null;
   };
 
   export const listChaptersInRange = async (
     bookId: string,
     from: number,
     to: number,
+    userId: string,
   ): Promise<Epub.Chapter[] | null> => {
-    const chapters = chaptersByBook.get(bookId);
-    if (!chapters) return null;
-    return chapters.slice(from, to + 1).map(toChapter);
+    const owned = await isOwned(bookId, userId);
+    if (!owned) return null;
+    const rows = await Instance.db
+      .select(chapterSelect)
+      .from(epubChapter)
+      .where(
+        and(
+          eq(epubChapter.bookId, bookId),
+          gte(epubChapter.order, from),
+          lte(epubChapter.order, to),
+        ),
+      )
+      .orderBy(asc(epubChapter.order));
+    return rows.map(toChapter);
   };
 
-  export const getToc = async (bookId: string): Promise<Epub.TocItem[] | null> => {
-    const toc = tocByBook.get(bookId);
-    return toc ? flattenToc(toc) : null;
+  export const getToc = async (bookId: string, userId: string): Promise<Epub.TocItem[] | null> => {
+    const rows = await Instance.db
+      .select({ toc: epubBook.toc })
+      .from(epubBook)
+      .where(and(eq(epubBook.id, bookId), eq(epubBook.userId, userId)))
+      .limit(1);
+    const row = rows[0];
+    return row ? row.toc : null;
+  };
+
+  const isOwned = async (bookId: string, userId: string): Promise<boolean> => {
+    const rows = await Instance.db
+      .select({ id: epubBook.id })
+      .from(epubBook)
+      .where(and(eq(epubBook.id, bookId), eq(epubBook.userId, userId)))
+      .limit(1);
+    return rows.length > 0;
   };
 }

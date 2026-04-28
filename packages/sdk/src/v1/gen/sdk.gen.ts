@@ -18,6 +18,7 @@ import type {
   EpubGetDetailResponses,
   EpubIngestErrors,
   EpubIngestResponses,
+  EpubListErrors,
   EpubListResponses,
   ExampleCreateErrors,
   ExampleCreateResponses,
@@ -138,7 +139,7 @@ export class Epub extends HeyApiClient {
    * List ingested EPUBs
    */
   public list<ThrowOnError extends boolean = false>(options?: Options<never, ThrowOnError>) {
-    return (options?.client ?? this.client).get<EpubListResponses, unknown, ThrowOnError>({
+    return (options?.client ?? this.client).get<EpubListResponses, EpubListErrors, ThrowOnError>({
       url: "/epubs",
       ...options,
     });

@@ -2,6 +2,8 @@ import { Hono } from "hono";
 import { describeRoute, resolver, validator } from "hono-openapi";
 import type { AppEnv } from "../../app/context";
 import { Epub } from "../../epub/epub";
+import { Instance } from "../../instance";
+import { requireAuth } from "../../middleware/auth";
 import { createErrorMapper } from "../error-mapper";
 
 const epubRouter = new Hono<AppEnv>();
@@ -32,10 +34,12 @@ epubRouter.post(
         content: { "application/json": { schema: resolver(Epub.Entity) } },
       },
       400: { description: "Invalid or unsupported EPUB" },
+      401: { description: "Not authenticated" },
       413: { description: "Upload exceeds size limit" },
       422: { description: "EPUB had no readable chapters" },
     },
   }),
+  requireAuth,
   async (c) => {
     const body = await c.req.arrayBuffer();
     if (body.byteLength === 0) {
@@ -49,7 +53,7 @@ epubRouter.post(
       { error: Epub.EpubEmptyError, status: 422 },
     ]);
     try {
-      const entity = await Epub.ingest(new Uint8Array(body));
+      const entity = await Epub.ingest(Instance.userId, new Uint8Array(body));
       return c.json(entity, 201);
     } catch (error) {
       const mapped = mapError(error);
@@ -69,10 +73,12 @@ epubRouter.get(
         description: "All ingested books",
         content: { "application/json": { schema: resolver(Epub.ListResponse) } },
       },
+      401: { description: "Not authenticated" },
     },
   }),
+  requireAuth,
   async (c) => {
-    const items = await Epub.list();
+    const items = await Epub.list(Instance.userId);
     return c.json({ items });
   },
 );
@@ -87,14 +93,16 @@ epubRouter.get(
         description: "Book detail",
         content: { "application/json": { schema: resolver(Epub.Detail) } },
       },
+      401: { description: "Not authenticated" },
       404: { description: "Not found" },
     },
   }),
+  requireAuth,
   async (c) => {
     const id = c.req.param("id");
     const mapError = createErrorMapper([{ error: Epub.EpubNotFoundError, status: 404 }]);
     try {
-      const detail = await Epub.getDetail(id);
+      const detail = await Epub.getDetail(Instance.userId, id);
       return c.json(detail);
     } catch (error) {
       const mapped = mapError(error);
@@ -111,14 +119,16 @@ epubRouter.delete(
     operationId: "epub.delete",
     responses: {
       204: { description: "Deleted" },
+      401: { description: "Not authenticated" },
       404: { description: "Not found" },
     },
   }),
+  requireAuth,
   async (c) => {
     const id = c.req.param("id");
     const mapError = createErrorMapper([{ error: Epub.EpubNotFoundError, status: 404 }]);
     try {
-      await Epub.remove(id);
+      await Epub.remove(Instance.userId, id);
       return c.body(null, 204);
     } catch (error) {
       const mapped = mapError(error);
@@ -138,9 +148,11 @@ epubRouter.get(
         description: "Chapter content (cleaned HTML and plain text)",
         content: { "application/json": { schema: resolver(Epub.Chapter) } },
       },
+      401: { description: "Not authenticated" },
       404: { description: "Book or chapter not found" },
     },
   }),
+  requireAuth,
   async (c) => {
     const id = c.req.param("id");
     const orderRaw = c.req.param("order");
@@ -153,7 +165,7 @@ epubRouter.get(
       { error: Epub.EpubChapterNotFoundError, status: 404 },
     ]);
     try {
-      const chapter = await Epub.getChapter(id, order);
+      const chapter = await Epub.getChapter(Instance.userId, id, order);
       return c.json(chapter);
     } catch (error) {
       const mapped = mapError(error);
@@ -175,9 +187,11 @@ epubRouter.get(
         description: "Assembled context",
         content: { "application/json": { schema: resolver(Epub.ContextResponse) } },
       },
+      401: { description: "Not authenticated" },
       404: { description: "Book or chapter range not found" },
     },
   }),
+  requireAuth,
   validator("query", Epub.ContextQuery),
   async (c) => {
     const id = c.req.param("id");
@@ -187,7 +201,7 @@ epubRouter.get(
       { error: Epub.EpubChapterNotFoundError, status: 404 },
     ]);
     try {
-      const context = await Epub.getContext(id, query);
+      const context = await Epub.getContext(Instance.userId, id, query);
       return c.json(context);
     } catch (error) {
       const mapped = mapError(error);
