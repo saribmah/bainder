@@ -158,6 +158,13 @@ export type EpubListData = {
   url: "/epubs";
 };
 
+export type EpubListErrors = {
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+};
+
 export type EpubListResponses = {
   /**
    * All ingested books
@@ -181,6 +188,10 @@ export type EpubIngestErrors = {
    * Invalid or unsupported EPUB
    */
   400: unknown;
+  /**
+   * Not authenticated
+   */
+  401: unknown;
   /**
    * Upload exceeds size limit
    */
@@ -211,6 +222,10 @@ export type EpubDeleteData = {
 
 export type EpubDeleteErrors = {
   /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
    * Not found
    */
   404: unknown;
@@ -235,6 +250,10 @@ export type EpubGetDetailData = {
 };
 
 export type EpubGetDetailErrors = {
+  /**
+   * Not authenticated
+   */
+  401: unknown;
   /**
    * Not found
    */
@@ -261,6 +280,10 @@ export type EpubGetChapterData = {
 };
 
 export type EpubGetChapterErrors = {
+  /**
+   * Not authenticated
+   */
+  401: unknown;
   /**
    * Book or chapter not found
    */
@@ -290,6 +313,10 @@ export type EpubGetContextData = {
 };
 
 export type EpubGetContextErrors = {
+  /**
+   * Not authenticated
+   */
+  401: unknown;
   /**
    * Book or chapter range not found
    */

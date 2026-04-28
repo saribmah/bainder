@@ -517,6 +517,9 @@
           "400": {
             "description": "Invalid or unsupported EPUB"
           },
+          "401": {
+            "description": "Not authenticated"
+          },
           "413": {
             "description": "Upload exceeds size limit"
           },
@@ -549,6 +552,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Not authenticated"
           }
         }
       }
@@ -567,6 +573,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Not authenticated"
           },
           "404": {
             "description": "Not found"
@@ -589,6 +598,9 @@
         "responses": {
           "204": {
             "description": "Deleted"
+          },
+          "401": {
+            "description": "Not authenticated"
           },
           "404": {
             "description": "Not found"
@@ -620,6 +632,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Not authenticated"
           },
           "404": {
             "description": "Book or chapter not found"
@@ -660,6 +675,9 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Not authenticated"
           },
           "404": {
             "description": "Book or chapter range not found"

@@ -138,7 +138,7 @@ export namespace Epub {
   export type ContextResponse = z.infer<typeof ContextResponse>;
 
   // ---- Operations -------------------------------------------------------
-  export const ingest = async (bytes: Uint8Array): Promise<Entity> => {
+  export const ingest = async (userId: string, bytes: Uint8Array): Promise<Entity> => {
     let parsed;
     try {
       parsed = parseEpubBytes(bytes);
@@ -152,6 +152,7 @@ export namespace Epub {
       throw new EpubEmptyError({ message: "EPUB contained no readable chapters" });
     }
     return EpubStorage.create({
+      userId,
       metadata: {
         title: parsed.metadata.title,
         authors: parsed.metadata.authors,
@@ -170,46 +171,51 @@ export namespace Epub {
         text: c.text,
         wordCount: c.wordCount,
       })),
-      toc: parsed.toc.map(toTocRow),
+      toc: flattenToc(parsed.toc),
     });
   };
 
-  export const list = async (): Promise<Entity[]> => EpubStorage.list();
+  export const list = async (userId: string): Promise<Entity[]> => EpubStorage.list(userId);
 
-  export const get = async (id: string): Promise<Entity> => {
-    const entity = await EpubStorage.get(id);
+  export const get = async (userId: string, id: string): Promise<Entity> => {
+    const entity = await EpubStorage.get(id, userId);
     if (!entity) throw new EpubNotFoundError({ id });
     return entity;
   };
 
-  export const remove = async (id: string): Promise<void> => {
-    const existed = await EpubStorage.remove(id);
+  export const remove = async (userId: string, id: string): Promise<void> => {
+    const existed = await EpubStorage.remove(id, userId);
     if (!existed) throw new EpubNotFoundError({ id });
   };
 
-  export const getDetail = async (id: string): Promise<Detail> => {
-    const book = await EpubStorage.get(id);
+  export const getDetail = async (userId: string, id: string): Promise<Detail> => {
+    const book = await EpubStorage.get(id, userId);
     if (!book) throw new EpubNotFoundError({ id });
     const [toc, chapters] = await Promise.all([
-      EpubStorage.getToc(id),
-      EpubStorage.listChapterSummaries(id),
+      EpubStorage.getToc(id, userId),
+      EpubStorage.listChapterSummaries(id, userId),
     ]);
     return { book, toc: toc ?? [], chapters: chapters ?? [] };
   };
 
-  export const getChapter = async (bookId: string, order: number): Promise<Chapter> => {
-    const book = await EpubStorage.get(bookId);
+  export const getChapter = async (
+    userId: string,
+    bookId: string,
+    order: number,
+  ): Promise<Chapter> => {
+    const book = await EpubStorage.get(bookId, userId);
     if (!book) throw new EpubNotFoundError({ id: bookId });
-    const chapter = await EpubStorage.getChapter(bookId, order);
+    const chapter = await EpubStorage.getChapter(bookId, order, userId);
     if (!chapter) throw new EpubChapterNotFoundError({ bookId, order });
     return chapter;
   };
 
   export const getContext = async (
+    userId: string,
     bookId: string,
     query: ContextQuery,
   ): Promise<ContextResponse> => {
-    const book = await EpubStorage.get(bookId);
+    const book = await EpubStorage.get(bookId, userId);
     if (!book) throw new EpubNotFoundError({ id: bookId });
 
     const from = query.from ?? 0;
@@ -218,7 +224,7 @@ export namespace Epub {
       throw new EpubChapterNotFoundError({ bookId, order: from });
     }
     const clampedTo = Math.min(to, book.chapterCount - 1);
-    const chapters = (await EpubStorage.listChaptersInRange(bookId, from, clampedTo)) ?? [];
+    const chapters = (await EpubStorage.listChaptersInRange(bookId, from, clampedTo, userId)) ?? [];
     if (chapters.length === 0) {
       throw new EpubChapterNotFoundError({ bookId, order: from });
     }
@@ -242,13 +248,26 @@ export namespace Epub {
   };
 
   // ---- Helpers (feature-local) ------------------------------------------
-  const toTocRow = (entry: ParsedTocEntry): EpubStorage.TocRow => ({
-    title: entry.title,
-    href: entry.href,
-    fileHref: entry.fileHref,
-    anchor: entry.anchor,
-    children: entry.children.map(toTocRow),
-  });
+  const flattenToc = (rows: ParsedTocEntry[]): TocItem[] => {
+    const out: TocItem[] = [];
+    const visit = (entries: ParsedTocEntry[], depth: number, parent: number | null): void => {
+      for (const entry of entries) {
+        const index = out.length;
+        out.push({
+          index,
+          parent,
+          depth,
+          title: entry.title,
+          href: entry.href,
+          fileHref: entry.fileHref,
+          anchor: entry.anchor,
+        });
+        if (entry.children.length > 0) visit(entry.children, depth + 1, index);
+      }
+    };
+    visit(rows, 0, null);
+    return out;
+  };
 
   const renderText = (book: Entity, chapters: Chapter[]): string => {
     const header = [
