@@ -20,6 +20,7 @@ export namespace EpubStorage {
     identifiers: epubBook.identifiers,
     subjects: epubBook.subjects,
     toc: epubBook.toc,
+    coverImage: epubBook.coverImage,
     chapterCount: epubBook.chapterCount,
     wordCount: epubBook.wordCount,
     createdAt: epubBook.createdAt,
@@ -37,6 +38,7 @@ export namespace EpubStorage {
     identifiers: string[];
     subjects: string[];
     toc: Epub.TocItem[];
+    coverImage: string | null;
     chapterCount: number;
     wordCount: number;
     createdAt: Date;
@@ -51,6 +53,7 @@ export namespace EpubStorage {
     html: epubChapter.html,
     text: epubChapter.text,
     wordCount: epubChapter.wordCount,
+    linear: epubChapter.linear,
   } as const;
 
   export const chapterSummarySelect = {
@@ -60,6 +63,7 @@ export namespace EpubStorage {
     href: epubChapter.href,
     title: epubChapter.title,
     wordCount: epubChapter.wordCount,
+    linear: epubChapter.linear,
   } as const;
 
   export type ChapterRow = {
@@ -71,6 +75,7 @@ export namespace EpubStorage {
     html: string;
     text: string;
     wordCount: number;
+    linear: boolean;
   };
 
   export type ChapterSummaryRow = Omit<ChapterRow, "html" | "text">;
@@ -85,6 +90,7 @@ export namespace EpubStorage {
     publishedDate: row.publishedDate,
     identifiers: row.identifiers,
     subjects: row.subjects,
+    coverImage: row.coverImage,
     chapterCount: row.chapterCount,
     wordCount: row.wordCount,
     createdAt: row.createdAt.toISOString(),
@@ -99,6 +105,7 @@ export namespace EpubStorage {
     html: row.html,
     text: row.text,
     wordCount: row.wordCount,
+    linear: row.linear,
   });
 
   export const toChapterSummary = (row: ChapterSummaryRow): Epub.ChapterSummary => ({
@@ -108,6 +115,7 @@ export namespace EpubStorage {
     href: row.href,
     title: row.title,
     wordCount: row.wordCount,
+    linear: row.linear,
   });
 
   export type CreateInput = {
@@ -121,6 +129,7 @@ export namespace EpubStorage {
       publishedDate: string | null;
       identifiers: string[];
       subjects: string[];
+      coverImage: string | null;
     };
     chapters: Array<Omit<ChapterRow, "id" | "bookId">>;
     toc: Epub.TocItem[];
@@ -142,6 +151,7 @@ export namespace EpubStorage {
       identifiers: input.metadata.identifiers,
       subjects: input.metadata.subjects,
       toc: input.toc,
+      coverImage: input.metadata.coverImage,
       chapterCount: input.chapters.length,
       wordCount,
       createdAt,
@@ -155,6 +165,7 @@ export namespace EpubStorage {
       html: c.html,
       text: c.text,
       wordCount: c.wordCount,
+      linear: c.linear,
     }));
 
     const db = Instance.db;
@@ -192,6 +203,9 @@ export namespace EpubStorage {
     return rows.length > 0;
   };
 
+  // Default reading order: linear=true chapters only. Non-linear items (footnotes,
+  // ancillary content) are still ingested and reachable via getChapter(order)
+  // for direct lookup, but excluded from sidebars and prev/next navigation.
   export const listChapterSummaries = async (
     bookId: string,
     userId: string,
@@ -201,7 +215,7 @@ export namespace EpubStorage {
     const rows = await Instance.db
       .select(chapterSummarySelect)
       .from(epubChapter)
-      .where(eq(epubChapter.bookId, bookId))
+      .where(and(eq(epubChapter.bookId, bookId), eq(epubChapter.linear, true)))
       .orderBy(asc(epubChapter.order));
     return rows.map(toChapterSummary);
   };
@@ -241,6 +255,7 @@ export namespace EpubStorage {
       .where(
         and(
           eq(epubChapter.bookId, bookId),
+          eq(epubChapter.linear, true),
           gte(epubChapter.order, from),
           lte(epubChapter.order, to),
         ),

@@ -24,6 +24,15 @@
 					"migrations_dir": "migrations"
 				}
 			],
+			"r2_buckets": [
+				{
+					"binding": "BUCKET",
+					"bucket_name": "bainder-assets-dev"
+				}
+			],
+			"ai": {
+				"binding": "AI"
+			},
 			"send_email": [{ "name": "EMAIL" }],
 			"secrets": {
 				"required": [
@@ -68,6 +77,15 @@
 					"migrations_dir": "migrations"
 				}
 			],
+			"r2_buckets": [
+				{
+					"binding": "BUCKET",
+					"bucket_name": "bainder-assets"
+				}
+			],
+			"ai": {
+				"binding": "AI"
+			},
 			"send_email": [{ "name": "EMAIL" }],
 			"secrets": {
 				"required": [

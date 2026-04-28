@@ -38,4 +38,28 @@ export namespace Config {
     const value = Instance.env.WEB_PUBLIC_HOST;
     return typeof value === "string" && value.length > 0 ? value : null;
   };
+
+  export const R2BucketNotConfiguredError = NamedError.create(
+    "R2BucketNotConfiguredError",
+    z.object({ message: z.string().optional() }),
+  );
+  export type R2BucketNotConfiguredError = InstanceType<typeof R2BucketNotConfiguredError>;
+
+  export const requireR2Bucket = (): R2Bucket => {
+    const bucket = Instance.env.BUCKET;
+    if (!bucket) throw new R2BucketNotConfiguredError({});
+    return bucket;
+  };
+
+  export const AiNotConfiguredError = NamedError.create(
+    "AiNotConfiguredError",
+    z.object({ message: z.string().optional() }),
+  );
+  export type AiNotConfiguredError = InstanceType<typeof AiNotConfiguredError>;
+
+  export const requireAi = (): Ai => {
+    const ai = Instance.env.AI;
+    if (!ai) throw new AiNotConfiguredError({});
+    return ai;
+  };
 }

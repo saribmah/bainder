@@ -10,6 +10,8 @@ import { client } from "./client.gen";
 import type {
   EpubDeleteErrors,
   EpubDeleteResponses,
+  EpubGetAssetErrors,
+  EpubGetAssetResponses,
   EpubGetChapterErrors,
   EpubGetChapterResponses,
   EpubGetContextErrors,
@@ -243,6 +245,38 @@ export class Epub extends HeyApiClient {
       ThrowOnError
     >({
       url: "/epubs/{id}/chapters/{order}",
+      ...options,
+      ...params,
+    });
+  }
+
+  /**
+   * Fetch a book asset (image) by name
+   */
+  public getAsset<ThrowOnError extends boolean = false>(
+    parameters: {
+      id: string;
+      name: string;
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "id" },
+            { in: "path", key: "name" },
+          ],
+        },
+      ],
+    );
+    return (options?.client ?? this.client).get<
+      EpubGetAssetResponses,
+      EpubGetAssetErrors,
+      ThrowOnError
+    >({
+      url: "/epubs/{id}/assets/{name}",
       ...options,
       ...params,
     });

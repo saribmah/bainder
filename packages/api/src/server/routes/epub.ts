@@ -175,6 +175,39 @@ epubRouter.get(
   },
 );
 
+// Binary asset fetch: serves an image extracted from the EPUB during ingest.
+// Stored chapter HTML uses `assets/{name}` tokens (relative paths) so the web
+// reader rewrites them at render time to hit this route. The SDK is generated
+// from this OpenAPI spec but won't produce a useful streaming method — clients
+// fetch the URL directly.
+epubRouter.get(
+  "/:id/assets/:name",
+  describeRoute({
+    summary: "Fetch a book asset (image) by name",
+    operationId: "epub.getAsset",
+    responses: {
+      200: {
+        description: "Asset bytes",
+        content: { "image/*": { schema: { type: "string", format: "binary" } } },
+      },
+      401: { description: "Not authenticated" },
+      404: { description: "Book or asset not found" },
+    },
+  }),
+  requireAuth,
+  async (c) => {
+    const id = c.req.param("id");
+    const name = c.req.param("name");
+    const asset = await Epub.getAsset(Instance.userId, id, name);
+    if (!asset) return c.body(null, 404);
+    return c.body(asset.body, 200, {
+      "Content-Type": asset.contentType,
+      "Content-Length": String(asset.size),
+      "Cache-Control": "private, max-age=3600",
+    });
+  },
+);
+
 epubRouter.get(
   "/:id/context",
   describeRoute({

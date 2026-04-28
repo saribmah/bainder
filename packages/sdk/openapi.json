@@ -97,6 +97,16 @@
               "type": "string"
             }
           },
+          "coverImage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "chapterCount": {
             "type": "integer",
             "minimum": 0,
@@ -121,6 +131,7 @@
           "publishedDate",
           "identifiers",
           "subjects",
+          "coverImage",
           "chapterCount",
           "wordCount",
           "createdAt"
@@ -198,6 +209,9 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 9007199254740991
+          },
+          "linear": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -206,7 +220,8 @@
           "order",
           "href",
           "title",
-          "wordCount"
+          "wordCount",
+          "linear"
         ]
       },
       "EpubDetail": {
@@ -264,6 +279,9 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 9007199254740991
+          },
+          "linear": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -274,7 +292,8 @@
           "title",
           "html",
           "text",
-          "wordCount"
+          "wordCount",
+          "linear"
         ]
       },
       "EpubContext": {
@@ -655,6 +674,49 @@
             },
             "in": "path",
             "name": "order",
+            "required": true
+          }
+        ]
+      }
+    },
+    "/epubs/{id}/assets/{name}": {
+      "get": {
+        "operationId": "epub.getAsset",
+        "summary": "Fetch a book asset (image) by name",
+        "responses": {
+          "200": {
+            "description": "Asset bytes",
+            "content": {
+              "image/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "404": {
+            "description": "Book or asset not found"
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "name",
             "required": true
           }
         ]
