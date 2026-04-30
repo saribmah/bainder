@@ -41,7 +41,7 @@ export const createTestRuntime = (users: TestUser[]) => {
 
   const env = { DB: {} as unknown, BUCKET: createFakeR2Bucket() } as RuntimeEnv;
 
-  const runAs = <R>(userId: string, fn: () => R): R => {
+  const runAs = async <R>(userId: string, fn: () => Promise<R>): Promise<R> => {
     const auth: AuthContext = {
       isAuthenticated: true,
       userId,
@@ -51,9 +51,22 @@ export const createTestRuntime = (users: TestUser[]) => {
     return Instance.provide({ db: db as unknown as Db, env, auth }, fn);
   };
 
+  // Anonymous Instance frame for code paths the Workflow runs (no auth in
+  // scope; storage calls that operate by document id are still scoped via
+  // the parent table's user_id).
+  const runAnonymous = async <R>(fn: () => Promise<R>): Promise<R> => {
+    const auth: AuthContext = {
+      isAuthenticated: false,
+      userId: null,
+      user: null,
+      authMethod: null,
+    };
+    return Instance.provide({ db: db as unknown as Db, env, auth }, fn);
+  };
+
   const close = () => sqlite.close();
 
-  return { runAs, close };
+  return { runAs, runAnonymous, close };
 };
 
 // In-memory R2Bucket fake. Implements only the surface our storage actually
@@ -78,7 +91,8 @@ const createFakeR2Bucket = (): R2Bucket => {
       },
     }),
     bodyUsed: false,
-    arrayBuffer: async () => item.bytes.buffer,
+    arrayBuffer: async () =>
+      item.bytes.buffer.slice(item.bytes.byteOffset, item.bytes.byteOffset + item.bytes.byteLength),
     text: async () => new TextDecoder().decode(item.bytes),
   });
 

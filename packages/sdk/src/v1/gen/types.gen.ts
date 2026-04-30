@@ -10,9 +10,29 @@ export type Example = {
   createdAt: string;
 };
 
-export type Epub = {
+export type Document = {
   id: string;
+  kind: "epub" | "pdf" | "image" | "text" | "other";
+  mimeType: string;
+  originalFilename: string;
+  sizeBytes: number;
+  sha256: string;
   title: string;
+  sensitive: boolean;
+  status: "uploading" | "processing" | "processed" | "failed";
+  errorReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type DocumentStatus = {
+  id: string;
+  status: "uploading" | "processing" | "processed" | "failed";
+  errorReason: string | null;
+};
+
+export type EpubBook = {
+  documentId: string;
   authors: Array<string>;
   language: string;
   description: string | null;
@@ -23,7 +43,6 @@ export type Epub = {
   coverImage: string | null;
   chapterCount: number;
   wordCount: number;
-  createdAt: string;
 };
 
 export type EpubTocItem = {
@@ -38,7 +57,7 @@ export type EpubTocItem = {
 
 export type EpubChapterSummary = {
   id: string;
-  bookId: string;
+  documentId: string;
   order: number;
   href: string;
   title: string;
@@ -47,14 +66,14 @@ export type EpubChapterSummary = {
 };
 
 export type EpubDetail = {
-  book: Epub;
+  book: EpubBook;
   toc: Array<EpubTocItem>;
   chapters: Array<EpubChapterSummary>;
 };
 
 export type EpubChapter = {
   id: string;
-  bookId: string;
+  documentId: string;
   order: number;
   href: string;
   title: string;
@@ -64,16 +83,46 @@ export type EpubChapter = {
   linear: boolean;
 };
 
-export type EpubContext = {
-  bookId: string;
-  title: string;
-  authors: Array<string>;
-  from: number;
-  to: number;
-  chapterCount: number;
+export type PdfDocument = {
+  documentId: string;
+  pageCount: number;
+  pdfTitle: string | null;
+  pdfAuthor: string | null;
+  pdfProducer: string | null;
+  pdfCreator: string | null;
+};
+
+export type PdfPageSummary = {
+  id: string;
+  documentId: string;
+  pageNumber: number;
   wordCount: number;
-  format: "text" | "markdown";
-  context: string;
+};
+
+export type PdfDetail = {
+  pdf: PdfDocument;
+  pages: Array<PdfPageSummary>;
+};
+
+export type PdfPage = {
+  id: string;
+  documentId: string;
+  pageNumber: number;
+  text: string;
+  wordCount: number;
+};
+
+export type ImageDocument = {
+  documentId: string;
+  width: number;
+  height: number;
+  format: "jpeg" | "png" | "webp" | "gif" | "heic" | "tiff" | "bmp" | "unknown";
+};
+
+export type TextDocument = {
+  documentId: string;
+  charset: string;
+  text: string;
 };
 
 export type User = {
@@ -154,41 +203,44 @@ export type ExampleGetResponses = {
 
 export type ExampleGetResponse = ExampleGetResponses[keyof ExampleGetResponses];
 
-export type EpubListData = {
+export type DocumentListData = {
   body?: never;
   path?: never;
   query?: never;
-  url: "/epubs";
+  url: "/documents";
 };
 
-export type EpubListErrors = {
+export type DocumentListErrors = {
   /**
    * Not authenticated
    */
   401: unknown;
 };
 
-export type EpubListResponses = {
+export type DocumentListResponses = {
   /**
-   * All ingested books
+   * All documents owned by the caller
    */
   200: {
-    items: Array<Epub>;
+    items: Array<Document>;
   };
 };
 
-export type EpubListResponse = EpubListResponses[keyof EpubListResponses];
+export type DocumentListResponse = DocumentListResponses[keyof DocumentListResponses];
 
-export type EpubIngestData = {
-  body: Blob | File;
+export type DocumentCreateData = {
+  body: {
+    file: Blob | File;
+    sensitive?: "true" | "false";
+  };
   path?: never;
   query?: never;
-  url: "/epubs";
+  url: "/documents";
 };
 
-export type EpubIngestErrors = {
+export type DocumentCreateErrors = {
   /**
-   * Invalid or unsupported EPUB
+   * Invalid request
    */
   400: unknown;
   /**
@@ -200,30 +252,30 @@ export type EpubIngestErrors = {
    */
   413: unknown;
   /**
-   * EPUB had no readable chapters
+   * Unsupported file format
    */
-  422: unknown;
+  415: unknown;
 };
 
-export type EpubIngestResponses = {
+export type DocumentCreateResponses = {
   /**
-   * Book ingested
+   * Document created (processing started)
    */
-  201: Epub;
+  201: Document;
 };
 
-export type EpubIngestResponse = EpubIngestResponses[keyof EpubIngestResponses];
+export type DocumentCreateResponse = DocumentCreateResponses[keyof DocumentCreateResponses];
 
-export type EpubDeleteData = {
+export type DocumentDeleteData = {
   body?: never;
   path: {
     id: string;
   };
   query?: never;
-  url: "/epubs/{id}";
+  url: "/documents/{id}";
 };
 
-export type EpubDeleteErrors = {
+export type DocumentDeleteErrors = {
   /**
    * Not authenticated
    */
@@ -234,25 +286,25 @@ export type EpubDeleteErrors = {
   404: unknown;
 };
 
-export type EpubDeleteResponses = {
+export type DocumentDeleteResponses = {
   /**
    * Deleted
    */
   204: void;
 };
 
-export type EpubDeleteResponse = EpubDeleteResponses[keyof EpubDeleteResponses];
+export type DocumentDeleteResponse = DocumentDeleteResponses[keyof DocumentDeleteResponses];
 
-export type EpubGetDetailData = {
+export type DocumentGetData = {
   body?: never;
   path: {
     id: string;
   };
   query?: never;
-  url: "/epubs/{id}";
+  url: "/documents/{id}";
 };
 
-export type EpubGetDetailErrors = {
+export type DocumentGetErrors = {
   /**
    * Not authenticated
    */
@@ -263,107 +315,315 @@ export type EpubGetDetailErrors = {
   404: unknown;
 };
 
-export type EpubGetDetailResponses = {
+export type DocumentGetResponses = {
   /**
-   * Book detail
+   * Document metadata
    */
-  200: EpubDetail;
+  200: Document;
 };
 
-export type EpubGetDetailResponse = EpubGetDetailResponses[keyof EpubGetDetailResponses];
+export type DocumentGetResponse = DocumentGetResponses[keyof DocumentGetResponses];
 
-export type EpubGetChapterData = {
+export type DocumentGetStatusData = {
   body?: never;
   path: {
     id: string;
-    order: string;
   };
   query?: never;
-  url: "/epubs/{id}/chapters/{order}";
+  url: "/documents/{id}/status";
 };
 
-export type EpubGetChapterErrors = {
+export type DocumentGetStatusErrors = {
   /**
    * Not authenticated
    */
   401: unknown;
   /**
-   * Book or chapter not found
+   * Not found
    */
   404: unknown;
 };
 
-export type EpubGetChapterResponses = {
+export type DocumentGetStatusResponses = {
   /**
-   * Chapter content (cleaned HTML and plain text)
+   * Processing status
    */
-  200: EpubChapter;
+  200: DocumentStatus;
 };
 
-export type EpubGetChapterResponse = EpubGetChapterResponses[keyof EpubGetChapterResponses];
+export type DocumentGetStatusResponse =
+  DocumentGetStatusResponses[keyof DocumentGetStatusResponses];
 
-export type EpubGetAssetData = {
+export type DocumentGetRawData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/documents/{id}/raw";
+};
+
+export type DocumentGetRawErrors = {
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * Not found
+   */
+  404: unknown;
+};
+
+export type DocumentGetRawResponses = {
+  /**
+   * Original bytes
+   */
+  200: Blob | File;
+};
+
+export type DocumentGetRawResponse = DocumentGetRawResponses[keyof DocumentGetRawResponses];
+
+export type DocumentGetAssetData = {
   body?: never;
   path: {
     id: string;
     name: string;
   };
   query?: never;
-  url: "/epubs/{id}/assets/{name}";
+  url: "/documents/{id}/assets/{name}";
 };
 
-export type EpubGetAssetErrors = {
+export type DocumentGetAssetErrors = {
   /**
    * Not authenticated
    */
   401: unknown;
   /**
-   * Book or asset not found
+   * Not found
    */
   404: unknown;
 };
 
-export type EpubGetAssetResponses = {
+export type DocumentGetAssetResponses = {
   /**
    * Asset bytes
    */
   200: Blob | File;
 };
 
-export type EpubGetAssetResponse = EpubGetAssetResponses[keyof EpubGetAssetResponses];
+export type DocumentGetAssetResponse = DocumentGetAssetResponses[keyof DocumentGetAssetResponses];
 
-export type EpubGetContextData = {
+export type DocumentGetEpubDetailData = {
   body?: never;
   path: {
     id: string;
   };
-  query?: {
-    from?: number;
-    to?: number;
-    format?: "text" | "markdown";
-  };
-  url: "/epubs/{id}/context";
+  query?: never;
+  url: "/documents/{id}/epub";
 };
 
-export type EpubGetContextErrors = {
+export type DocumentGetEpubDetailErrors = {
   /**
    * Not authenticated
    */
   401: unknown;
   /**
-   * Book or chapter range not found
+   * Not found or wrong kind
    */
   404: unknown;
-};
-
-export type EpubGetContextResponses = {
   /**
-   * Assembled context
+   * Document not yet processed
    */
-  200: EpubContext;
+  409: unknown;
 };
 
-export type EpubGetContextResponse = EpubGetContextResponses[keyof EpubGetContextResponses];
+export type DocumentGetEpubDetailResponses = {
+  /**
+   * EPUB detail
+   */
+  200: EpubDetail;
+};
+
+export type DocumentGetEpubDetailResponse =
+  DocumentGetEpubDetailResponses[keyof DocumentGetEpubDetailResponses];
+
+export type DocumentGetEpubChapterData = {
+  body?: never;
+  path: {
+    id: string;
+    order: string;
+  };
+  query?: never;
+  url: "/documents/{id}/epub/chapters/{order}";
+};
+
+export type DocumentGetEpubChapterErrors = {
+  /**
+   * Invalid chapter order
+   */
+  400: unknown;
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * Document or chapter not found
+   */
+  404: unknown;
+  /**
+   * Document not yet processed
+   */
+  409: unknown;
+};
+
+export type DocumentGetEpubChapterResponses = {
+  /**
+   * Chapter content (cleaned HTML and plain text)
+   */
+  200: EpubChapter;
+};
+
+export type DocumentGetEpubChapterResponse =
+  DocumentGetEpubChapterResponses[keyof DocumentGetEpubChapterResponses];
+
+export type DocumentGetPdfDetailData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/documents/{id}/pdf";
+};
+
+export type DocumentGetPdfDetailErrors = {
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * Not found or wrong kind
+   */
+  404: unknown;
+  /**
+   * Document not yet processed
+   */
+  409: unknown;
+};
+
+export type DocumentGetPdfDetailResponses = {
+  /**
+   * PDF detail
+   */
+  200: PdfDetail;
+};
+
+export type DocumentGetPdfDetailResponse =
+  DocumentGetPdfDetailResponses[keyof DocumentGetPdfDetailResponses];
+
+export type DocumentGetPdfPageData = {
+  body?: never;
+  path: {
+    id: string;
+    page: string;
+  };
+  query?: never;
+  url: "/documents/{id}/pdf/pages/{page}";
+};
+
+export type DocumentGetPdfPageErrors = {
+  /**
+   * Invalid page number
+   */
+  400: unknown;
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * Document or page not found
+   */
+  404: unknown;
+  /**
+   * Document not yet processed
+   */
+  409: unknown;
+};
+
+export type DocumentGetPdfPageResponses = {
+  /**
+   * Page text and metadata
+   */
+  200: PdfPage;
+};
+
+export type DocumentGetPdfPageResponse =
+  DocumentGetPdfPageResponses[keyof DocumentGetPdfPageResponses];
+
+export type DocumentGetImageData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/documents/{id}/image";
+};
+
+export type DocumentGetImageErrors = {
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * Not found or wrong kind
+   */
+  404: unknown;
+  /**
+   * Document not yet processed
+   */
+  409: unknown;
+};
+
+export type DocumentGetImageResponses = {
+  /**
+   * Image metadata
+   */
+  200: ImageDocument;
+};
+
+export type DocumentGetImageResponse = DocumentGetImageResponses[keyof DocumentGetImageResponses];
+
+export type DocumentGetTextData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/documents/{id}/text";
+};
+
+export type DocumentGetTextErrors = {
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * Not found or wrong kind
+   */
+  404: unknown;
+  /**
+   * Document not yet processed
+   */
+  409: unknown;
+};
+
+export type DocumentGetTextResponses = {
+  /**
+   * Text content
+   */
+  200: TextDocument;
+};
+
+export type DocumentGetTextResponse = DocumentGetTextResponses[keyof DocumentGetTextResponses];
 
 export type UserMeData = {
   body?: never;

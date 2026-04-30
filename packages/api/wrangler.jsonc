@@ -34,6 +34,13 @@
 				"binding": "AI"
 			},
 			"send_email": [{ "name": "EMAIL" }],
+			"workflows": [
+				{
+					"binding": "DOCUMENT_PROCESSOR",
+					"name": "bainder-document-processor-dev",
+					"class_name": "DocumentProcessor"
+				}
+			],
 			"secrets": {
 				"required": [
 					"BETTER_AUTH_SECRET",
@@ -87,6 +94,13 @@
 				"binding": "AI"
 			},
 			"send_email": [{ "name": "EMAIL" }],
+			"workflows": [
+				{
+					"binding": "DOCUMENT_PROCESSOR",
+					"name": "bainder-document-processor",
+					"class_name": "DocumentProcessor"
+				}
+			],
 			"secrets": {
 				"required": [
 					"BETTER_AUTH_SECRET",
