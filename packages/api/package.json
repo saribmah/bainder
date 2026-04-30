@@ -6,6 +6,7 @@
   "scripts": {
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
     "dev": "wrangler dev --env dev",
+    "dev:test": "wrangler dev --env dev --var TEST_MODE:true",
     "build": "bunx --bun tsgo",
     "deploy": "wrangler deploy --env production",
     "openapi:generate": "bun run ./scripts/generate-openapi.ts",

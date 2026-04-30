@@ -62,4 +62,11 @@ export namespace Config {
     if (!ai) throw new AiNotConfiguredError({});
     return ai;
   };
+
+  // Local-only flag that gates the `/__test__/*` endpoints used by the
+  // `@bainder/testing` package. Both env types declare `TEST_MODE: "false"`
+  // statically (so `Config.isTestMode` type-checks); the `dev:test` script
+  // overrides at runtime via `wrangler --var TEST_MODE:true`. Cast through
+  // `string` because the literal type narrows comparison out otherwise.
+  export const isTestMode = (): boolean => (Instance.env.TEST_MODE as string) === "true";
 }

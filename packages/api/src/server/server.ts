@@ -5,6 +5,7 @@ import { Health } from "../health/health";
 import { createAuth } from "../user/auth";
 import documentRouter from "./routes/document";
 import exampleRouter from "./routes/example";
+import testModeRouter from "./routes/test-mode";
 import userRouter from "./routes/user";
 
 const server = new Hono<AppEnv>();
@@ -17,6 +18,9 @@ server.on(["GET", "POST"], "/auth/*", (c) => createAuth(c.env).handler(c.req.raw
 server.route("/example", exampleRouter);
 server.route("/documents", documentRouter);
 server.route("/user", userRouter);
+// Test-mode endpoints are always mounted but each handler 404s unless
+// `TEST_MODE=true` is set on the env (only the local `dev:test` script does).
+server.route("/__test__", testModeRouter);
 
 server.get(
   "/health",
