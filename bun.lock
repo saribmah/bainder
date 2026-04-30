@@ -43,6 +43,17 @@
         "@hey-api/openapi-ts": "^0.93.1",
       },
     },
+    "packages/testing": {
+      "name": "@bainder/testing",
+      "version": "0.0.0",
+      "dependencies": {
+        "@bainder/sdk": "workspace:*",
+        "fflate": "^0.8.2",
+      },
+      "devDependencies": {
+        "@types/bun": "^1.3.9",
+      },
+    },
     "packages/web": {
       "name": "@bainder/web",
       "version": "0.0.0",
@@ -108,6 +119,8 @@
     "@bainder/api": ["@bainder/api@workspace:packages/api"],
 
     "@bainder/sdk": ["@bainder/sdk@workspace:packages/sdk"],
+
+    "@bainder/testing": ["@bainder/testing@workspace:packages/testing"],
 
     "@bainder/web": ["@bainder/web@workspace:packages/web"],
 

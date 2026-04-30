@@ -32,6 +32,7 @@
     "packages": [
       "packages/api",
       "packages/sdk",
+      "packages/testing",
       "packages/web"
     ]
   }
