@@ -1,1 +1,73 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500;6..72,600&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
 @import "tailwindcss";
+@import "@bainder/ui/styles.css";
+
+/* Map design-system tokens onto Tailwind v4 utility namespaces.
+   Indirection through CSS variables means changing tokens.css updates utilities at runtime. */
+@theme {
+  /* Paper neutrals */
+  --color-paper-50: var(--paper-50);
+  --color-paper-100: var(--paper-100);
+  --color-paper-200: var(--paper-200);
+  --color-paper-300: var(--paper-300);
+  --color-paper-400: var(--paper-400);
+  --color-paper-500: var(--paper-500);
+  --color-paper-600: var(--paper-600);
+  --color-paper-700: var(--paper-700);
+  --color-paper-800: var(--paper-800);
+  --color-paper-900: var(--paper-900);
+
+  /* Wine accent */
+  --color-wine-50: var(--wine-50);
+  --color-wine-100: var(--wine-100);
+  --color-wine-300: var(--wine-300);
+  --color-wine-500: var(--wine-500);
+  --color-wine-600: var(--wine-600);
+  --color-wine-700: var(--wine-700);
+  --color-wine-800: var(--wine-800);
+  --color-wine-900: var(--wine-900);
+
+  /* Sepia (reading) */
+  --color-sepia-50: var(--sepia-50);
+  --color-sepia-100: var(--sepia-100);
+  --color-sepia-200: var(--sepia-200);
+  --color-sepia-700: var(--sepia-700);
+  --color-sepia-800: var(--sepia-800);
+  --color-sepia-900: var(--sepia-900);
+
+  /* Night (dark) */
+  --color-night-50: var(--night-50);
+  --color-night-200: var(--night-200);
+  --color-night-500: var(--night-500);
+  --color-night-700: var(--night-700);
+  --color-night-800: var(--night-800);
+  --color-night-900: var(--night-900);
+  --color-night-950: var(--night-950);
+
+  /* Reader highlights */
+  --color-highlight-pink: var(--hl-pink);
+  --color-highlight-yellow: var(--hl-yellow);
+  --color-highlight-green: var(--hl-green);
+  --color-highlight-blue: var(--hl-blue);
+  --color-highlight-purple: var(--hl-purple);
+
+  /* Status */
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  --color-info: var(--info);
+
+  /* Font families */
+  --font-display: var(--font-display);
+  --font-reading: var(--font-reading);
+  --font-ui: var(--font-ui);
+  --font-mono: var(--font-mono);
+
+  /* Radii */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+  --radius-pill: 999px;
+}

@@ -1,0 +1,363 @@
+/* Bainder UI — primitive component styles.
+   Class names use the bd- prefix to avoid collisions and stay portable. */
+
+/* ─── Button ────────────────────────────────────────────────────────── */
+.bd-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--font-ui);
+  font-weight: 500;
+  border: 0;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition:
+    background var(--m-fast),
+    color var(--m-fast),
+    transform var(--m-fast),
+    box-shadow var(--m-fast),
+    border-color var(--m-fast);
+}
+.bd-btn:active {
+  transform: scale(0.98);
+}
+.bd-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.bd-btn:focus-visible {
+  outline: 2px solid var(--paper-900);
+  outline-offset: 2px;
+}
+
+.bd-btn-pill {
+  border-radius: var(--r-pill);
+}
+.bd-btn-rounded {
+  border-radius: var(--r-md);
+}
+
+.bd-btn-lg {
+  height: 56px;
+  padding: 0 28px;
+  font-size: 16px;
+}
+.bd-btn-md {
+  height: 44px;
+  padding: 0 20px;
+  font-size: 15px;
+}
+.bd-btn-sm {
+  height: 36px;
+  padding: 0 16px;
+  font-size: 13px;
+}
+
+.bd-btn-primary {
+  background: var(--paper-900);
+  color: var(--paper-50);
+}
+.bd-btn-primary:hover:not(:disabled) {
+  background: var(--paper-800);
+}
+.bd-btn-wine {
+  background: var(--wine-700);
+  color: var(--paper-50);
+}
+.bd-btn-wine:hover:not(:disabled) {
+  background: var(--wine-600);
+}
+.bd-btn-secondary {
+  background: var(--paper-50);
+  color: var(--paper-900);
+  border: 1px solid var(--paper-300);
+}
+.bd-btn-secondary:hover:not(:disabled) {
+  background: var(--paper-100);
+}
+.bd-btn-ghost {
+  background: transparent;
+  color: var(--paper-800);
+}
+.bd-btn-ghost:hover:not(:disabled) {
+  background: var(--paper-100);
+}
+
+/* Icon-only circular variant */
+.bd-btn-icon {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: var(--r-pill);
+  background: var(--paper-50);
+  border: 1px solid var(--paper-200);
+}
+.bd-btn-icon:hover:not(:disabled) {
+  background: var(--paper-100);
+}
+.bd-btn-icon-sm {
+  width: 36px;
+  height: 36px;
+}
+.bd-btn-icon-lg {
+  width: 56px;
+  height: 56px;
+}
+
+/* ─── Input ─────────────────────────────────────────────────────────── */
+.bd-input {
+  font-family: var(--font-ui);
+  font-size: 15px;
+  height: 48px;
+  padding: 0 18px;
+  background: var(--paper-100);
+  border: 1px solid transparent;
+  border-radius: var(--r-pill);
+  color: var(--paper-900);
+  outline: none;
+  width: 100%;
+  transition:
+    border-color var(--m-fast),
+    background var(--m-fast);
+}
+.bd-input::placeholder {
+  color: var(--paper-500);
+}
+.bd-input:focus {
+  border-color: var(--paper-300);
+  background: var(--paper-50);
+}
+.bd-input:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.bd-input-wrap {
+  position: relative;
+  width: 100%;
+}
+.bd-input-wrap-icon-end .bd-input {
+  padding-right: 48px;
+}
+.bd-input-wrap-icon-start .bd-input {
+  padding-left: 48px;
+}
+.bd-input-icon {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  color: var(--paper-500);
+}
+.bd-input-icon-start {
+  left: 16px;
+}
+.bd-input-icon-end {
+  right: 16px;
+}
+
+/* ─── Chip ──────────────────────────────────────────────────────────── */
+.bd-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: var(--r-pill);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  background: var(--paper-100);
+  color: var(--paper-700);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition:
+    background var(--m-fast),
+    color var(--m-fast),
+    border-color var(--m-fast);
+}
+.bd-chip-outline {
+  background: transparent;
+  border-color: var(--paper-300);
+}
+.bd-chip-active {
+  background: var(--paper-900);
+  color: var(--paper-50);
+  border-color: var(--paper-900);
+}
+
+/* ─── Card ──────────────────────────────────────────────────────────── */
+.bd-card {
+  background: var(--paper-50);
+  border-radius: var(--r-xl);
+  border: 1px solid var(--paper-200);
+}
+.bd-card-elevated {
+  background: var(--paper-50);
+  border-radius: var(--r-xl);
+  border: 0;
+  box-shadow: var(--sh-md);
+}
+
+/* ─── Tabs ──────────────────────────────────────────────────────────── */
+.bd-tabs {
+  display: flex;
+  gap: 28px;
+  border-bottom: 1px solid var(--paper-200);
+}
+.bd-tab {
+  padding: 12px 4px;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--paper-500);
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color var(--m-fast);
+}
+.bd-tab:hover {
+  color: var(--paper-700);
+}
+.bd-tab-active {
+  color: var(--paper-900);
+  border-bottom-color: var(--paper-900);
+}
+
+/* ─── Hairline ──────────────────────────────────────────────────────── */
+.bd-hr {
+  height: 1px;
+  width: 100%;
+  background: var(--paper-200);
+  border: 0;
+  margin: 0;
+}
+
+/* ─── Toast ─────────────────────────────────────────────────────────── */
+.bd-toast {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border-radius: var(--r-pill);
+  background: var(--paper-900);
+  color: var(--paper-50);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 500;
+  box-shadow: var(--sh-lg);
+}
+
+/* ─── Progress ──────────────────────────────────────────────────────── */
+.bd-progress {
+  width: 100%;
+  height: 6px;
+  background: var(--paper-200);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+.bd-progress-bar {
+  height: 100%;
+  background: var(--paper-900);
+  border-radius: var(--r-pill);
+  transition: width var(--m-base);
+}
+.bd-progress-bar-wine {
+  background: var(--wine-700);
+}
+.bd-progress-thin {
+  height: 4px;
+}
+
+/* ─── Match badge ───────────────────────────────────────────────────── */
+.bd-match {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.bd-match-num {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 56px;
+  letter-spacing: -0.02em;
+  color: var(--paper-900);
+  line-height: 1;
+}
+.bd-match-pct {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 28px;
+  color: var(--paper-900);
+}
+.bd-match-label {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--paper-500);
+  margin-left: 8px;
+}
+
+/* ─── Book cover ────────────────────────────────────────────────────── */
+.bd-book-cover {
+  position: relative;
+  overflow: hidden;
+  border-radius: 4px;
+  background-size: cover;
+  background-position: center;
+  box-shadow:
+    0 6px 18px rgba(20, 15, 10, 0.18),
+    0 2px 4px rgba(20, 15, 10, 0.08);
+}
+.bd-book-cover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    rgba(255, 255, 255, 0.18) 0%,
+    rgba(255, 255, 255, 0) 22%,
+    rgba(0, 0, 0, 0) 78%,
+    rgba(0, 0, 0, 0.1) 100%
+  );
+}
+
+/* ─── Highlight (inline mark) ───────────────────────────────────────── */
+.bd-highlight {
+  background: var(--hl-pink);
+  padding: 2px 0;
+  box-shadow:
+    2px 0 0 var(--hl-pink),
+    -2px 0 0 var(--hl-pink);
+}
+.bd-highlight-yellow {
+  background: var(--hl-yellow);
+  box-shadow:
+    2px 0 0 var(--hl-yellow),
+    -2px 0 0 var(--hl-yellow);
+}
+.bd-highlight-green {
+  background: var(--hl-green);
+  box-shadow:
+    2px 0 0 var(--hl-green),
+    -2px 0 0 var(--hl-green);
+}
+.bd-highlight-blue {
+  background: var(--hl-blue);
+  box-shadow:
+    2px 0 0 var(--hl-blue),
+    -2px 0 0 var(--hl-blue);
+}
+.bd-highlight-purple {
+  background: var(--hl-purple);
+  box-shadow:
+    2px 0 0 var(--hl-purple),
+    -2px 0 0 var(--hl-purple);
+}

@@ -1,0 +1,227 @@
+/* Bainder UI — reader-specific component styles.
+   Sheet, floating toolbar, AI sheet bits. Theme-aware via [data-theme]. */
+
+/* ─── Floating toolbar ──────────────────────────────────────────────── */
+.bd-floating-toolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  background: var(--paper-50);
+  border: 1px solid var(--paper-200);
+  border-radius: var(--r-pill);
+  box-shadow: var(--sh-lg);
+  color: var(--paper-800);
+}
+
+[data-theme="sepia"] .bd-floating-toolbar {
+  background: var(--sepia-50);
+  border-color: var(--sepia-200);
+  color: var(--sepia-800);
+}
+
+[data-theme="dark"] .bd-floating-toolbar {
+  background: var(--night-800);
+  border-color: oklch(30% 0.012 240);
+  color: var(--night-50);
+}
+
+.bd-floating-toolbar-btn {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  border-radius: var(--r-pill);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background var(--m-fast);
+}
+.bd-floating-toolbar-btn:hover:not(:disabled) {
+  background: var(--paper-100);
+}
+.bd-floating-toolbar-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+[data-theme="sepia"] .bd-floating-toolbar-btn:hover:not(:disabled) {
+  background: var(--sepia-100);
+}
+[data-theme="dark"] .bd-floating-toolbar-btn:hover:not(:disabled) {
+  background: oklch(28% 0.012 240);
+}
+
+/* ─── Sheet (generic bottom sheet) ──────────────────────────────────── */
+.bd-sheet {
+  background: var(--paper-50);
+  color: var(--paper-900);
+  border-top-left-radius: var(--r-2xl);
+  border-top-right-radius: var(--r-2xl);
+  box-shadow: var(--sh-sheet);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+[data-theme="sepia"] .bd-sheet {
+  background: var(--sepia-50);
+  color: var(--sepia-900);
+}
+[data-theme="dark"] .bd-sheet {
+  background: var(--night-800);
+  color: var(--night-50);
+}
+
+.bd-sheet-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: var(--r-pill);
+  background: var(--paper-300);
+  align-self: center;
+  margin-bottom: 4px;
+}
+[data-theme="dark"] .bd-sheet-handle {
+  background: oklch(30% 0.012 240);
+}
+
+/* ─── AI sheet bits ─────────────────────────────────────────────────── */
+.bd-ai-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--wine-700);
+}
+.bd-ai-header-label {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 13px;
+}
+[data-theme="dark"] .bd-ai-header {
+  color: var(--wine-300);
+}
+
+.bd-ai-quote {
+  background: var(--paper-100);
+  border-radius: var(--r-md);
+  padding: 10px 12px;
+  font-family: var(--font-reading);
+  font-style: italic;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--paper-700);
+}
+[data-theme="sepia"] .bd-ai-quote {
+  background: var(--sepia-100);
+  color: var(--sepia-800);
+}
+[data-theme="dark"] .bd-ai-quote {
+  background: oklch(15% 0.008 240);
+  color: var(--night-200);
+}
+
+/* ─── Thinking dots ─────────────────────────────────────────────────── */
+.bd-thinking {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.bd-thinking-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-pill);
+  background: var(--paper-300);
+  animation: bd-thinking-pulse 1.2s ease-in-out infinite;
+}
+.bd-thinking-dot-2 {
+  animation-delay: 0.2s;
+}
+.bd-thinking-dot-3 {
+  animation-delay: 0.4s;
+}
+.bd-thinking-status {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--paper-500);
+  margin-left: 4px;
+}
+[data-theme="dark"] .bd-thinking-dot {
+  background: oklch(30% 0.012 240);
+}
+[data-theme="dark"] .bd-thinking-status {
+  color: var(--night-200);
+}
+
+@keyframes bd-thinking-pulse {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ─── AI input row (pill input + send button) ───────────────────────── */
+.bd-ai-input {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  background: var(--paper-100);
+  border-radius: var(--r-pill);
+}
+[data-theme="sepia"] .bd-ai-input {
+  background: var(--sepia-100);
+}
+[data-theme="dark"] .bd-ai-input {
+  background: oklch(15% 0.008 240);
+}
+
+.bd-ai-input input {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  padding: 0 8px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: inherit;
+  outline: none;
+}
+.bd-ai-input input::placeholder {
+  color: var(--paper-500);
+}
+[data-theme="dark"] .bd-ai-input input::placeholder {
+  color: var(--night-200);
+}
+
+.bd-ai-input-send {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--paper-900);
+  color: var(--paper-50);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    background var(--m-fast),
+    opacity var(--m-fast);
+}
+.bd-ai-input-send:hover:not(:disabled) {
+  background: var(--paper-800);
+}
+.bd-ai-input-send:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+[data-theme="dark"] .bd-ai-input-send {
+  background: var(--paper-50);
+  color: var(--paper-900);
+}

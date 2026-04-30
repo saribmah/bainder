@@ -1,0 +1,32 @@
+/* Bainder UI — themes.
+   Apply via [data-theme="..."] on html/body or a containing element. */
+
+:root,
+[data-theme="light"] {
+  background: var(--paper-50);
+  color: var(--paper-900);
+}
+
+[data-theme="sepia"] {
+  background: var(--sepia-50);
+  color: var(--sepia-900);
+}
+
+[data-theme="dark"] {
+  background: var(--night-900);
+  color: var(--night-50);
+}
+
+/* Legacy class hooks — kept for parity with the design prototype. */
+.bd-theme-light {
+  background: var(--paper-50);
+  color: var(--paper-900);
+}
+.bd-theme-sepia {
+  background: var(--sepia-50);
+  color: var(--sepia-900);
+}
+.bd-theme-dark {
+  background: var(--night-900);
+  color: var(--night-50);
+}

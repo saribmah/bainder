@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@bainder/sdk": "*",
+    "@bainder/ui": "workspace:*",
     "better-auth": "^1.6.9",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
