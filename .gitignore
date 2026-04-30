@@ -41,3 +41,5 @@ npm-debug.log*
 # Generated
 packages/api/openapi.generated.json
 packages/sdk/lib/
+
+bainder-designs
