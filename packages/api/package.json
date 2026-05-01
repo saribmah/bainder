@@ -14,6 +14,7 @@
     "db:migrate:local": "bunx --bun wrangler d1 migrations apply bainder-dev --local --env dev",
     "db:migrate:dev": "bunx --bun wrangler d1 migrations apply bainder-dev --remote --env dev",
     "db:migrate": "bunx --bun wrangler d1 migrations apply bainder --remote --env production",
+    "db:reset:local": "bun run ./scripts/reset-local-db.ts",
     "ts-check": "tsgo --noEmit -p tsconfig.json",
     "lint": "oxlint ./src",
     "lint:fix": "oxlint --fix --quiet ./src",
