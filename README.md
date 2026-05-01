@@ -119,4 +119,4 @@ in `.github/workflows/deploy.yml` (and `publish-sdk.yml` for npm).
 
 ## License
 
-MIT (or whatever you want — edit this section after cloning).
+MIT. See [LICENSE](./LICENSE).
