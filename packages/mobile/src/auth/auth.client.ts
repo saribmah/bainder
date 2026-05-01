@@ -11,10 +11,6 @@ export const authClient = createAuthClient({
       scheme: "bainder",
       storagePrefix: "bainder",
       storage: SecureStore,
-      // Don't trust the SecureStore session cache as the source of truth —
-      // it has stale-data races on signOut and on cold start. Always go to the
-      // server. AuthGate renders an ActivityIndicator while session is pending.
-      disableCache: true,
     }),
     emailOTPClient(),
   ],
