@@ -10,7 +10,6 @@ export namespace HighlightStorage {
     id: highlight.id,
     documentId: highlight.documentId,
     epubChapterOrder: highlight.epubChapterOrder,
-    pdfPageNumber: highlight.pdfPageNumber,
     offsetStart: highlight.offsetStart,
     offsetEnd: highlight.offsetEnd,
     textSnippet: highlight.textSnippet,
@@ -23,8 +22,7 @@ export namespace HighlightStorage {
   export type EntityRow = {
     id: string;
     documentId: string;
-    epubChapterOrder: number | null;
-    pdfPageNumber: number | null;
+    epubChapterOrder: number;
     offsetStart: number;
     offsetEnd: number;
     textSnippet: string;
@@ -38,7 +36,6 @@ export namespace HighlightStorage {
     id: row.id,
     documentId: row.documentId,
     epubChapterOrder: row.epubChapterOrder,
-    pdfPageNumber: row.pdfPageNumber,
     offsetStart: row.offsetStart,
     offsetEnd: row.offsetEnd,
     textSnippet: row.textSnippet,
@@ -65,8 +62,7 @@ export namespace HighlightStorage {
     id: string;
     userId: string;
     documentId: string;
-    epubChapterOrder: number | null;
-    pdfPageNumber: number | null;
+    epubChapterOrder: number;
     offsetStart: number;
     offsetEnd: number;
     textSnippet: string;
@@ -81,7 +77,6 @@ export namespace HighlightStorage {
       userId: input.userId,
       documentId: input.documentId,
       epubChapterOrder: input.epubChapterOrder,
-      pdfPageNumber: input.pdfPageNumber,
       offsetStart: input.offsetStart,
       offsetEnd: input.offsetEnd,
       textSnippet: input.textSnippet,
@@ -97,16 +92,12 @@ export namespace HighlightStorage {
   export type ListQuery = {
     documentId: string;
     epubChapterOrder?: number;
-    pdfPageNumber?: number;
   };
 
   export const list = async (userId: string, query: ListQuery): Promise<Highlight.Entity[]> => {
     const conds = [eq(highlight.userId, userId), eq(highlight.documentId, query.documentId)];
     if (query.epubChapterOrder !== undefined) {
       conds.push(eq(highlight.epubChapterOrder, query.epubChapterOrder));
-    }
-    if (query.pdfPageNumber !== undefined) {
-      conds.push(eq(highlight.pdfPageNumber, query.pdfPageNumber));
     }
     const rows = await Instance.db
       .select(entitySelect)

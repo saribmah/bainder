@@ -5,13 +5,10 @@ import { useSdk } from "../sdk";
 
 export type NotesSheetProps = {
   documentId: string;
-  documentKind: "epub" | "pdf";
   chapters?: ReadonlyArray<EpubChapterSummary>;
   currentOrder?: number;
-  currentPage?: number;
   refreshToken: number;
   onJumpEpub?: (chapterOrder: number) => void;
-  onJumpPdf?: (pageNumber: number) => void;
   onClose: () => void;
 };
 
@@ -38,13 +35,10 @@ const formatRelativeTime = (iso: string): string => {
 
 export function NotesSheet({
   documentId,
-  documentKind,
   chapters,
   currentOrder,
-  currentPage,
   refreshToken,
   onJumpEpub,
-  onJumpPdf,
   onClose,
 }: NotesSheetProps) {
   const { client } = useSdk();
@@ -53,7 +47,7 @@ export function NotesSheet({
   const [error, setError] = useState<string | null>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
 
-  // Map chapter order → title for EPUB nav labels.
+  // Map chapter order → title for nav labels.
   const titleByOrder = useMemo(() => {
     const map = new Map<number, string>();
     if (chapters) {
@@ -162,21 +156,13 @@ export function NotesSheet({
               </li>
             )}
             {items?.map((h) => {
-              const positionLabel = labelFor(h, documentKind, titleByOrder);
-              const isCurrent =
-                (documentKind === "epub" && h.epubChapterOrder === currentOrder) ||
-                (documentKind === "pdf" && h.pdfPageNumber === currentPage);
+              const positionLabel = labelFor(h, titleByOrder);
+              const isCurrent = h.epubChapterOrder === currentOrder;
               return (
                 <li key={h.id} className="mb-2 last:mb-0">
                   <button
                     type="button"
-                    onClick={() => {
-                      if (documentKind === "epub" && h.epubChapterOrder !== null) {
-                        onJumpEpub?.(h.epubChapterOrder);
-                      } else if (documentKind === "pdf" && h.pdfPageNumber !== null) {
-                        onJumpPdf?.(h.pdfPageNumber);
-                      }
-                    }}
+                    onClick={() => onJumpEpub?.(h.epubChapterOrder)}
                     className={`block w-full rounded-xl p-3 text-left transition-colors ${cardBg} ${
                       isCurrent ? activeRing : ""
                     }`}
@@ -215,17 +201,7 @@ export function NotesSheet({
   );
 }
 
-const labelFor = (
-  h: Highlight,
-  kind: "epub" | "pdf",
-  titleByOrder: Map<number, string>,
-): string => {
-  if (kind === "epub" && h.epubChapterOrder !== null) {
-    const title = titleByOrder.get(h.epubChapterOrder);
-    return title ? `Ch. ${h.epubChapterOrder + 1} · ${title}` : `Chapter ${h.epubChapterOrder + 1}`;
-  }
-  if (kind === "pdf" && h.pdfPageNumber !== null) {
-    return `Page ${h.pdfPageNumber}`;
-  }
-  return "—";
+const labelFor = (h: Highlight, titleByOrder: Map<number, string>): string => {
+  const title = titleByOrder.get(h.epubChapterOrder);
+  return title ? `Ch. ${h.epubChapterOrder + 1} · ${title}` : `Chapter ${h.epubChapterOrder + 1}`;
 };

@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import { createTestClient, resetState, signInAs } from "../lib/client";
-import { asFile, buildBrokenEpub, buildText } from "../lib/fixtures";
+import { asFile, buildBrokenEpub, buildEpub } from "../lib/fixtures";
 import { waitForProcessed } from "../lib/polling";
 
 const UPLOAD_TIMEOUT_MS = 45000;
@@ -19,7 +19,7 @@ describe("document errors", () => {
 
   test("400 when uploading an empty file", async () => {
     const { client } = await signInAs("empty@bainder.test");
-    const empty = new File([new Uint8Array(0)], "empty.txt", { type: "text/plain" });
+    const empty = new File([new Uint8Array(0)], "empty.epub", { type: "application/epub+zip" });
     const upload = await client.document.create({ file: empty });
     expect(upload.error).toBeDefined();
     expect(upload.response.status).toBe(400);
@@ -31,6 +31,16 @@ describe("document errors", () => {
     const bytes = new Uint8Array([0x00, 0x01, 0x02, 0x03, 0xab, 0xcd, 0xef]);
     const upload = await client.document.create({
       file: asFile(bytes, "blob.bin", "application/octet-stream"),
+    });
+    expect(upload.error).toBeDefined();
+    expect(upload.response.status).toBe(415);
+  });
+
+  test("415 when uploading a PDF (only EPUB is supported)", async () => {
+    const { client } = await signInAs("pdf-rejected@bainder.test");
+    const pdfBytes = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34, 0x0a]);
+    const upload = await client.document.create({
+      file: asFile(pdfBytes, "doc.pdf", "application/pdf"),
     });
     expect(upload.error).toBeDefined();
     expect(upload.response.status).toBe(415);
@@ -49,31 +59,6 @@ describe("document errors", () => {
     expect(del.error).toBeDefined();
     expect(del.response.status).toBe(404);
   });
-
-  test(
-    "404 when calling a format route with the wrong kind",
-    async () => {
-      const { client } = await signInAs("wrongkind@bainder.test");
-      const upload = await client.document.create({
-        file: asFile(buildText("text doc"), "doc.txt", "text/plain"),
-      });
-      if (!upload.data) throw new Error("no upload data");
-      const documentId = upload.data.id;
-      await waitForProcessed(client, documentId);
-
-      // Text doc isn't an EPUB → WrongKindError → 404.
-      const detail = await client.document.getEpubDetail({ id: documentId });
-      expect(detail.error).toBeDefined();
-      expect(detail.response.status).toBe(404);
-
-      // Same for PDF/image format routes.
-      const pdf = await client.document.getPdfDetail({ id: documentId });
-      expect(pdf.response.status).toBe(404);
-      const image = await client.document.getImage({ id: documentId });
-      expect(image.response.status).toBe(404);
-    },
-    UPLOAD_TIMEOUT_MS,
-  );
 
   test("409 when reading a format route on a failed document", async () => {
     const { client } = await signInAs("failed@bainder.test");
@@ -110,16 +95,6 @@ describe("document errors", () => {
     expect(chapter.response.status).toBe(400);
   });
 
-  test("400 when PDF page number is invalid", async () => {
-    const { client } = await signInAs("badpage@bainder.test");
-    const page = await client.document.getPdfPage({
-      id: crypto.randomUUID(),
-      page: "0",
-    });
-    expect(page.error).toBeDefined();
-    expect(page.response.status).toBe(400);
-  });
-
   test(
     "ownership isolation: user B cannot see user A's document",
     async () => {
@@ -127,7 +102,7 @@ describe("document errors", () => {
       const b = await signInAs("bob@bainder.test");
 
       const upload = await a.client.document.create({
-        file: asFile(buildText("alice's data"), "alice.txt", "text/plain"),
+        file: asFile(buildEpub(), "alice.epub", "application/epub+zip"),
       });
       if (!upload.data) throw new Error("no upload data");
       const documentId = upload.data.id;
@@ -144,8 +119,8 @@ describe("document errors", () => {
       const bobStatus = await b.client.document.getStatus({ id: documentId });
       expect(bobStatus.response.status).toBe(404);
 
-      const bobText = await b.client.document.getText({ id: documentId });
-      expect(bobText.response.status).toBe(404);
+      const bobDetail = await b.client.document.getEpubDetail({ id: documentId });
+      expect(bobDetail.response.status).toBe(404);
 
       const bobDelete = await b.client.document.delete({ id: documentId });
       expect(bobDelete.response.status).toBe(404);

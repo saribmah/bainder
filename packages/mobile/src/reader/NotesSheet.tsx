@@ -8,14 +8,11 @@ export type NotesSheetProps = {
   visible: boolean;
   onClose: () => void;
   documentId: string;
-  kind: "epub" | "pdf";
   theme: Theme;
   chapters?: ReadonlyArray<EpubChapterSummary>;
   currentOrder?: number;
-  currentPage?: number;
   refreshToken: number;
   onJumpEpub?: (chapterOrder: number) => void;
-  onJumpPdf?: (pageNumber: number) => void;
 };
 
 const RELATIVE_THRESHOLDS: Array<[number, Intl.RelativeTimeFormatUnit]> = [
@@ -43,14 +40,11 @@ export function NotesSheet({
   visible,
   onClose,
   documentId,
-  kind,
   theme,
   chapters,
   currentOrder,
-  currentPage,
   refreshToken,
   onJumpEpub,
-  onJumpPdf,
 }: NotesSheetProps) {
   const { client } = useSdk();
   const [items, setItems] = useState<Highlight[] | null>(null);
@@ -118,20 +112,12 @@ export function NotesSheet({
           </Text>
         )}
         {items?.map((h) => {
-          const positionLabel = labelFor(h, kind, titleByOrder);
-          const isCurrent =
-            (kind === "epub" && h.epubChapterOrder === currentOrder) ||
-            (kind === "pdf" && h.pdfPageNumber === currentPage);
+          const positionLabel = labelFor(h, titleByOrder);
+          const isCurrent = h.epubChapterOrder === currentOrder;
           return (
             <Pressable
               key={h.id}
-              onPress={() => {
-                if (kind === "epub" && h.epubChapterOrder !== null) {
-                  onJumpEpub?.(h.epubChapterOrder);
-                } else if (kind === "pdf" && h.pdfPageNumber !== null) {
-                  onJumpPdf?.(h.pdfPageNumber);
-                }
-              }}
+              onPress={() => onJumpEpub?.(h.epubChapterOrder)}
               style={({ pressed }) => [
                 styles.card,
                 { backgroundColor: cardBg },
@@ -166,19 +152,9 @@ export function NotesSheet({
   );
 }
 
-const labelFor = (
-  h: Highlight,
-  kind: "epub" | "pdf",
-  titleByOrder: Map<number, string>,
-): string => {
-  if (kind === "epub" && h.epubChapterOrder !== null) {
-    const title = titleByOrder.get(h.epubChapterOrder);
-    return title ? `Ch. ${h.epubChapterOrder + 1} · ${title}` : `Chapter ${h.epubChapterOrder + 1}`;
-  }
-  if (kind === "pdf" && h.pdfPageNumber !== null) {
-    return `Page ${h.pdfPageNumber}`;
-  }
-  return "—";
+const labelFor = (h: Highlight, titleByOrder: Map<number, string>): string => {
+  const title = titleByOrder.get(h.epubChapterOrder);
+  return title ? `Ch. ${h.epubChapterOrder + 1} · ${title}` : `Chapter ${h.epubChapterOrder + 1}`;
 };
 
 function mutedFor(theme: Theme): string {

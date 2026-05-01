@@ -36,18 +36,10 @@ const COVER_H = 60;
 
 const KIND_LABEL: Record<Document["kind"], string> = {
   epub: "EPUB",
-  pdf: "PDF",
-  image: "Image",
-  text: "Text",
-  other: "Other",
 };
 
 const KIND_BG: Record<Document["kind"], string> = {
   epub: "#d64c29",
-  pdf: "#347ec4",
-  image: "#37b880",
-  text: "#bda257",
-  other: "#94a0aa",
 };
 
 const RELATIVE_THRESHOLDS: Array<[number, Intl.RelativeTimeFormatUnit]> = [
@@ -73,13 +65,7 @@ const formatRelativeTime = (iso: string): string => {
 const progressLabel = (doc: Document): string | null => {
   const p = doc.progress;
   if (!p) return null;
-  if (p.epubChapterOrder !== null) {
-    return `Chapter ${p.epubChapterOrder + 1} · ${formatRelativeTime(p.updatedAt)}`;
-  }
-  if (p.pdfPageNumber !== null) {
-    return `Page ${p.pdfPageNumber} · ${formatRelativeTime(p.updatedAt)}`;
-  }
-  return null;
+  return `Chapter ${p.epubChapterOrder + 1} · ${formatRelativeTime(p.updatedAt)}`;
 };
 
 export default function LibraryScreen() {
@@ -126,7 +112,7 @@ export default function LibraryScreen() {
   const upload = useCallback(async () => {
     setError(null);
     const result = await DocumentPicker.getDocumentAsync({
-      type: ["application/pdf", "application/epub+zip", "text/plain", "image/*"],
+      type: ["application/epub+zip"],
       copyToCacheDirectory: true,
       multiple: false,
     });
@@ -247,9 +233,7 @@ export default function LibraryScreen() {
 
       <View style={{ marginTop: 24 }}>
         <Text style={styles.h1}>Library</Text>
-        <Text style={styles.lead}>
-          Drop in a PDF, EPUB, image, or text file. Bainder extracts and organises them.
-        </Text>
+        <Text style={styles.lead}>Drop in an EPUB. Bainder extracts and organises your books.</Text>
       </View>
 
       <UploadZone compact={!isEmpty} uploading={uploading} onPress={upload} />
@@ -365,7 +349,7 @@ function UploadZone({
         <Text style={compact ? styles.uploadTitleCompact : styles.uploadTitle}>
           {compact ? "Add a document" : "Drop a file to begin"}
         </Text>
-        <Text style={styles.uploadSub}>PDF · EPUB · text · image — up to 100 MB</Text>
+        <Text style={styles.uploadSub}>EPUB · up to 100 MB</Text>
       </View>
       {compact && (
         <Button variant="wine" size="md" disabled={uploading} onPress={onPress}>

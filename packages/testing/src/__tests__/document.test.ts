@@ -1,13 +1,6 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import { resetState, signInAs } from "../lib/client";
-import {
-  asFile,
-  buildEpub,
-  buildEpubWithImage,
-  buildPdf,
-  buildText,
-  onePxPng,
-} from "../lib/fixtures";
+import { asFile, buildEpub, buildEpubWithImage } from "../lib/fixtures";
 import { waitForProcessed } from "../lib/polling";
 
 // Per-test budget for upload + workflow processing. The polling helper itself
@@ -110,88 +103,12 @@ describe("document", () => {
   );
 
   test(
-    "PDF upload → processed → read pages",
-    async () => {
-      const { client } = await signInAs("pdf-reader@bainder.test");
-
-      const upload = await client.document.create({
-        file: asFile(buildPdf(), "doc.pdf", "application/pdf"),
-      });
-      if (!upload.data) throw new Error("no upload data");
-      expect(upload.data.kind).toBe("pdf");
-      const documentId = upload.data.id;
-
-      const terminal = await waitForProcessed(client, documentId);
-      expect(terminal.status).toBe("processed");
-
-      const detail = await client.document.getPdfDetail({ id: documentId });
-      expect(detail.error).toBeUndefined();
-      expect(detail.data?.pdf.pageCount).toBe(1);
-      expect(detail.data?.pages).toHaveLength(1);
-
-      const page = await client.document.getPdfPage({ id: documentId, page: "1" });
-      expect(page.error).toBeUndefined();
-      expect(page.data?.pageNumber).toBe(1);
-      expect(typeof page.data?.text).toBe("string");
-    },
-    UPLOAD_TIMEOUT_MS,
-  );
-
-  test(
-    "Image upload → processed → image metadata reports dimensions",
-    async () => {
-      const { client } = await signInAs("image-reader@bainder.test");
-
-      const upload = await client.document.create({
-        file: asFile(onePxPng(), "pixel.png", "image/png"),
-      });
-      if (!upload.data) throw new Error("no upload data");
-      expect(upload.data.kind).toBe("image");
-      const documentId = upload.data.id;
-
-      const terminal = await waitForProcessed(client, documentId);
-      expect(terminal.status).toBe("processed");
-
-      const meta = await client.document.getImage({ id: documentId });
-      expect(meta.error).toBeUndefined();
-      expect(meta.data?.format).toBe("png");
-      expect(meta.data?.width).toBe(1);
-      expect(meta.data?.height).toBe(1);
-    },
-    UPLOAD_TIMEOUT_MS,
-  );
-
-  test(
-    "Text upload → processed → text content readable",
-    async () => {
-      const { client } = await signInAs("text-reader@bainder.test");
-      const content = "Hello Bainder.\nLine two.";
-
-      const upload = await client.document.create({
-        file: asFile(buildText(content), "notes.txt", "text/plain"),
-      });
-      if (!upload.data) throw new Error("no upload data");
-      expect(upload.data.kind).toBe("text");
-      const documentId = upload.data.id;
-
-      const terminal = await waitForProcessed(client, documentId);
-      expect(terminal.status).toBe("processed");
-
-      const text = await client.document.getText({ id: documentId });
-      expect(text.error).toBeUndefined();
-      expect(text.data?.text).toBe(content);
-      expect(text.data?.charset.toLowerCase()).toContain("utf-8");
-    },
-    UPLOAD_TIMEOUT_MS,
-  );
-
-  test(
     "DELETE removes document and read-back returns 404",
     async () => {
       const { client } = await signInAs("deleter@bainder.test");
 
       const upload = await client.document.create({
-        file: asFile(buildText("dispose me"), "tmp.txt", "text/plain"),
+        file: asFile(buildEpub(), "tmp.epub", "application/epub+zip"),
       });
       if (!upload.data) throw new Error("no upload data");
       const documentId = upload.data.id;

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
@@ -22,10 +22,6 @@ import type {
   EpubChapterSummary,
   EpubDetail,
   EpubTocItem,
-  ImageDocument,
-  PdfDetail,
-  PdfPage,
-  TextDocument,
 } from "@bainder/sdk";
 import { useSdk } from "../../src/sdk/sdk.provider.tsx";
 import { EpubHtmlBody } from "../../src/reader/EpubHtmlBody.tsx";
@@ -34,13 +30,10 @@ import { useReaderHighlights } from "../../src/reader/useReaderHighlights.ts";
 import { NotesSheet } from "../../src/reader/NotesSheet.tsx";
 
 type NotesContext = {
-  kind: "epub" | "pdf";
   chapters?: ReadonlyArray<EpubChapterSummary>;
   currentOrder?: number;
-  currentPage?: number;
   refreshToken: number;
   onJumpEpub?: (order: number) => void;
-  onJumpPdf?: (page: number) => void;
 };
 
 export default function ReaderScreen() {
@@ -153,29 +146,14 @@ function ReaderShell({ doc, onClose }: { doc: Document; onClose: () => void }) {
         style={shellStyles.body}
         contentContainerStyle={[shellStyles.bodyContent, { paddingBottom: insets.bottom + 120 }]}
       >
-        {doc.kind === "epub" && (
-          <EpubBody
-            documentId={doc.id}
-            initialOrder={doc.progress?.epubChapterOrder ?? 0}
-            theme={theme}
-            onPosition={setPosition}
-            onTocChange={setTocState}
-            onNotesChange={setNotesState}
-          />
-        )}
-        {doc.kind === "pdf" && (
-          <PdfBody
-            documentId={doc.id}
-            initialPage={doc.progress?.pdfPageNumber ?? 1}
-            theme={theme}
-            onPosition={setPosition}
-          />
-        )}
-        {doc.kind === "text" && <TextBody documentId={doc.id} theme={theme} />}
-        {doc.kind === "image" && <ImageBody documentId={doc.id} />}
-        {doc.kind === "other" && (
-          <Text style={shellStyles.muted}>This document type isn't readable in-app yet.</Text>
-        )}
+        <EpubBody
+          documentId={doc.id}
+          initialOrder={doc.progress?.epubChapterOrder ?? 0}
+          theme={theme}
+          onPosition={setPosition}
+          onTocChange={setTocState}
+          onNotesChange={setNotesState}
+        />
       </ScrollView>
 
       <View style={[shellStyles.toolbarWrap, { bottom: insets.bottom + 16 }]}>
@@ -220,18 +198,12 @@ function ReaderShell({ doc, onClose }: { doc: Document; onClose: () => void }) {
           visible={notesOpen}
           onClose={() => setNotesOpen(false)}
           documentId={doc.id}
-          kind={notesState.kind}
           theme={theme}
           chapters={notesState.chapters}
           currentOrder={notesState.currentOrder}
-          currentPage={notesState.currentPage}
           refreshToken={notesState.refreshToken}
           onJumpEpub={(order) => {
             notesState.onJumpEpub?.(order);
-            setNotesOpen(false);
-          }}
-          onJumpPdf={(page) => {
-            notesState.onJumpPdf?.(page);
             setNotesOpen(false);
           }}
         />
@@ -270,12 +242,10 @@ function EpubBody({
   const [error, setError] = useState<string | null>(null);
   const assetCacheRef = useRef<AssetCache>(new Map());
 
-  const target = useMemo(() => ({ kind: "epub" as const, chapterOrder: order }), [order]);
-
   const highlightLayer = useReaderHighlights({
     client,
     documentId,
-    target,
+    chapterOrder: order,
     enabled: true,
   });
 
@@ -360,7 +330,6 @@ function EpubBody({
       return;
     }
     onNotesChange({
-      kind: "epub",
       chapters: detail.chapters,
       currentOrder: order,
       refreshToken,
@@ -383,7 +352,6 @@ function EpubBody({
         html={chapter.html}
         assetBase={`${baseUrl}/documents/${documentId}/`}
         theme={theme}
-        target={target}
         contentKey={`${documentId}:${order}`}
         highlights={highlightLayer.highlights}
         authedFetch={authedFetch}
@@ -404,165 +372,7 @@ function EpubBody({
   );
 }
 
-// ─── PDF body ───────────────────────────────────────────────────────────
-function PdfBody({
-  documentId,
-  initialPage,
-  theme,
-  onPosition,
-}: {
-  documentId: string;
-  initialPage: number;
-  theme: Theme;
-  onPosition: (p: string | null) => void;
-}) {
-  const { client } = useSdk();
-  const [pageNumber, setPageNumber] = useState(Math.max(1, initialPage));
-  const [detail, setDetail] = useState<PdfDetail | null>(null);
-  const [page, setPage] = useState<PdfPage | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    client.document
-      .getPdfDetail({ id: documentId })
-      .then((res) => {
-        if (cancelled) return;
-        if (res.data) setDetail(res.data);
-        else setError("Failed to load PDF details");
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) setError(String(err));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [client, documentId]);
-
-  useEffect(() => {
-    let cancelled = false;
-    setPage(null);
-    client.document
-      .getPdfPage({ id: documentId, page: String(pageNumber) })
-      .then((res) => {
-        if (cancelled) return;
-        if (res.data) setPage(res.data);
-        else setError("Failed to load page");
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) setError(String(err));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [client, documentId, pageNumber]);
-
-  useEffect(() => {
-    const handle = setTimeout(() => {
-      client.progress.upsert({ id: documentId, pdfPageNumber: pageNumber }).catch(() => undefined);
-    }, 1000);
-    return () => clearTimeout(handle);
-  }, [client, documentId, pageNumber]);
-
-  useEffect(() => {
-    if (!detail) return;
-    onPosition(`Page ${pageNumber} of ${detail.pdf.pageCount}`);
-    return () => onPosition(null);
-  }, [detail, pageNumber, onPosition]);
-
-  if (error) return <Text style={shellStyles.errorText}>{error}</Text>;
-  if (!detail || !page) return <ChapterSkeleton />;
-
-  const totalPages = detail.pdf.pageCount;
-  const palette = themeColors(theme);
-
-  return (
-    <>
-      <Text style={[shellStyles.readingText, { color: palette.text }]} selectable>
-        {page.text}
-      </Text>
-      <ChapterNav
-        canPrev={pageNumber > 1}
-        canNext={pageNumber < totalPages}
-        onPrev={() => setPageNumber(pageNumber - 1)}
-        onNext={() => setPageNumber(pageNumber + 1)}
-        prevLabel="Previous page"
-        nextLabel="Next page"
-      />
-    </>
-  );
-}
-
-// ─── Text body ──────────────────────────────────────────────────────────
-function TextBody({ documentId, theme }: { documentId: string; theme: Theme }) {
-  const { client } = useSdk();
-  const [text, setText] = useState<TextDocument | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    client.document
-      .getText({ id: documentId })
-      .then((res) => {
-        if (cancelled) return;
-        if (res.data) setText(res.data);
-        else setError("Failed to load text");
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) setError(String(err));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [client, documentId]);
-
-  if (error) return <Text style={shellStyles.errorText}>{error}</Text>;
-  if (!text) return <ChapterSkeleton />;
-
-  return (
-    <Text style={[shellStyles.readingText, { color: themeColors(theme).text }]} selectable>
-      {text.text}
-    </Text>
-  );
-}
-
-// ─── Image body ─────────────────────────────────────────────────────────
-function ImageBody({ documentId }: { documentId: string }) {
-  const { client, baseUrl } = useSdk();
-  const [meta, setMeta] = useState<ImageDocument | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    client.document
-      .getImage({ id: documentId })
-      .then((res) => {
-        if (cancelled) return;
-        if (res.data) setMeta(res.data);
-        else setError("Failed to load image");
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) setError(String(err));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [client, documentId]);
-
-  if (error) return <Text style={shellStyles.errorText}>{error}</Text>;
-  if (!meta) return <Skeleton width="100%" height={420} />;
-
-  const aspect = meta.width / meta.height;
-  return (
-    <Image
-      source={{ uri: `${baseUrl}/documents/${documentId}/raw` }}
-      style={{ width: "100%", aspectRatio: aspect, borderRadius: 12 }}
-      resizeMode="contain"
-    />
-  );
-}
-
-// ─── Chapter / page navigation row ──────────────────────────────────────
+// ─── Chapter navigation row ─────────────────────────────────────────────
 function ChapterNav({
   canPrev,
   canNext,

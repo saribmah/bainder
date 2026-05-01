@@ -19,25 +19,16 @@ import { useSdk } from "../sdk";
 
 const KIND_LABEL: Record<Document["kind"], string> = {
   epub: "EPUB",
-  pdf: "PDF",
-  image: "Image",
-  text: "Text",
-  other: "Other",
 };
 
 const KIND_GRADIENT: Record<Document["kind"], string> = {
   epub: "linear-gradient(160deg, oklch(60% 0.18 35), oklch(40% 0.16 30))",
-  pdf: "linear-gradient(160deg, oklch(58% 0.13 250), oklch(38% 0.12 250))",
-  image: "linear-gradient(160deg, oklch(70% 0.14 160), oklch(50% 0.13 160))",
-  text: "linear-gradient(160deg, oklch(72% 0.10 90), oklch(52% 0.10 80))",
-  other: "linear-gradient(160deg, oklch(70% 0.02 240), oklch(50% 0.02 240))",
 };
 
 const COVER_W = 44;
 const COVER_H = 60;
 
-const ACCEPT_ATTR =
-  ".pdf,.epub,.txt,.jpg,.jpeg,.png,.webp,.gif,application/pdf,application/epub+zip,text/plain,image/*";
+const ACCEPT_ATTR = ".epub,application/epub+zip";
 
 const RELATIVE_THRESHOLDS: Array<[number, Intl.RelativeTimeFormatUnit]> = [
   [60, "second"],
@@ -62,13 +53,7 @@ const formatRelativeTime = (iso: string): string => {
 const progressLabel = (doc: Document): string | null => {
   const p = doc.progress;
   if (!p) return null;
-  if (p.epubChapterOrder !== null) {
-    return `Chapter ${p.epubChapterOrder + 1} · ${formatRelativeTime(p.updatedAt)}`;
-  }
-  if (p.pdfPageNumber !== null) {
-    return `Page ${p.pdfPageNumber} · ${formatRelativeTime(p.updatedAt)}`;
-  }
-  return null;
+  return `Chapter ${p.epubChapterOrder + 1} · ${formatRelativeTime(p.updatedAt)}`;
 };
 
 export function Library() {
@@ -192,7 +177,7 @@ export function Library() {
       <section className="mx-auto max-w-3xl px-6 py-10">
         <h1 className="t-display-l">Library</h1>
         <p className="t-body-l mt-2 text-paper-700">
-          Drop in a PDF, EPUB, image, or text file. Bainder extracts and organises them.
+          Drop in an EPUB. Bainder extracts and organises your books.
         </p>
 
         <div className="mt-8">
@@ -380,7 +365,7 @@ function UploadZone({
         <div className={compact ? "t-label-l" : "t-display-s"}>
           {dragging ? "Release to upload" : compact ? "Add a document" : "Drop a file to begin"}
         </div>
-        <div className="t-body-s mt-1 text-paper-600">PDF · EPUB · text · image — up to 100 MB</div>
+        <div className="t-body-s mt-1 text-paper-600">EPUB · up to 100 MB</div>
       </div>
 
       {compact && (

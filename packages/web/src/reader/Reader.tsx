@@ -25,10 +25,6 @@ import type {
   EpubChapterSummary,
   EpubDetail,
   EpubTocItem,
-  ImageDocument,
-  PdfDetail,
-  PdfPage,
-  TextDocument,
 } from "@bainder/sdk";
 import { useSdk } from "../sdk";
 import { HighlightLayer } from "./HighlightLayer";
@@ -114,19 +110,7 @@ export function Reader() {
         <ReaderTocProvider>
           <ReaderHighlightsProvider>
             <ReaderShell doc={doc} onClose={handleClose}>
-              {doc.kind === "epub" && (
-                <EpubBody documentId={doc.id} initialOrder={doc.progress?.epubChapterOrder ?? 0} />
-              )}
-              {doc.kind === "pdf" && (
-                <PdfBody documentId={doc.id} initialPage={doc.progress?.pdfPageNumber ?? 1} />
-              )}
-              {doc.kind === "text" && <TextBody documentId={doc.id} />}
-              {doc.kind === "image" && <ImageBody documentId={doc.id} />}
-              {doc.kind === "other" && (
-                <p className="t-body-m text-paper-500">
-                  This document type isn't readable in-app yet.
-                </p>
-              )}
+              <EpubBody documentId={doc.id} initialOrder={doc.progress?.epubChapterOrder ?? 0} />
             </ReaderShell>
           </ReaderHighlightsProvider>
         </ReaderTocProvider>
@@ -135,7 +119,7 @@ export function Reader() {
   );
 }
 
-// ─── Position context (current chapter / page label) ─────────────────────
+// ─── Position context (current chapter label) ────────────────────────────
 type PositionLabel = string | null;
 
 const ReaderPositionContext = createContext<{
@@ -155,7 +139,7 @@ function useReaderPosition() {
   return ctx;
 }
 
-// ─── TOC context (EPUB-only; null when no TOC available) ─────────────────
+// ─── TOC context ────────────────────────────────────────────────────────
 type TocState = {
   toc: ReadonlyArray<EpubTocItem>;
   chapters: ReadonlyArray<EpubChapterSummary>;
@@ -205,11 +189,7 @@ function ReaderShell({
   const [tocOpen, setTocOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
 
-  const supportsHighlights = doc.kind === "epub" || doc.kind === "pdf";
-  const currentOrder =
-    doc.kind === "epub" ? Math.max(0, Number(searchParams.get("chapter") ?? 0)) : undefined;
-  const currentPage =
-    doc.kind === "pdf" ? Math.max(1, Number(searchParams.get("page") ?? 1)) : undefined;
+  const currentOrder = Math.max(0, Number(searchParams.get("chapter") ?? 0));
 
   const pageBg =
     theme === "dark"
@@ -249,11 +229,9 @@ function ReaderShell({
               <Icons.List size={20} />
             </FloatingToolbarButton>
           )}
-          {supportsHighlights && (
-            <FloatingToolbarButton aria-label="Notes" onClick={() => setNotesOpen(true)}>
-              <Icons.Note size={20} />
-            </FloatingToolbarButton>
-          )}
+          <FloatingToolbarButton aria-label="Notes" onClick={() => setNotesOpen(true)}>
+            <Icons.Note size={20} />
+          </FloatingToolbarButton>
           <FloatingToolbarButton aria-label={`Theme: ${theme}`} onClick={cycleTheme}>
             {theme === "dark" ? <Icons.Sun size={20} /> : <Icons.Moon size={20} />}
           </FloatingToolbarButton>
@@ -273,20 +251,14 @@ function ReaderShell({
         />
       )}
 
-      {supportsHighlights && notesOpen && (
+      {notesOpen && (
         <NotesSheet
           documentId={doc.id}
-          documentKind={doc.kind === "epub" ? "epub" : "pdf"}
           chapters={toc?.chapters}
           currentOrder={currentOrder}
-          currentPage={currentPage}
           refreshToken={refresh?.refreshToken ?? 0}
           onJumpEpub={(order) => {
             setSearchParams({ chapter: String(order) });
-            setNotesOpen(false);
-          }}
-          onJumpPdf={(page) => {
-            setSearchParams({ page: String(page) });
             setNotesOpen(false);
           }}
           onClose={() => setNotesOpen(false)}
@@ -428,7 +400,7 @@ function EpubBody({ documentId, initialOrder }: { documentId: string; initialOrd
       <HighlightLayer
         containerRef={htmlRef}
         documentId={documentId}
-        target={{ kind: "epub", chapterOrder: order }}
+        chapterOrder={order}
         contentKey={chapter.id}
       />
 
@@ -444,184 +416,7 @@ function EpubBody({ documentId, initialOrder }: { documentId: string; initialOrd
   );
 }
 
-// ─── PDF body ───────────────────────────────────────────────────────────
-function PdfBody({ documentId, initialPage }: { documentId: string; initialPage: number }) {
-  const { client } = useSdk();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const { setPosition } = useReaderPosition();
-  const [detail, setDetail] = useState<PdfDetail | null>(null);
-  const [page, setPage] = useState<PdfPage | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const pageRef = useRef<HTMLPreElement>(null);
-
-  const pageParam = searchParams.get("page");
-  const pageNumber = pageParam !== null ? Math.max(1, Number(pageParam)) : Math.max(1, initialPage);
-
-  useEffect(() => {
-    if (pageParam === null) {
-      setSearchParams({ page: String(pageNumber) }, { replace: true });
-    }
-  }, [pageParam, pageNumber, setSearchParams]);
-
-  useEffect(() => {
-    let cancelled = false;
-    client.document
-      .getPdfDetail({ id: documentId })
-      .then((res) => {
-        if (cancelled) return;
-        if (res.data) setDetail(res.data);
-        else setError("Failed to load PDF details");
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) setError(String(err));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [client, documentId]);
-
-  useEffect(() => {
-    let cancelled = false;
-    setPage(null);
-    client.document
-      .getPdfPage({ id: documentId, page: String(pageNumber) })
-      .then((res) => {
-        if (cancelled) return;
-        if (res.data) setPage(res.data);
-        else setError("Failed to load page");
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) setError(String(err));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [client, documentId, pageNumber]);
-
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "instant" });
-  }, [pageNumber]);
-
-  // Persist reading progress after the user stabilizes on a page for ~1s.
-  useEffect(() => {
-    const handle = setTimeout(() => {
-      client.progress.upsert({ id: documentId, pdfPageNumber: pageNumber }).catch(() => {});
-    }, 1000);
-    return () => clearTimeout(handle);
-  }, [client, documentId, pageNumber]);
-
-  useEffect(() => {
-    if (!detail) return;
-    setPosition(`Page ${pageNumber} of ${detail.pdf.pageCount}`);
-    return () => setPosition(null);
-  }, [detail, pageNumber, setPosition]);
-
-  if (error) return <p className="t-body-m text-error">{error}</p>;
-  if (!detail || !page) return <ChapterSkeleton />;
-
-  const totalPages = detail.pdf.pageCount;
-  const navigateTo = (next: number) => {
-    setSearchParams({ page: String(next) });
-  };
-
-  return (
-    <>
-      <pre ref={pageRef} className="t-reading-l whitespace-pre-wrap break-words font-reading">
-        {page.text}
-      </pre>
-
-      <HighlightLayer
-        containerRef={pageRef}
-        documentId={documentId}
-        target={{ kind: "pdf", pageNumber }}
-        contentKey={page.id}
-      />
-
-      <ChapterNav
-        canPrev={pageNumber > 1}
-        canNext={pageNumber < totalPages}
-        onPrev={() => navigateTo(pageNumber - 1)}
-        onNext={() => navigateTo(pageNumber + 1)}
-        prevLabel="Previous page"
-        nextLabel="Next page"
-      />
-    </>
-  );
-}
-
-// ─── Text body ──────────────────────────────────────────────────────────
-function TextBody({ documentId }: { documentId: string }) {
-  const { client } = useSdk();
-  const [text, setText] = useState<TextDocument | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    client.document
-      .getText({ id: documentId })
-      .then((res) => {
-        if (cancelled) return;
-        if (res.data) setText(res.data);
-        else setError("Failed to load text");
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) setError(String(err));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [client, documentId]);
-
-  if (error) return <p className="t-body-m text-error">{error}</p>;
-  if (!text) return <ChapterSkeleton />;
-
-  return (
-    <pre className="t-reading-l whitespace-pre-wrap break-words font-reading">{text.text}</pre>
-  );
-}
-
-// ─── Image body ─────────────────────────────────────────────────────────
-function ImageBody({ documentId }: { documentId: string }) {
-  const { client, baseUrl } = useSdk();
-  const [meta, setMeta] = useState<ImageDocument | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    client.document
-      .getImage({ id: documentId })
-      .then((res) => {
-        if (cancelled) return;
-        if (res.data) setMeta(res.data);
-        else setError("Failed to load image");
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) setError(String(err));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [client, documentId]);
-
-  const src = useMemo(() => `${baseUrl}/documents/${documentId}/raw`, [baseUrl, documentId]);
-
-  if (error) return <p className="t-body-m text-error">{error}</p>;
-  if (!meta) {
-    return <Skeleton width="100%" height={420} />;
-  }
-
-  return (
-    <img
-      src={src}
-      width={meta.width}
-      height={meta.height}
-      alt=""
-      className="mx-auto h-auto max-w-full rounded-lg"
-    />
-  );
-}
-
-// ─── Chapter / page navigation row ──────────────────────────────────────
+// ─── Chapter navigation row ─────────────────────────────────────────────
 function ChapterNav({
   canPrev,
   canNext,

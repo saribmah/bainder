@@ -41,28 +41,9 @@
         "type": "object",
         "properties": {
           "epubChapterOrder": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 9007199254740991
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "pdfPageNumber": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "exclusiveMinimum": 0,
-                "maximum": 9007199254740991
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
           },
           "updatedAt": {
             "type": "string"
@@ -70,7 +51,6 @@
         },
         "required": [
           "epubChapterOrder",
-          "pdfPageNumber",
           "updatedAt"
         ]
       },
@@ -83,11 +63,7 @@
           "kind": {
             "type": "string",
             "enum": [
-              "epub",
-              "pdf",
-              "image",
-              "text",
-              "other"
+              "epub"
             ]
           },
           "mimeType": {
@@ -201,28 +177,9 @@
             "type": "string"
           },
           "epubChapterOrder": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 9007199254740991
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "pdfPageNumber": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "exclusiveMinimum": 0,
-                "maximum": 9007199254740991
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
           },
           "updatedAt": {
             "type": "string"
@@ -231,7 +188,6 @@
         "required": [
           "documentId",
           "epubChapterOrder",
-          "pdfPageNumber",
           "updatedAt"
         ]
       },
@@ -486,199 +442,6 @@
           "linear"
         ]
       },
-      "PdfDocument": {
-        "type": "object",
-        "properties": {
-          "documentId": {
-            "type": "string"
-          },
-          "pageCount": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          },
-          "pdfTitle": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "pdfAuthor": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "pdfProducer": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "pdfCreator": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": [
-          "documentId",
-          "pageCount",
-          "pdfTitle",
-          "pdfAuthor",
-          "pdfProducer",
-          "pdfCreator"
-        ]
-      },
-      "PdfPageSummary": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "documentId": {
-            "type": "string"
-          },
-          "pageNumber": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          },
-          "wordCount": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "id",
-          "documentId",
-          "pageNumber",
-          "wordCount"
-        ]
-      },
-      "PdfDetail": {
-        "type": "object",
-        "properties": {
-          "pdf": {
-            "$ref": "#/components/schemas/PdfDocument"
-          },
-          "pages": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PdfPageSummary"
-            }
-          }
-        },
-        "required": [
-          "pdf",
-          "pages"
-        ]
-      },
-      "PdfPage": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "documentId": {
-            "type": "string"
-          },
-          "pageNumber": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          },
-          "text": {
-            "type": "string"
-          },
-          "wordCount": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "id",
-          "documentId",
-          "pageNumber",
-          "text",
-          "wordCount"
-        ]
-      },
-      "ImageDocument": {
-        "type": "object",
-        "properties": {
-          "documentId": {
-            "type": "string"
-          },
-          "width": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          },
-          "height": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          },
-          "format": {
-            "type": "string",
-            "enum": [
-              "jpeg",
-              "png",
-              "webp",
-              "gif",
-              "heic",
-              "tiff",
-              "bmp",
-              "unknown"
-            ]
-          }
-        },
-        "required": [
-          "documentId",
-          "width",
-          "height",
-          "format"
-        ]
-      },
-      "TextDocument": {
-        "type": "object",
-        "properties": {
-          "documentId": {
-            "type": "string"
-          },
-          "charset": {
-            "type": "string"
-          },
-          "text": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "documentId",
-          "charset",
-          "text"
-        ]
-      },
       "Highlight": {
         "type": "object",
         "properties": {
@@ -689,28 +452,9 @@
             "type": "string"
           },
           "epubChapterOrder": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 9007199254740991
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "pdfPageNumber": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "exclusiveMinimum": 0,
-                "maximum": 9007199254740991
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
           },
           "offsetStart": {
             "type": "integer",
@@ -756,7 +500,6 @@
           "id",
           "documentId",
           "epubChapterOrder",
-          "pdfPageNumber",
           "offsetStart",
           "offsetEnd",
           "textSnippet",
@@ -959,7 +702,7 @@
       "post": {
         "operationId": "document.create",
         "summary": "Upload a document",
-        "description": "Multipart upload. Required field `file` (binary). Optional `sensitive` (boolean string). Returns the created document with status='processing'; processing runs asynchronously via Workflow.",
+        "description": "Multipart upload. Required field `file` (binary). Optional `sensitive` (boolean string). Returns the created document with status='processing'; processing runs asynchronously via Workflow. Only EPUB is currently supported.",
         "requestBody": {
           "required": true,
           "content": {
@@ -1274,7 +1017,7 @@
       "post": {
         "operationId": "progress.upsert",
         "summary": "Upsert reading progress",
-        "description": "Records the caller's last position within a document. Pass `epubChapterOrder` for EPUBs or `pdfPageNumber` for PDFs (exactly one). Overwrites any existing row for this (user, document).",
+        "description": "Records the caller's last position within an EPUB document via `epubChapterOrder`. Overwrites any existing row for this (user, document).",
         "responses": {
           "200": {
             "description": "Updated progress",
@@ -1287,7 +1030,7 @@
             }
           },
           "400": {
-            "description": "Invalid input or target mismatched with document kind"
+            "description": "Invalid input"
           },
           "401": {
             "description": "Not authenticated"
@@ -1307,13 +1050,11 @@
                     "type": "integer",
                     "minimum": 0,
                     "maximum": 9007199254740991
-                  },
-                  "pdfPageNumber": {
-                    "type": "integer",
-                    "exclusiveMinimum": 0,
-                    "maximum": 9007199254740991
                   }
-                }
+                },
+                "required": [
+                  "epubChapterOrder"
+                ]
               }
             }
           }
@@ -1415,170 +1156,11 @@
         ]
       }
     },
-    "/documents/{id}/pdf": {
-      "get": {
-        "operationId": "document.getPdfDetail",
-        "summary": "Get PDF detail (metadata + page summaries)",
-        "responses": {
-          "200": {
-            "description": "PDF detail",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PdfDetail"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Not authenticated"
-          },
-          "404": {
-            "description": "Not found or wrong kind"
-          },
-          "409": {
-            "description": "Document not yet processed"
-          }
-        },
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "id",
-            "required": true
-          }
-        ]
-      }
-    },
-    "/documents/{id}/pdf/pages/{page}": {
-      "get": {
-        "operationId": "document.getPdfPage",
-        "summary": "Get a single PDF page by page number",
-        "responses": {
-          "200": {
-            "description": "Page text and metadata",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PdfPage"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid page number"
-          },
-          "401": {
-            "description": "Not authenticated"
-          },
-          "404": {
-            "description": "Document or page not found"
-          },
-          "409": {
-            "description": "Document not yet processed"
-          }
-        },
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "id",
-            "required": true
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "page",
-            "required": true
-          }
-        ]
-      }
-    },
-    "/documents/{id}/image": {
-      "get": {
-        "operationId": "document.getImage",
-        "summary": "Get image metadata (width, height, format)",
-        "responses": {
-          "200": {
-            "description": "Image metadata",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ImageDocument"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Not authenticated"
-          },
-          "404": {
-            "description": "Not found or wrong kind"
-          },
-          "409": {
-            "description": "Document not yet processed"
-          }
-        },
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "id",
-            "required": true
-          }
-        ]
-      }
-    },
-    "/documents/{id}/text": {
-      "get": {
-        "operationId": "document.getText",
-        "summary": "Get decoded text content",
-        "responses": {
-          "200": {
-            "description": "Text content",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TextDocument"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Not authenticated"
-          },
-          "404": {
-            "description": "Not found or wrong kind"
-          },
-          "409": {
-            "description": "Document not yet processed"
-          }
-        },
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "id",
-            "required": true
-          }
-        ]
-      }
-    },
     "/highlights": {
       "post": {
         "operationId": "highlight.create",
         "summary": "Create a highlight or note on a document",
-        "description": "Creates a colour highlight (and optional note) anchored to either an EPUB chapter (`epubChapterOrder`) or a PDF page (`pdfPageNumber`). Offsets are character positions into the canonical text payload — `epub_chapter.html`'s textContent or `pdf_page.text`. Exactly one of the two target fields must be set.",
+        "description": "Creates a colour highlight (and optional note) anchored to an EPUB chapter (`epubChapterOrder`). Offsets are character positions into the chapter's canonical text — `epub_chapter.html`'s textContent.",
         "responses": {
           "201": {
             "description": "Created",
@@ -1591,7 +1173,7 @@
             }
           },
           "400": {
-            "description": "Invalid input or target mismatched with document kind"
+            "description": "Invalid input"
           },
           "401": {
             "description": "Not authenticated"
@@ -1614,11 +1196,6 @@
                   "epubChapterOrder": {
                     "type": "integer",
                     "minimum": 0,
-                    "maximum": 9007199254740991
-                  },
-                  "pdfPageNumber": {
-                    "type": "integer",
-                    "exclusiveMinimum": 0,
                     "maximum": 9007199254740991
                   },
                   "offsetStart": {
@@ -1653,6 +1230,7 @@
                 },
                 "required": [
                   "documentId",
+                  "epubChapterOrder",
                   "offsetStart",
                   "offsetEnd",
                   "textSnippet",
@@ -1666,7 +1244,7 @@
       "get": {
         "operationId": "highlight.list",
         "summary": "List highlights for a document",
-        "description": "Returns highlights owned by the caller for the given `documentId`, ordered by creation time. Optional `epubChapterOrder` or `pdfPageNumber` query params scope the result to a single chapter or page.",
+        "description": "Returns highlights owned by the caller for the given `documentId`, ordered by creation time. Optional `epubChapterOrder` query param scopes the result to a single chapter.",
         "parameters": [
           {
             "name": "documentId",
@@ -1683,15 +1261,6 @@
             "schema": {
               "type": "integer",
               "minimum": 0
-            }
-          },
-          {
-            "name": "pdfPageNumber",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 1
             }
           }
         ],

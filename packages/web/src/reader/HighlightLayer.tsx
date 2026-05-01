@@ -1,6 +1,6 @@
 import { useEffect, useState, type RefObject } from "react";
 import { Button, IconButton, Icons, SelectionToolbar, Sheet, useTheme } from "@bainder/ui";
-import { useHighlightLayer, type HighlightColor, type HighlightTarget } from "./useHighlightLayer";
+import { useHighlightLayer, type HighlightColor } from "./useHighlightLayer";
 
 const TOOLBAR_OFFSET_Y = 12;
 const TOOLBAR_HEIGHT_ESTIMATE = 44;
@@ -8,22 +8,22 @@ const TOOLBAR_HEIGHT_ESTIMATE = 44;
 export type HighlightLayerProps = {
   containerRef: RefObject<HTMLElement | null>;
   documentId: string;
-  target: HighlightTarget | null;
+  chapterOrder: number | null;
   contentKey: string;
 };
 
 export function HighlightLayer({
   containerRef,
   documentId,
-  target,
+  chapterOrder,
   contentKey,
 }: HighlightLayerProps) {
   const layer = useHighlightLayer({
     containerRef,
     documentId,
-    target,
+    chapterOrder,
     contentKey,
-    enabled: target !== null,
+    enabled: chapterOrder !== null,
   });
 
   // `noteDraft` is non-null while the user is editing or composing a note.
@@ -33,7 +33,7 @@ export function HighlightLayer({
     null,
   );
 
-  if (!target) return null;
+  if (chapterOrder === null) return null;
 
   return (
     <>

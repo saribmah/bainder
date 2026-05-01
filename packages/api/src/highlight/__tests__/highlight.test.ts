@@ -3,26 +3,25 @@ import { DocumentStorage } from "../../document/storage";
 import { createTestRuntime } from "../../document/__tests__/test-db";
 import { Highlight } from "../highlight";
 
-// Seed a `document` row directly. The highlight feature only needs the row
-// to exist with the right userId/kind; no parsing / R2 work is required to
+// Seed an EPUB `document` row directly. The highlight feature only needs the
+// row to exist with the right userId; no parsing / R2 work is required to
 // exercise highlight CRUD.
 const seedDocument = async (
   userId: string,
-  kind: "epub" | "pdf",
   overrides?: Partial<Parameters<typeof DocumentStorage.create>[0]>,
 ) =>
   DocumentStorage.create({
     id: crypto.randomUUID(),
     userId,
-    kind,
-    mimeType: kind === "epub" ? "application/epub+zip" : "application/pdf",
-    originalFilename: `seed.${kind}`,
+    kind: "epub",
+    mimeType: "application/epub+zip",
+    originalFilename: "seed.epub",
     sizeBytes: 100,
     sha256: "0".repeat(64),
     title: "Seed",
     sensitive: false,
     status: "processed",
-    r2KeyOriginal: `users/${userId}/documents/seed/original.${kind}`,
+    r2KeyOriginal: `users/${userId}/documents/seed/original.epub`,
     ...overrides,
   });
 
@@ -44,7 +43,7 @@ describe("Highlight feature", () => {
 
   it("creates a highlight on an EPUB chapter and lists it back", async () => {
     await runtime.runAs(userA, async () => {
-      const doc = await seedDocument(userA, "epub");
+      const doc = await seedDocument(userA);
 
       const created = await Highlight.create(userA, {
         documentId: doc.id,
@@ -58,7 +57,6 @@ describe("Highlight feature", () => {
       expect(created.id).toBeDefined();
       expect(created.documentId).toBe(doc.id);
       expect(created.epubChapterOrder).toBe(2);
-      expect(created.pdfPageNumber).toBeNull();
       expect(created.color).toBe("yellow");
       expect(created.note).toBeNull();
       expect(created.createdAt).toBe(created.updatedAt);
@@ -79,11 +77,11 @@ describe("Highlight feature", () => {
 
   it("creates a highlight with a note and updates color + note", async () => {
     await runtime.runAs(userA, async () => {
-      const doc = await seedDocument(userA, "pdf");
+      const doc = await seedDocument(userA);
 
       const created = await Highlight.create(userA, {
         documentId: doc.id,
-        pdfPageNumber: 5,
+        epubChapterOrder: 5,
         offsetStart: 0,
         offsetEnd: 12,
         textSnippet: "First words.",
@@ -101,24 +99,8 @@ describe("Highlight feature", () => {
     });
   });
 
-  it("rejects targeting an EPUB chapter on a PDF document", async () => {
-    await runtime.runAs(userA, async () => {
-      const pdf = await seedDocument(userA, "pdf");
-      await expect(
-        Highlight.create(userA, {
-          documentId: pdf.id,
-          epubChapterOrder: 1,
-          offsetStart: 0,
-          offsetEnd: 5,
-          textSnippet: "hello",
-          color: "yellow",
-        }),
-      ).rejects.toMatchObject({ name: "HighlightInvalidTargetError" });
-    });
-  });
-
   it("treats another user's highlight as not found", async () => {
-    const docA = await runtime.runAs(userA, () => seedDocument(userA, "epub"));
+    const docA = await runtime.runAs(userA, () => seedDocument(userA));
     const created = await runtime.runAs(userA, () =>
       Highlight.create(userA, {
         documentId: docA.id,
@@ -147,7 +129,7 @@ describe("Highlight feature", () => {
 
   it("removes a highlight", async () => {
     await runtime.runAs(userA, async () => {
-      const doc = await seedDocument(userA, "epub");
+      const doc = await seedDocument(userA);
       const created = await Highlight.create(userA, {
         documentId: doc.id,
         epubChapterOrder: 0,
@@ -168,7 +150,7 @@ describe("Highlight feature", () => {
 
   it("cascades deletes when the parent document is removed", async () => {
     await runtime.runAs(userA, async () => {
-      const doc = await seedDocument(userA, "epub");
+      const doc = await seedDocument(userA);
       await Highlight.create(userA, {
         documentId: doc.id,
         epubChapterOrder: 0,
@@ -181,7 +163,7 @@ describe("Highlight feature", () => {
       // we're testing FK cascade behaviour, not the asset cleanup.
       await DocumentStorage.remove(doc.id, userA);
       // Re-seed a doc to satisfy the ownership check on list.
-      const replacement = await seedDocument(userA, "epub");
+      const replacement = await seedDocument(userA);
       const survivors = await Highlight.list(userA, { documentId: replacement.id });
       expect(survivors).toEqual([]);
     });

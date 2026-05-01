@@ -6,21 +6,20 @@ import { Progress } from "../progress";
 
 const seedDocument = (
   userId: string,
-  kind: "epub" | "pdf",
   overrides?: Partial<Parameters<typeof DocumentStorage.create>[0]>,
 ) =>
   DocumentStorage.create({
     id: crypto.randomUUID(),
     userId,
-    kind,
-    mimeType: kind === "epub" ? "application/epub+zip" : "application/pdf",
-    originalFilename: `seed.${kind}`,
+    kind: "epub",
+    mimeType: "application/epub+zip",
+    originalFilename: "seed.epub",
     sizeBytes: 100,
     sha256: "0".repeat(64),
     title: "Seed",
     sensitive: false,
     status: "processed",
-    r2KeyOriginal: `users/${userId}/documents/seed/original.${kind}`,
+    r2KeyOriginal: `users/${userId}/documents/seed/original.epub`,
     ...overrides,
   });
 
@@ -40,11 +39,10 @@ describe("Progress feature", () => {
 
   it("upserts EPUB progress and surfaces it on Document.get", async () => {
     await runtime.runAs(userA, async () => {
-      const doc = await seedDocument(userA, "epub");
+      const doc = await seedDocument(userA);
 
       const first = await Progress.upsert(userA, doc.id, { epubChapterOrder: 3 });
       expect(first.epubChapterOrder).toBe(3);
-      expect(first.pdfPageNumber).toBeNull();
 
       const fetched = await Document.get(userA, doc.id);
       expect(fetched.progress).not.toBeNull();
@@ -59,26 +57,8 @@ describe("Progress feature", () => {
     });
   });
 
-  it("upserts PDF progress with pdfPageNumber", async () => {
-    await runtime.runAs(userA, async () => {
-      const doc = await seedDocument(userA, "pdf");
-      const created = await Progress.upsert(userA, doc.id, { pdfPageNumber: 42 });
-      expect(created.pdfPageNumber).toBe(42);
-      expect(created.epubChapterOrder).toBeNull();
-    });
-  });
-
-  it("rejects PDF progress on an EPUB document", async () => {
-    await runtime.runAs(userA, async () => {
-      const doc = await seedDocument(userA, "epub");
-      await expect(Progress.upsert(userA, doc.id, { pdfPageNumber: 1 })).rejects.toMatchObject({
-        name: "ProgressInvalidTargetError",
-      });
-    });
-  });
-
   it("treats another user's document as not found", async () => {
-    const doc = await runtime.runAs(userA, () => seedDocument(userA, "epub"));
+    const doc = await runtime.runAs(userA, () => seedDocument(userA));
     await runtime.runAs(userB, async () => {
       await expect(Progress.upsert(userB, doc.id, { epubChapterOrder: 1 })).rejects.toMatchObject({
         name: "DocumentNotFoundError",
@@ -87,11 +67,9 @@ describe("Progress feature", () => {
   });
 
   it("isolates progress across users on the same document", async () => {
-    const doc = await runtime.runAs(userA, () => seedDocument(userA, "epub"));
+    const doc = await runtime.runAs(userA, () => seedDocument(userA));
     // Both users need access — share by seeding under both.
-    const docB = await runtime.runAs(userB, () =>
-      seedDocument(userB, "epub", { id: crypto.randomUUID() }),
-    );
+    const docB = await runtime.runAs(userB, () => seedDocument(userB, { id: crypto.randomUUID() }));
 
     await runtime.runAs(userA, async () => {
       await Progress.upsert(userA, doc.id, { epubChapterOrder: 5 });
