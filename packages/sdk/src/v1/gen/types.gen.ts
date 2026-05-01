@@ -10,6 +10,12 @@ export type Example = {
   createdAt: string;
 };
 
+export type DocumentProgress = {
+  epubChapterOrder: number | null;
+  pdfPageNumber: number | null;
+  updatedAt: string;
+};
+
 export type Document = {
   id: string;
   kind: "epub" | "pdf" | "image" | "text" | "other";
@@ -21,6 +27,7 @@ export type Document = {
   sensitive: boolean;
   status: "uploading" | "processing" | "processed" | "failed";
   errorReason: string | null;
+  progress: DocumentProgress | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -29,6 +36,13 @@ export type DocumentStatus = {
   id: string;
   status: "uploading" | "processing" | "processed" | "failed";
   errorReason: string | null;
+};
+
+export type Progress = {
+  documentId: string;
+  epubChapterOrder: number | null;
+  pdfPageNumber: number | null;
+  updatedAt: string;
 };
 
 export type EpubBook = {
@@ -352,6 +366,41 @@ export type DocumentGetResponses = {
 
 export type DocumentGetResponse = DocumentGetResponses[keyof DocumentGetResponses];
 
+export type DocumentUpdateData = {
+  body: {
+    title: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/documents/{id}";
+};
+
+export type DocumentUpdateErrors = {
+  /**
+   * Invalid input
+   */
+  400: unknown;
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * Not found
+   */
+  404: unknown;
+};
+
+export type DocumentUpdateResponses = {
+  /**
+   * Updated document
+   */
+  200: Document;
+};
+
+export type DocumentUpdateResponse = DocumentUpdateResponses[keyof DocumentUpdateResponses];
+
 export type DocumentGetStatusData = {
   body?: never;
   path: {
@@ -440,6 +489,42 @@ export type DocumentGetAssetResponses = {
 };
 
 export type DocumentGetAssetResponse = DocumentGetAssetResponses[keyof DocumentGetAssetResponses];
+
+export type ProgressUpsertData = {
+  body: {
+    epubChapterOrder?: number;
+    pdfPageNumber?: number;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/documents/{id}/progress";
+};
+
+export type ProgressUpsertErrors = {
+  /**
+   * Invalid input or target mismatched with document kind
+   */
+  400: unknown;
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * Document not found
+   */
+  404: unknown;
+};
+
+export type ProgressUpsertResponses = {
+  /**
+   * Updated progress
+   */
+  200: Progress;
+};
+
+export type ProgressUpsertResponse = ProgressUpsertResponses[keyof ProgressUpsertResponses];
 
 export type DocumentGetEpubDetailData = {
   body?: never;

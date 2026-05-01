@@ -114,8 +114,12 @@ export function Reader() {
         <ReaderTocProvider>
           <ReaderHighlightsProvider>
             <ReaderShell doc={doc} onClose={handleClose}>
-              {doc.kind === "epub" && <EpubBody documentId={doc.id} />}
-              {doc.kind === "pdf" && <PdfBody documentId={doc.id} />}
+              {doc.kind === "epub" && (
+                <EpubBody documentId={doc.id} initialOrder={doc.progress?.epubChapterOrder ?? 0} />
+              )}
+              {doc.kind === "pdf" && (
+                <PdfBody documentId={doc.id} initialPage={doc.progress?.pdfPageNumber ?? 1} />
+              )}
               {doc.kind === "text" && <TextBody documentId={doc.id} />}
               {doc.kind === "image" && <ImageBody documentId={doc.id} />}
               {doc.kind === "other" && (
@@ -293,7 +297,7 @@ function ReaderShell({
 }
 
 // ─── EPUB body ──────────────────────────────────────────────────────────
-function EpubBody({ documentId }: { documentId: string }) {
+function EpubBody({ documentId, initialOrder }: { documentId: string; initialOrder: number }) {
   const { client, baseUrl } = useSdk();
   const [searchParams, setSearchParams] = useSearchParams();
   const { setPosition } = useReaderPosition();
@@ -303,7 +307,18 @@ function EpubBody({ documentId }: { documentId: string }) {
   const [error, setError] = useState<string | null>(null);
   const htmlRef = useRef<HTMLDivElement>(null);
 
-  const order = Math.max(0, Number(searchParams.get("chapter") ?? 0));
+  // Explicit URL param wins over saved progress so chapter navigation and
+  // shared/copied URLs behave predictably.
+  const orderParam = searchParams.get("chapter");
+  const order = orderParam !== null ? Math.max(0, Number(orderParam)) : Math.max(0, initialOrder);
+
+  // Reflect resumed position in the URL so other consumers (notes sheet,
+  // share, refresh) see the same source of truth.
+  useEffect(() => {
+    if (orderParam === null) {
+      setSearchParams({ chapter: String(order) }, { replace: true });
+    }
+  }, [orderParam, order, setSearchParams]);
 
   const navigateTo = useCallback(
     (next: number) => {
@@ -362,6 +377,14 @@ function EpubBody({ documentId }: { documentId: string }) {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [order]);
+
+  // Persist reading progress after the user stabilizes on a chapter for ~1s.
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      client.progress.upsert({ id: documentId, epubChapterOrder: order }).catch(() => {});
+    }, 1000);
+    return () => clearTimeout(handle);
+  }, [client, documentId, order]);
 
   // Publish position label for the sticky header.
   useEffect(() => {
@@ -422,7 +445,7 @@ function EpubBody({ documentId }: { documentId: string }) {
 }
 
 // ─── PDF body ───────────────────────────────────────────────────────────
-function PdfBody({ documentId }: { documentId: string }) {
+function PdfBody({ documentId, initialPage }: { documentId: string; initialPage: number }) {
   const { client } = useSdk();
   const [searchParams, setSearchParams] = useSearchParams();
   const { setPosition } = useReaderPosition();
@@ -431,7 +454,14 @@ function PdfBody({ documentId }: { documentId: string }) {
   const [error, setError] = useState<string | null>(null);
   const pageRef = useRef<HTMLPreElement>(null);
 
-  const pageNumber = Math.max(1, Number(searchParams.get("page") ?? 1));
+  const pageParam = searchParams.get("page");
+  const pageNumber = pageParam !== null ? Math.max(1, Number(pageParam)) : Math.max(1, initialPage);
+
+  useEffect(() => {
+    if (pageParam === null) {
+      setSearchParams({ page: String(pageNumber) }, { replace: true });
+    }
+  }, [pageParam, pageNumber, setSearchParams]);
 
   useEffect(() => {
     let cancelled = false;
@@ -471,6 +501,14 @@ function PdfBody({ documentId }: { documentId: string }) {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [pageNumber]);
+
+  // Persist reading progress after the user stabilizes on a page for ~1s.
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      client.progress.upsert({ id: documentId, pdfPageNumber: pageNumber }).catch(() => {});
+    }, 1000);
+    return () => clearTimeout(handle);
+  }, [client, documentId, pageNumber]);
 
   useEffect(() => {
     if (!detail) return;

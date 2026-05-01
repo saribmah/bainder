@@ -36,6 +36,13 @@
       "when": 1777733000000,
       "tag": "0004_add_highlight",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1777819000000,
+      "tag": "0005_add_progress",
+      "breakpoints": true
     }
   ]
 }

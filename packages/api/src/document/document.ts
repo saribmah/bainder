@@ -69,6 +69,18 @@ export namespace Document {
   export const Status = z.enum(["uploading", "processing", "processed", "failed"]);
   export type Status = z.infer<typeof Status>;
 
+  // Embedded reading-progress snapshot. Lives on Document because every
+  // list/get response wants it; the upsert path lives in the Progress
+  // feature. Null when the caller hasn't opened this document yet.
+  export const Progress = z
+    .object({
+      epubChapterOrder: z.number().int().nonnegative().nullable(),
+      pdfPageNumber: z.number().int().positive().nullable(),
+      updatedAt: z.string(),
+    })
+    .meta({ ref: "DocumentProgress" });
+  export type Progress = z.infer<typeof Progress>;
+
   export const Entity = z
     .object({
       id: z.string(),
@@ -81,6 +93,7 @@ export namespace Document {
       sensitive: z.boolean(),
       status: Status,
       errorReason: z.string().nullable(),
+      progress: Progress.nullable(),
       createdAt: z.string(),
       updatedAt: z.string(),
     })
@@ -98,6 +111,11 @@ export namespace Document {
 
   export const ListResponse = z.object({ items: z.array(Entity) });
   export type ListResponse = z.infer<typeof ListResponse>;
+
+  export const UpdateInput = z.object({
+    title: z.string().trim().min(1).max(200),
+  });
+  export type UpdateInput = z.infer<typeof UpdateInput>;
 
   export const ChaptersResponse = z.object({ items: z.array(Epub.ChapterSummary) });
   export type ChaptersResponse = z.infer<typeof ChaptersResponse>;
@@ -195,6 +213,15 @@ export namespace Document {
     // longer find. The D1 row can always be re-deleted.
     await DocumentAssetStore.removeAll(userId, id);
     await DocumentStorage.remove(id, userId);
+  };
+
+  export const update = async (userId: string, id: string, input: UpdateInput): Promise<Entity> => {
+    const updated = await DocumentStorage.updateTitle(id, userId, input.title);
+    if (!updated) throw new NotFoundError({ id });
+    // Refetch via the joined read so the response carries the up-to-date
+    // progress alongside the renamed title — the writer doesn't bother
+    // joining itself.
+    return get(userId, id);
   };
 
   export const getOriginal = async (

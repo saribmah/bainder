@@ -1,5 +1,5 @@
 import { and, desc, eq } from "drizzle-orm";
-import { document } from "../db/schema";
+import { document, progress } from "../db/schema";
 import { Instance } from "../instance";
 import type { Document } from "./document";
 
@@ -44,7 +44,13 @@ export namespace DocumentStorage {
 
   type EntityWithKey = Document.Entity & { userId: string; r2KeyOriginal: string };
 
-  export const toEntity = (row: EntityRow): EntityWithKey => ({
+  // Optional embedded progress, joined in by list/get and discarded by the
+  // workflow's getInternal path. Defaults to null, which is also the
+  // truthful state for a freshly-created (unread) row.
+  export const toEntity = (
+    row: EntityRow,
+    progress: Document.Progress | null = null,
+  ): EntityWithKey => ({
     id: row.id,
     userId: row.userId,
     kind: parseKind(row.kind),
@@ -56,6 +62,7 @@ export namespace DocumentStorage {
     sensitive: row.sensitive,
     status: parseStatus(row.status),
     errorReason: row.errorReason,
+    progress,
     r2KeyOriginal: row.r2KeyOriginal,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
@@ -109,28 +116,54 @@ export namespace DocumentStorage {
     return projectEntity(toEntity(row));
   };
 
+  // Joined select shape used by user-scoped list/get. The progress columns
+  // are nullable for documents the caller hasn't opened yet.
+  const entitySelectWithProgress = {
+    ...entitySelect,
+    progressEpubChapterOrder: progress.epubChapterOrder,
+    progressPdfPageNumber: progress.pdfPageNumber,
+    progressUpdatedAt: progress.updatedAt,
+  } as const;
+
+  type ProgressRow = {
+    progressEpubChapterOrder: number | null;
+    progressPdfPageNumber: number | null;
+    progressUpdatedAt: Date | null;
+  };
+
+  const projectProgress = (row: ProgressRow): Document.Progress | null =>
+    row.progressUpdatedAt
+      ? {
+          epubChapterOrder: row.progressEpubChapterOrder,
+          pdfPageNumber: row.progressPdfPageNumber,
+          updatedAt: row.progressUpdatedAt.toISOString(),
+        }
+      : null;
+
   export const get = async (
     id: string,
     userId: string,
   ): Promise<(Document.Entity & { r2KeyOriginal: string }) | null> => {
     const rows = await Instance.db
-      .select(entitySelect)
+      .select(entitySelectWithProgress)
       .from(document)
+      .leftJoin(progress, and(eq(progress.documentId, document.id), eq(progress.userId, userId)))
       .where(and(eq(document.id, id), eq(document.userId, userId)))
       .limit(1);
     const row = rows[0];
     if (!row) return null;
-    const entity = toEntity(row);
+    const entity = toEntity(row, projectProgress(row));
     return { ...projectEntity(entity), r2KeyOriginal: entity.r2KeyOriginal };
   };
 
   export const list = async (userId: string): Promise<Document.Entity[]> => {
     const rows = await Instance.db
-      .select(entitySelect)
+      .select(entitySelectWithProgress)
       .from(document)
+      .leftJoin(progress, and(eq(progress.documentId, document.id), eq(progress.userId, userId)))
       .where(eq(document.userId, userId))
       .orderBy(desc(document.createdAt));
-    return rows.map((r) => projectEntity(toEntity(r)));
+    return rows.map((r) => projectEntity(toEntity(r, projectProgress(r))));
   };
 
   export const remove = async (id: string, userId: string): Promise<boolean> => {
@@ -150,6 +183,23 @@ export namespace DocumentStorage {
       .update(document)
       .set({ title, status, updatedAt: new Date(), errorReason: null })
       .where(eq(document.id, id));
+  };
+
+  // User-facing rename. Scoped to the caller; returns null when the row is
+  // missing or owned by another user (same NotFoundError semantics as get).
+  export const updateTitle = async (
+    id: string,
+    userId: string,
+    title: string,
+  ): Promise<Document.Entity | null> => {
+    const rows = await Instance.db
+      .update(document)
+      .set({ title, updatedAt: new Date() })
+      .where(and(eq(document.id, id), eq(document.userId, userId)))
+      .returning(entitySelect);
+    const row = rows[0];
+    if (!row) return null;
+    return projectEntity(toEntity(row));
   };
 
   export const markProcessed = async (id: string, title: string | null): Promise<void> => {
@@ -198,6 +248,7 @@ export namespace DocumentStorage {
     sensitive: entity.sensitive,
     status: entity.status,
     errorReason: entity.errorReason,
+    progress: entity.progress,
     createdAt: entity.createdAt,
     updatedAt: entity.updatedAt,
   });

@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { describeRoute, resolver } from "hono-openapi";
+import { describeRoute, resolver, validator } from "hono-openapi";
 import type { AppEnv } from "../../app/context";
 import { Document } from "../../document/document";
 import { Epub } from "../../document/formats/epub/epub";
@@ -8,6 +8,7 @@ import { Pdf } from "../../document/formats/pdf/pdf";
 import { Text } from "../../document/formats/text/text";
 import { Instance } from "../../instance";
 import { requireAuth } from "../../middleware/auth";
+import { Progress } from "../../progress/progress";
 import { createErrorMapper } from "../error-mapper";
 
 const documentRouter = new Hono<AppEnv>();
@@ -174,6 +175,39 @@ documentRouter.get(
   },
 );
 
+documentRouter.patch(
+  "/:id",
+  describeRoute({
+    summary: "Update document metadata",
+    description: "Currently supports renaming via `title`. Other fields may follow.",
+    operationId: "document.update",
+    responses: {
+      200: {
+        description: "Updated document",
+        content: { "application/json": { schema: resolver(Document.Entity) } },
+      },
+      400: { description: "Invalid input" },
+      401: { description: "Not authenticated" },
+      404: { description: "Not found" },
+    },
+  }),
+  requireAuth,
+  validator("json", Document.UpdateInput),
+  async (c) => {
+    const id = c.req.param("id");
+    const body = c.req.valid("json");
+    const mapError = createErrorMapper([{ error: Document.NotFoundError, status: 404 }]);
+    try {
+      const entity = await Document.update(Instance.userId, id, body);
+      return c.json(entity);
+    } catch (error) {
+      const mapped = mapError(error);
+      if (!mapped) throw error;
+      return c.json(mapped.payload, mapped.status);
+    }
+  },
+);
+
 documentRouter.delete(
   "/:id",
   describeRoute({
@@ -254,6 +288,43 @@ documentRouter.get(
       "Content-Length": String(asset.size),
       "Cache-Control": "private, max-age=3600",
     });
+  },
+);
+
+documentRouter.post(
+  "/:id/progress",
+  describeRoute({
+    summary: "Upsert reading progress",
+    description:
+      "Records the caller's last position within a document. Pass `epubChapterOrder` for EPUBs or `pdfPageNumber` for PDFs (exactly one). Overwrites any existing row for this (user, document).",
+    operationId: "progress.upsert",
+    responses: {
+      200: {
+        description: "Updated progress",
+        content: { "application/json": { schema: resolver(Progress.Entity) } },
+      },
+      400: { description: "Invalid input or target mismatched with document kind" },
+      401: { description: "Not authenticated" },
+      404: { description: "Document not found" },
+    },
+  }),
+  requireAuth,
+  validator("json", Progress.UpsertInput),
+  async (c) => {
+    const id = c.req.param("id");
+    const body = c.req.valid("json");
+    const mapError = createErrorMapper([
+      { error: Document.NotFoundError, status: 404 },
+      { error: Progress.InvalidTargetError, status: 400 },
+    ]);
+    try {
+      const entity = await Progress.upsert(Instance.userId, id, body);
+      return c.json(entity);
+    } catch (error) {
+      const mapped = mapError(error);
+      if (!mapped) throw error;
+      return c.json(mapped.payload, mapped.status);
+    }
   },
 );
 

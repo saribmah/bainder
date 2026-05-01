@@ -312,6 +312,23 @@ describe("Document feature", () => {
     });
   });
 
+  it("renames a document and rejects renaming someone else's", async () => {
+    const created = await runtime.runAs(userA, () => uploadEpub(userA));
+
+    await runtime.runAs(userA, async () => {
+      const renamed = await Document.update(userA, created.id, { title: "My New Title" });
+      expect(renamed.title).toBe("My New Title");
+      const fetched = await Document.get(userA, created.id);
+      expect(fetched.title).toBe("My New Title");
+    });
+
+    await runtime.runAs(userB, async () => {
+      await expect(Document.update(userB, created.id, { title: "Hacked" })).rejects.toMatchObject({
+        name: "DocumentNotFoundError",
+      });
+    });
+  });
+
   it("rejects reading-format endpoints on the wrong kind", async () => {
     await runtime.runAs(userA, async () => {
       const created = await Document.create(

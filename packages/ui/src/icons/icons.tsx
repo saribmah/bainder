@@ -189,3 +189,25 @@ export const List = (p: IconProps) => (
     <circle cx="4.5" cy="18" r="1" fill="currentColor" stroke="none" />
   </Icon>
 );
+
+export const MoreVertical = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none" />
+  </Icon>
+);
+
+export const Trash = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M5 7h14M10 7V4h4v3M6 7l1 13a2 2 0 002 2h6a2 2 0 002-2l1-13" />
+    <path d="M10 11v7M14 11v7" />
+  </Icon>
+);
+
+export const Pencil = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M14.5 4.5l5 5L8 21H3v-5z" />
+    <path d="M13 6l5 5" />
+  </Icon>
+);
