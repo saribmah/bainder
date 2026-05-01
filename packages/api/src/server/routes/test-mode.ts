@@ -11,6 +11,31 @@ const testModeRouter = new Hono<AppEnv>();
 
 const mapNotEnabled = createErrorMapper([{ error: TestMode.NotEnabledError, status: 404 }]);
 
+testModeRouter.get(
+  "/status",
+  describeRoute({
+    summary: "[test-mode] Probe whether test mode is enabled",
+    description:
+      "Local-only. Gated by TEST_MODE=true. Returns {enabled: true} when on, 404 otherwise. Used by the @bainder/testing wrapper to skip suites when the dev server isn't running in test mode.",
+    responses: {
+      200: {
+        description: "Test mode is enabled",
+        content: { "application/json": { schema: resolver(TestMode.StatusResponse) } },
+      },
+      404: { description: "Test mode disabled" },
+    },
+  }),
+  async (c) => {
+    try {
+      return c.json(TestMode.status());
+    } catch (error) {
+      const mapped = mapNotEnabled(error);
+      if (!mapped) throw error;
+      return c.json(mapped.payload, mapped.status);
+    }
+  },
+);
+
 testModeRouter.post(
   "/sign-in",
   describeRoute({

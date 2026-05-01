@@ -40,7 +40,14 @@ import type {
   ExampleGetErrors,
   ExampleGetResponses,
   ExampleListResponses,
+  GetTestStatusErrors,
+  GetTestStatusResponses,
   HealthGetResponses,
+  PostTestResetErrors,
+  PostTestResetResponses,
+  PostTestSignInErrors,
+  PostTestSignInResponses,
+  TestModeSignInInput,
   UserMeErrors,
   UserMeResponses,
   UserUpdateErrors,
@@ -537,6 +544,67 @@ export class ApiClient extends HeyApiClient {
   constructor(args?: { client?: Client; key?: string }) {
     super(args);
     ApiClient.__registry.set(this, args?.key);
+  }
+
+  /**
+   * [test-mode] Probe whether test mode is enabled
+   *
+   * Local-only. Gated by TEST_MODE=true. Returns {enabled: true} when on, 404 otherwise. Used by the @bainder/testing wrapper to skip suites when the dev server isn't running in test mode.
+   */
+  public getTestStatus<ThrowOnError extends boolean = false>(
+    options?: Options<never, ThrowOnError>,
+  ) {
+    return (options?.client ?? this.client).get<
+      GetTestStatusResponses,
+      GetTestStatusErrors,
+      ThrowOnError
+    >({ url: "/__test__/status", ...options });
+  }
+
+  /**
+   * [test-mode] Mint a Better Auth session for any email
+   *
+   * Local-only. Gated by TEST_MODE=true. Creates the user if missing and returns a session token usable as `Authorization: Bearer <token>`. Returns 404 in production.
+   */
+  public postTestSignIn<ThrowOnError extends boolean = false>(
+    parameters: {
+      testModeSignInInput: TestModeSignInInput;
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [{ args: [{ key: "testModeSignInInput", map: "body" }] }],
+    );
+    return (options?.client ?? this.client).post<
+      PostTestSignInResponses,
+      PostTestSignInErrors,
+      ThrowOnError
+    >({
+      url: "/__test__/sign-in",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    });
+  }
+
+  /**
+   * [test-mode] Wipe all user data and R2 objects
+   *
+   * Local-only. Gated by TEST_MODE=true. Deletes every user (FK cascades to documents, sessions, etc.) and sweeps the `users/` R2 prefix. Returns 404 in production.
+   */
+  public postTestReset<ThrowOnError extends boolean = false>(
+    options?: Options<never, ThrowOnError>,
+  ) {
+    return (options?.client ?? this.client).post<
+      PostTestResetResponses,
+      PostTestResetErrors,
+      ThrowOnError
+    >({ url: "/__test__/reset", ...options });
   }
 
   private _example?: Example;

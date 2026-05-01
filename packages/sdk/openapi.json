@@ -633,6 +633,49 @@
           "createdAt",
           "updatedAt"
         ]
+      },
+      "TestModeStatusResponse": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "required": [
+          "enabled"
+        ]
+      },
+      "TestModeSignInResponse": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "sessionToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId",
+          "sessionToken"
+        ]
+      },
+      "TestModeSignInInput": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ]
       }
     }
   },
@@ -1309,6 +1352,75 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/__test__/status": {
+      "get": {
+        "operationId": "getTestStatus",
+        "summary": "[test-mode] Probe whether test mode is enabled",
+        "description": "Local-only. Gated by TEST_MODE=true. Returns {enabled: true} when on, 404 otherwise. Used by the @bainder/testing wrapper to skip suites when the dev server isn't running in test mode.",
+        "responses": {
+          "200": {
+            "description": "Test mode is enabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestModeStatusResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Test mode disabled"
+          }
+        }
+      }
+    },
+    "/__test__/sign-in": {
+      "post": {
+        "operationId": "postTestSignIn",
+        "summary": "[test-mode] Mint a Better Auth session for any email",
+        "description": "Local-only. Gated by TEST_MODE=true. Creates the user if missing and returns a session token usable as `Authorization: Bearer <token>`. Returns 404 in production.",
+        "responses": {
+          "200": {
+            "description": "Session minted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestModeSignInResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Test mode disabled"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestModeSignInInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/__test__/reset": {
+      "post": {
+        "operationId": "postTestReset",
+        "summary": "[test-mode] Wipe all user data and R2 objects",
+        "description": "Local-only. Gated by TEST_MODE=true. Deletes every user (FK cascades to documents, sessions, etc.) and sweeps the `users/` R2 prefix. Returns 404 in production.",
+        "responses": {
+          "204": {
+            "description": "State wiped"
+          },
+          "404": {
+            "description": "Test mode disabled"
           }
         }
       }
