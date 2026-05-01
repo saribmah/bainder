@@ -43,6 +43,14 @@ import type {
   GetTestStatusErrors,
   GetTestStatusResponses,
   HealthGetResponses,
+  HighlightCreateErrors,
+  HighlightCreateResponses,
+  HighlightDeleteErrors,
+  HighlightDeleteResponses,
+  HighlightListErrors,
+  HighlightListResponses,
+  HighlightUpdateErrors,
+  HighlightUpdateResponses,
   PostTestResetErrors,
   PostTestResetResponses,
   PostTestSignInErrors,
@@ -475,6 +483,155 @@ export class Document extends HeyApiClient {
   }
 }
 
+export class Highlight extends HeyApiClient {
+  /**
+   * List highlights for a document
+   *
+   * Returns highlights owned by the caller for the given `documentId`, ordered by creation time. Optional `epubChapterOrder` or `pdfPageNumber` query params scope the result to a single chapter or page.
+   */
+  public list<ThrowOnError extends boolean = false>(
+    parameters: {
+      documentId: string;
+      epubChapterOrder?: number;
+      pdfPageNumber?: number;
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "query", key: "documentId" },
+            { in: "query", key: "epubChapterOrder" },
+            { in: "query", key: "pdfPageNumber" },
+          ],
+        },
+      ],
+    );
+    return (options?.client ?? this.client).get<
+      HighlightListResponses,
+      HighlightListErrors,
+      ThrowOnError
+    >({
+      url: "/highlights",
+      ...options,
+      ...params,
+    });
+  }
+
+  /**
+   * Create a highlight or note on a document
+   *
+   * Creates a colour highlight (and optional note) anchored to either an EPUB chapter (`epubChapterOrder`) or a PDF page (`pdfPageNumber`). Offsets are character positions into the canonical text payload — `epub_chapter.html`'s textContent or `pdf_page.text`. Exactly one of the two target fields must be set.
+   */
+  public create<ThrowOnError extends boolean = false>(
+    parameters: {
+      documentId: string;
+      epubChapterOrder?: number;
+      pdfPageNumber?: number;
+      offsetStart: number;
+      offsetEnd: number;
+      textSnippet: string;
+      color: "pink" | "yellow" | "green" | "blue" | "purple";
+      note?: string;
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "body", key: "documentId" },
+            { in: "body", key: "epubChapterOrder" },
+            { in: "body", key: "pdfPageNumber" },
+            { in: "body", key: "offsetStart" },
+            { in: "body", key: "offsetEnd" },
+            { in: "body", key: "textSnippet" },
+            { in: "body", key: "color" },
+            { in: "body", key: "note" },
+          ],
+        },
+      ],
+    );
+    return (options?.client ?? this.client).post<
+      HighlightCreateResponses,
+      HighlightCreateErrors,
+      ThrowOnError
+    >({
+      url: "/highlights",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    });
+  }
+
+  /**
+   * Delete a highlight
+   */
+  public delete<ThrowOnError extends boolean = false>(
+    parameters: {
+      id: string;
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams([parameters], [{ args: [{ in: "path", key: "id" }] }]);
+    return (options?.client ?? this.client).delete<
+      HighlightDeleteResponses,
+      HighlightDeleteErrors,
+      ThrowOnError
+    >({
+      url: "/highlights/{id}",
+      ...options,
+      ...params,
+    });
+  }
+
+  /**
+   * Update a highlight's color or note
+   */
+  public update<ThrowOnError extends boolean = false>(
+    parameters: {
+      id: string;
+      color?: "pink" | "yellow" | "green" | "blue" | "purple";
+      note?: string | null;
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "id" },
+            { in: "body", key: "color" },
+            { in: "body", key: "note" },
+          ],
+        },
+      ],
+    );
+    return (options?.client ?? this.client).patch<
+      HighlightUpdateResponses,
+      HighlightUpdateErrors,
+      ThrowOnError
+    >({
+      url: "/highlights/{id}",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    });
+  }
+}
+
 export class User extends HeyApiClient {
   /**
    * Get the authenticated user
@@ -615,6 +772,11 @@ export class ApiClient extends HeyApiClient {
   private _document?: Document;
   get document(): Document {
     return (this._document ??= new Document({ client: this.client }));
+  }
+
+  private _highlight?: Highlight;
+  get highlight(): Highlight {
+    return (this._highlight ??= new Highlight({ client: this.client }));
   }
 
   private _user?: User;

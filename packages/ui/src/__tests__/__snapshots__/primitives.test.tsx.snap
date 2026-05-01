@@ -53,3 +53,9 @@ exports[`BookCover with src 1`] = `"<div role="img" aria-label="The Design of Ev
 exports[`Highlight default pink 1`] = `"<mark class="bd-highlight">Affordances define what actions are possible.</mark>"`;
 
 exports[`Highlight yellow 1`] = `"<mark class="bd-highlight bd-highlight-yellow">Signifiers</mark>"`;
+
+exports[`Skeleton rect default 1`] = `"<div role="presentation" aria-hidden="true" class="bd-skeleton bd-skeleton-rect" style="width:120px;height:16px"></div>"`;
+
+exports[`Skeleton circle 1`] = `"<div role="presentation" aria-hidden="true" class="bd-skeleton bd-skeleton-circle" style="width:32px;height:32px"></div>"`;
+
+exports[`Skeleton text 1`] = `"<div role="presentation" aria-hidden="true" class="bd-skeleton bd-skeleton-text" style="width:60%"></div>"`;

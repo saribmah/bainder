@@ -1,6 +1,16 @@
 import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Button, Card, Chip, Hairline, IconButton, Icons, Toast } from "@bainder/ui";
+import {
+  BookCover,
+  Button,
+  Card,
+  Chip,
+  Hairline,
+  IconButton,
+  Icons,
+  Skeleton,
+  Toast,
+} from "@bainder/ui";
 import type { Document } from "@bainder/sdk";
 import { authClient } from "../auth/auth.client";
 import { useSdk } from "../sdk";
@@ -12,6 +22,17 @@ const KIND_LABEL: Record<Document["kind"], string> = {
   text: "Text",
   other: "Other",
 };
+
+const KIND_GRADIENT: Record<Document["kind"], string> = {
+  epub: "linear-gradient(160deg, oklch(60% 0.18 35), oklch(40% 0.16 30))",
+  pdf: "linear-gradient(160deg, oklch(58% 0.13 250), oklch(38% 0.12 250))",
+  image: "linear-gradient(160deg, oklch(70% 0.14 160), oklch(50% 0.13 160))",
+  text: "linear-gradient(160deg, oklch(72% 0.10 90), oklch(52% 0.10 80))",
+  other: "linear-gradient(160deg, oklch(70% 0.02 240), oklch(50% 0.02 240))",
+};
+
+const COVER_W = 44;
+const COVER_H = 60;
 
 const ACCEPT_ATTR =
   ".pdf,.epub,.txt,.jpg,.jpeg,.png,.webp,.gif,application/pdf,application/epub+zip,text/plain,image/*";
@@ -105,7 +126,11 @@ export function Library() {
         {error && <p className="t-body-s mt-4 text-error">{error}</p>}
 
         {documents === null ? (
-          <p className="t-body-m mt-10 text-paper-500">Loading…</p>
+          <ul className="mt-10 flex flex-col gap-3" aria-label="Loading documents">
+            {Array.from({ length: 4 }, (_, i) => (
+              <DocumentRowSkeleton key={i} />
+            ))}
+          </ul>
         ) : isEmpty ? null : (
           <>
             {pending.length > 0 && (
@@ -283,6 +308,7 @@ function DocumentRow({ doc, onOpen }: { doc: Document; onOpen?: () => void }) {
             : undefined
         }
       >
+        <DocumentCover doc={doc} />
         <div className="min-w-0 flex-1">
           <div className="t-label-l truncate text-paper-900">{doc.title}</div>
           <div className="t-body-s mt-1 text-paper-500">{doc.originalFilename}</div>
@@ -299,6 +325,55 @@ function DocumentRow({ doc, onOpen }: { doc: Document; onOpen?: () => void }) {
             <Icons.Chevron size={16} />
           </IconButton>
         )}
+      </Card>
+    </li>
+  );
+}
+
+function DocumentCover({ doc }: { doc: Document }) {
+  const { client, baseUrl } = useSdk();
+  const [coverSrc, setCoverSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (doc.kind !== "epub" || doc.status !== "processed") return;
+    let cancelled = false;
+    client.document
+      .getEpubDetail({ id: doc.id })
+      .then((res) => {
+        if (cancelled) return;
+        const path = res.data?.book.coverImage;
+        if (path) setCoverSrc(`${baseUrl}/documents/${doc.id}/${path}`);
+      })
+      .catch(() => {
+        // Cover is best-effort; fall back to gradient.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [client, baseUrl, doc.id, doc.kind, doc.status]);
+
+  return (
+    <BookCover
+      width={COVER_W}
+      height={COVER_H}
+      src={coverSrc ?? undefined}
+      background={KIND_GRADIENT[doc.kind]}
+      alt=""
+      className="shrink-0"
+    />
+  );
+}
+
+function DocumentRowSkeleton() {
+  return (
+    <li>
+      <Card className="flex items-center gap-4 px-5 py-4">
+        <Skeleton width={COVER_W} height={COVER_H} className="shrink-0" />
+        <div className="min-w-0 flex-1 space-y-2">
+          <Skeleton width="55%" height={14} />
+          <Skeleton width="35%" height={12} />
+        </div>
+        <Skeleton shape="pill" width={56} height={24} />
       </Card>
     </li>
   );

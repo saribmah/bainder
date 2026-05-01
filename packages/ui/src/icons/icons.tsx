@@ -180,3 +180,12 @@ export const Quote = (p: IconProps) => (
     <path d="M7 7c-2 1-3 3-3 5h3v5H4V12c0-3 1-5 3-6zm9 0c-2 1-3 3-3 5h3v5h-3V12c0-3 1-5 3-6z" />
   </Icon>
 );
+
+export const List = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M9 6h11M9 12h11M9 18h11" />
+    <circle cx="4.5" cy="6" r="1" fill="currentColor" stroke="none" />
+    <circle cx="4.5" cy="12" r="1" fill="currentColor" stroke="none" />
+    <circle cx="4.5" cy="18" r="1" fill="currentColor" stroke="none" />
+  </Icon>
+);
