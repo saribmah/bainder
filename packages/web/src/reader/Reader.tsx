@@ -363,6 +363,14 @@ function EpubBody({ documentId }: { documentId: string }) {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [order]);
 
+  // Persist reading progress after the user stabilizes on a chapter for ~1s.
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      client.progress.upsert({ id: documentId, epubChapterOrder: order }).catch(() => {});
+    }, 1000);
+    return () => clearTimeout(handle);
+  }, [client, documentId, order]);
+
   // Publish position label for the sticky header.
   useEffect(() => {
     if (!detail) return;
@@ -471,6 +479,14 @@ function PdfBody({ documentId }: { documentId: string }) {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [pageNumber]);
+
+  // Persist reading progress after the user stabilizes on a page for ~1s.
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      client.progress.upsert({ id: documentId, pdfPageNumber: pageNumber }).catch(() => {});
+    }, 1000);
+    return () => clearTimeout(handle);
+  }, [client, documentId, pageNumber]);
 
   useEffect(() => {
     if (!detail) return;

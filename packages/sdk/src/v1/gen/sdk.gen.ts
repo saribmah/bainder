@@ -35,6 +35,8 @@ import type {
   DocumentGetTextResponses,
   DocumentListErrors,
   DocumentListResponses,
+  DocumentUpdateErrors,
+  DocumentUpdateResponses,
   ExampleCreateErrors,
   ExampleCreateResponses,
   ExampleGetErrors,
@@ -55,6 +57,8 @@ import type {
   PostTestResetResponses,
   PostTestSignInErrors,
   PostTestSignInResponses,
+  ProgressUpsertErrors,
+  ProgressUpsertResponses,
   TestModeSignInInput,
   UserMeErrors,
   UserMeResponses,
@@ -255,6 +259,45 @@ export class Document extends HeyApiClient {
       url: "/documents/{id}",
       ...options,
       ...params,
+    });
+  }
+
+  /**
+   * Update document metadata
+   *
+   * Currently supports renaming via `title`. Other fields may follow.
+   */
+  public update<ThrowOnError extends boolean = false>(
+    parameters: {
+      id: string;
+      title: string;
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "id" },
+            { in: "body", key: "title" },
+          ],
+        },
+      ],
+    );
+    return (options?.client ?? this.client).patch<
+      DocumentUpdateResponses,
+      DocumentUpdateErrors,
+      ThrowOnError
+    >({
+      url: "/documents/{id}",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
     });
   }
 
@@ -479,6 +522,49 @@ export class Document extends HeyApiClient {
       url: "/documents/{id}/text",
       ...options,
       ...params,
+    });
+  }
+}
+
+export class Progress extends HeyApiClient {
+  /**
+   * Upsert reading progress
+   *
+   * Records the caller's last position within a document. Pass `epubChapterOrder` for EPUBs or `pdfPageNumber` for PDFs (exactly one). Overwrites any existing row for this (user, document).
+   */
+  public upsert<ThrowOnError extends boolean = false>(
+    parameters: {
+      id: string;
+      epubChapterOrder?: number;
+      pdfPageNumber?: number;
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "id" },
+            { in: "body", key: "epubChapterOrder" },
+            { in: "body", key: "pdfPageNumber" },
+          ],
+        },
+      ],
+    );
+    return (options?.client ?? this.client).post<
+      ProgressUpsertResponses,
+      ProgressUpsertErrors,
+      ThrowOnError
+    >({
+      url: "/documents/{id}/progress",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
     });
   }
 }
@@ -772,6 +858,11 @@ export class ApiClient extends HeyApiClient {
   private _document?: Document;
   get document(): Document {
     return (this._document ??= new Document({ client: this.client }));
+  }
+
+  private _progress?: Progress;
+  get progress(): Progress {
+    return (this._progress ??= new Progress({ client: this.client }));
   }
 
   private _highlight?: Highlight;
