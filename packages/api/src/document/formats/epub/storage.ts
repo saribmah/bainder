@@ -1,4 +1,5 @@
 import { and, asc, eq } from "drizzle-orm";
+import { chunkForBindLimit } from "../../../db/chunk";
 import { document, epubBook, epubChapter } from "../../../db/schema";
 import { Instance } from "../../../instance";
 import { Epub } from "./epub";
@@ -154,12 +155,25 @@ export namespace EpubStorage {
     }));
 
     const db = Instance.db;
+    // Idempotent: a Workflow retry can re-enter this path after a partial
+    // success (e.g. book row inserted, chapter chunk failed). Without the
+    // pre-delete, retries would trip the epub_book primary-key constraint
+    // and surface as "Failed query: insert into epub_book" while masking
+    // the real underlying failure.
+    await db.delete(epubChapter).where(eq(epubChapter.documentId, input.documentId));
+    await db.delete(epubBook).where(eq(epubBook.documentId, input.documentId));
     await db.insert(epubBook).values(bookRow);
-    if (chapterRows.length > 0) {
-      await db.insert(epubChapter).values(chapterRows);
+    // 9 columns per chapter row × N rows would exceed D1's 100-bind-parameter
+    // ceiling for any non-trivial book. Chunk so each statement stays under it.
+    for (const chunk of chunkForBindLimit(chapterRows, EPUB_CHAPTER_PARAMS_PER_ROW)) {
+      await db.insert(epubChapter).values(chunk);
     }
     return toEntity(bookRow);
   };
+
+  // Keep in sync with the column list on `epub_chapter` (id, documentId,
+  // order, href, title, html, text, wordCount, linear).
+  const EPUB_CHAPTER_PARAMS_PER_ROW = 9;
 
   export const get = async (documentId: string, userId: string): Promise<Epub.Entity | null> => {
     const rows = await Instance.db
