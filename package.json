@@ -36,6 +36,7 @@
   "workspaces": {
     "packages": [
       "packages/api",
+      "packages/desktop",
       "packages/mobile",
       "packages/sdk",
       "packages/testing",

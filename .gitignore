@@ -22,6 +22,8 @@ coverage/
 # personal overrides.
 !packages/web/.env.development
 !packages/web/.env.production
+!packages/desktop/.env.development
+!packages/desktop/.env.production
 
 # Logs
 *.log
