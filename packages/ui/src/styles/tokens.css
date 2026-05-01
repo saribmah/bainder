@@ -3,65 +3,65 @@
 
 :root {
   /* paper neutrals */
-  --paper-50: oklch(99.2% 0.004 70);
-  --paper-100: oklch(97.4% 0.006 70);
-  --paper-200: oklch(94.2% 0.008 70);
-  --paper-300: oklch(89.0% 0.010 70);
-  --paper-400: oklch(78.0% 0.012 70);
-  --paper-500: oklch(60.0% 0.014 70);
-  --paper-600: oklch(46.0% 0.016 70);
-  --paper-700: oklch(33.0% 0.018 60);
-  --paper-800: oklch(22.0% 0.020 60);
-  --paper-900: oklch(14.0% 0.018 60);
+  --paper-50: #fefcfa;
+  --paper-100: #f9f6f2;
+  --paper-200: #efebe6;
+  --paper-300: #dfdad4;
+  --paper-400: #bcb6af;
+  --paper-500: #867f77;
+  --paper-600: #5e574f;
+  --paper-700: #3d332c;
+  --paper-800: #221811;
+  --paper-900: #0f0703;
 
   /* slate (cool UI) */
-  --slate-50: oklch(98.6% 0.003 240);
-  --slate-100: oklch(96.4% 0.005 240);
-  --slate-200: oklch(92.8% 0.007 240);
-  --slate-300: oklch(86.5% 0.009 240);
-  --slate-500: oklch(58.0% 0.012 240);
-  --slate-700: oklch(34.0% 0.014 240);
-  --slate-900: oklch(15.0% 0.012 240);
+  --slate-50: #f9fbfc;
+  --slate-100: #f0f4f6;
+  --slate-200: #e3e8eb;
+  --slate-300: #ced3d8;
+  --slate-500: #747b81;
+  --slate-700: #32393f;
+  --slate-900: #070c10;
 
   /* wine accent */
-  --wine-50: oklch(96.0% 0.018 20);
-  --wine-100: oklch(92.0% 0.040 20);
-  --wine-300: oklch(72.0% 0.110 22);
-  --wine-500: oklch(48.0% 0.140 22);
-  --wine-600: oklch(40.0% 0.130 22);
-  --wine-700: oklch(33.0% 0.110 22);
-  --wine-800: oklch(26.0% 0.085 22);
-  --wine-900: oklch(19.0% 0.060 22);
+  --wine-50: #feeded;
+  --wine-100: #fedbda;
+  --wine-300: #e18885;
+  --wine-500: #9d3438;
+  --wine-600: #7f1f26;
+  --wine-700: #62141a;
+  --wine-800: #450c10;
+  --wine-900: #290607;
 
   /* sepia */
-  --sepia-50: oklch(95.5% 0.022 75);
-  --sepia-100: oklch(92.0% 0.030 75);
-  --sepia-200: oklch(86.0% 0.035 75);
-  --sepia-700: oklch(35.0% 0.030 60);
-  --sepia-800: oklch(25.0% 0.025 55);
-  --sepia-900: oklch(17.0% 0.020 50);
+  --sepia-50: #f9eee0;
+  --sepia-100: #f1e2cf;
+  --sepia-200: #dfceb8;
+  --sepia-700: #46372b;
+  --sepia-800: #2b1f16;
+  --sepia-900: #170d08;
 
   /* night */
-  --night-50: oklch(96.0% 0.005 240);
-  --night-200: oklch(78.0% 0.008 240);
-  --night-500: oklch(50.0% 0.010 240);
-  --night-700: oklch(28.0% 0.012 240);
-  --night-800: oklch(20.0% 0.010 240);
-  --night-900: oklch(13.0% 0.008 240);
-  --night-950: oklch(9.0% 0.006 240);
+  --night-50: #eff2f5;
+  --night-200: #b3b8bc;
+  --night-500: #5e6468;
+  --night-700: #242a2e;
+  --night-800: #12171a;
+  --night-900: #05080a;
+  --night-950: #020303;
 
   /* highlights */
-  --hl-pink: oklch(82.0% 0.110 0);
-  --hl-yellow: oklch(90.0% 0.110 95);
-  --hl-green: oklch(85.0% 0.090 145);
-  --hl-blue: oklch(83.0% 0.080 230);
-  --hl-purple: oklch(80.0% 0.090 310);
+  --hl-pink: #ffa6c1;
+  --hl-yellow: #f5de87;
+  --hl-green: #a9deaa;
+  --hl-blue: #90d2f2;
+  --hl-purple: #d0aeea;
 
   /* status */
-  --success: oklch(52.0% 0.120 150);
-  --warning: oklch(70.0% 0.140 70);
-  --error: oklch(54.0% 0.180 25);
-  --info: oklch(50.0% 0.110 240);
+  --success: #287c42;
+  --warning: #d58d25;
+  --error: #c13234;
+  --info: #0e6a9b;
 
   /* fonts */
   --font-display: "Fraunces", "Times New Roman", serif;

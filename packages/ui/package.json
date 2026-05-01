@@ -7,6 +7,10 @@
   "exports": {
     "./package.json": "./package.json",
     ".": {
+      "react-native": {
+        "types": "./src/index.native.ts",
+        "default": "./src/index.native.ts"
+      },
       "types": "./src/index.ts",
       "default": "./src/index.ts"
     },
@@ -15,18 +19,34 @@
       "default": "./src/tokens/index.ts"
     },
     "./icons": {
+      "react-native": {
+        "types": "./src/icons/index.native.ts",
+        "default": "./src/icons/index.native.ts"
+      },
       "types": "./src/icons/index.ts",
       "default": "./src/icons/index.ts"
     },
     "./primitives": {
+      "react-native": {
+        "types": "./src/primitives/index.native.ts",
+        "default": "./src/primitives/index.native.ts"
+      },
       "types": "./src/primitives/index.ts",
       "default": "./src/primitives/index.ts"
     },
     "./theme": {
+      "react-native": {
+        "types": "./src/theme/index.native.ts",
+        "default": "./src/theme/index.native.ts"
+      },
       "types": "./src/theme/index.ts",
       "default": "./src/theme/index.ts"
     },
     "./reader": {
+      "react-native": {
+        "types": "./src/reader/index.native.ts",
+        "default": "./src/reader/index.native.ts"
+      },
       "types": "./src/reader/index.ts",
       "default": "./src/reader/index.ts"
     },
@@ -49,13 +69,23 @@
     "ts-check": "bunx --bun tsgo --noEmit -p tsconfig.json"
   },
   "peerDependencies": {
-    "react": "^19.0.0"
+    "react": "^19.0.0",
+    "react-native": ">=0.74.0",
+    "react-native-svg": ">=15.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react-native": {
+      "optional": true
+    },
+    "react-native-svg": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/bun": "^1.3.9",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
   }
 }

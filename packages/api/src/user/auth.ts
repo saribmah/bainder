@@ -1,3 +1,4 @@
+import { expo } from "@better-auth/expo";
 import { betterAuth, type BetterAuthOptions } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { bearer, emailOTP } from "better-auth/plugins";
@@ -24,10 +25,14 @@ export const createAuth = (env: RuntimeEnv) => {
     };
   }
 
-  const trustedOrigins = (env.TRUSTED_ORIGINS ?? "")
+  const configuredOrigins = (env.TRUSTED_ORIGINS ?? "")
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
+  // Mobile app deep-link scheme + Expo dev URLs. Without these the Expo client
+  // sign-out/social-callback requests are rejected as untrusted origins.
+  const mobileOrigins = ["bainder://", "bainder://*", "exp://", "exp://**"];
+  const trustedOrigins = [...configuredOrigins, ...mobileOrigins];
 
   return betterAuth({
     database: drizzleAdapter(db, { provider: "sqlite", schema }),
@@ -38,6 +43,9 @@ export const createAuth = (env: RuntimeEnv) => {
     emailAndPassword: { enabled: false },
     socialProviders,
     plugins: [
+      // Required for the Expo client plugin: handles native cookie/origin
+      // handling and OAuth deep-link redirects.
+      expo(),
       // Accepts the same session token as `Authorization: Bearer <token>`,
       // so non-browser callers (CLI, future MCP shim, mobile) authenticate
       // against the same session store the web app uses via cookies.
