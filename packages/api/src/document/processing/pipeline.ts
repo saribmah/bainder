@@ -1,15 +1,8 @@
 import { DocumentAssetStore } from "../asset-store";
-import { EpubStorage } from "../formats/epub/storage";
-import { ImageStorage } from "../formats/image/storage";
-import { PdfStorage } from "../formats/pdf/storage";
-import { TextStorage } from "../formats/text/storage";
 import { Epub } from "../formats/epub/epub";
-import type { Image } from "../formats/image/image";
+import { EpubStorage } from "../formats/epub/storage";
 import { DocumentStorage } from "../storage";
 import { parseEpubBytes, ParseFailure, type ParsedTocEntry } from "./parsers/epub";
-import { parseImageBytes } from "./parsers/image";
-import { parsePdfBytes } from "./parsers/pdf";
-import { parseTextBytes } from "./parsers/text";
 
 // Format-aware processing pipeline. Called from the Workflow (and from tests
 // via `processInline`). Reads the original blob from R2, dispatches to the
@@ -30,25 +23,7 @@ export const processDocument = async (documentId: string): Promise<void> => {
     throw new Error(`Original blob missing at ${row.r2KeyOriginal}`);
   }
 
-  let title: string | null = null;
-  switch (row.kindParsed) {
-    case "epub":
-      title = await processEpub(documentId, row.userId, bytes);
-      break;
-    case "pdf":
-      title = await processPdf(documentId, bytes);
-      break;
-    case "image":
-      await processImage(documentId, bytes);
-      break;
-    case "text":
-      await processText(documentId, bytes);
-      break;
-    case "other":
-      // Nothing to extract.
-      break;
-  }
-
+  const title = await processEpub(documentId, row.userId, bytes);
   await DocumentStorage.markProcessed(documentId, title);
 };
 
@@ -103,39 +78,6 @@ const processEpub = async (
   }
 
   return parsed.metadata.title || null;
-};
-
-const processPdf = async (documentId: string, bytes: Uint8Array): Promise<string | null> => {
-  const parsed = await parsePdfBytes(bytes);
-  await PdfStorage.create({
-    documentId,
-    metadata: {
-      pageCount: parsed.pageCount,
-      pdfTitle: parsed.metadata.pdfTitle,
-      pdfAuthor: parsed.metadata.pdfAuthor,
-      pdfProducer: parsed.metadata.pdfProducer,
-      pdfCreator: parsed.metadata.pdfCreator,
-      pdfMetadata: parsed.metadata.extra,
-    },
-    pages: parsed.pages,
-  });
-  return parsed.metadata.pdfTitle;
-};
-
-const processImage = async (documentId: string, bytes: Uint8Array): Promise<void> => {
-  const parsed = parseImageBytes(bytes);
-  // If we can't read dimensions, store a row with zero dimensions and
-  // `unknown` format rather than failing — the original blob is still
-  // serviceable via the raw route.
-  const width = parsed?.width ?? 0;
-  const height = parsed?.height ?? 0;
-  const format: Image.Format = parsed?.format ?? "unknown";
-  await ImageStorage.create({ documentId, width, height, format });
-};
-
-const processText = async (documentId: string, bytes: Uint8Array): Promise<void> => {
-  const parsed = parseTextBytes(bytes);
-  await TextStorage.create({ documentId, charset: parsed.charset, text: parsed.text });
 };
 
 // Flatten the EPUB TOC tree into the depth+parent representation used by the

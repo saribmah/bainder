@@ -149,17 +149,6 @@ const uploadEpub = (userId: string, bytes = buildEpub(), filename = "test.epub")
     inlineTrigger,
   );
 
-// Minimal valid PNG (1x1 transparent pixel) — enough to exercise the image
-// dimensions parser end-to-end.
-const onePxPng = (): Uint8Array =>
-  new Uint8Array([
-    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
-    0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4,
-    0x89, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9c, 0x63, 0x00, 0x01, 0x00, 0x00,
-    0x05, 0x00, 0x01, 0x0d, 0x0a, 0x2d, 0xb4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae,
-    0x42, 0x60, 0x82,
-  ]);
-
 describe("Document feature", () => {
   const userA = "user-a";
   const userB = "user-b";
@@ -256,6 +245,26 @@ describe("Document feature", () => {
     });
   });
 
+  it("rejects a PDF — only EPUB is supported for now", async () => {
+    await runtime.runAs(userA, async () => {
+      // "%PDF-1.4" header — the previous detector would have classified this
+      // as `pdf`; the EPUB-only gate must reject it.
+      const pdfBytes = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34, 0x0a]);
+      await expect(
+        Document.create(
+          {
+            userId: userA,
+            bytes: pdfBytes,
+            filename: "doc.pdf",
+            declaredMimeType: "application/pdf",
+            sensitive: false,
+          },
+          inlineTrigger,
+        ),
+      ).rejects.toMatchObject({ name: "DocumentUnsupportedFormatError" });
+    });
+  });
+
   it("marks the document as failed when EPUB parsing fails", async () => {
     await runtime.runAs(userA, async () => {
       // ZIP with the EPUB mimetype member but no container.xml — passes
@@ -329,24 +338,6 @@ describe("Document feature", () => {
     });
   });
 
-  it("rejects reading-format endpoints on the wrong kind", async () => {
-    await runtime.runAs(userA, async () => {
-      const created = await Document.create(
-        {
-          userId: userA,
-          bytes: onePxPng(),
-          filename: "pixel.png",
-          declaredMimeType: "image/png",
-          sensitive: false,
-        },
-        inlineTrigger,
-      );
-      await expect(Document.getEpubDetail(userA, created.id)).rejects.toMatchObject({
-        name: "DocumentWrongKindError",
-      });
-    });
-  });
-
   it("extracts EPUB images to R2 and rewrites chapter <img src> to assets/{name}", async () => {
     await runtime.runAs(userA, async () => {
       const created = await uploadEpub(userA, buildImageEpub(), "with-pics.epub");
@@ -368,52 +359,6 @@ describe("Document feature", () => {
     await runtime.runAs(userB, async () => {
       const asset = await Document.getAsset(userB, created.id, "cover.jpg");
       expect(asset).toBeNull();
-    });
-  });
-
-  it("processes an image upload and exposes dimensions", async () => {
-    await runtime.runAs(userA, async () => {
-      const created = await Document.create(
-        {
-          userId: userA,
-          bytes: onePxPng(),
-          filename: "pixel.png",
-          declaredMimeType: "image/png",
-          sensitive: false,
-        },
-        inlineTrigger,
-      );
-      const after = await Document.get(userA, created.id);
-      expect(after.kind).toBe("image");
-      expect(after.status).toBe("processed");
-
-      const image = await Document.getImage(userA, created.id);
-      expect(image.width).toBe(1);
-      expect(image.height).toBe(1);
-      expect(image.format).toBe("png");
-    });
-  });
-
-  it("processes a plain text upload", async () => {
-    await runtime.runAs(userA, async () => {
-      const bytes = new TextEncoder().encode("Hello, plain text.\nSecond line.");
-      const created = await Document.create(
-        {
-          userId: userA,
-          bytes,
-          filename: "notes.txt",
-          declaredMimeType: "text/plain",
-          sensitive: false,
-        },
-        inlineTrigger,
-      );
-      const after = await Document.get(userA, created.id);
-      expect(after.kind).toBe("text");
-      expect(after.status).toBe("processed");
-
-      const text = await Document.getText(userA, created.id);
-      expect(text.charset).toBe("utf-8");
-      expect(text.text).toContain("Hello, plain text.");
     });
   });
 

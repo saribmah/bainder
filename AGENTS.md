@@ -52,6 +52,7 @@ When asked to do specific kinds of work, read the matching recipe first:
 
 - [`.agents/add-feature.md`](./.agents/add-feature.md) — add a domain feature module
 - [`.agents/add-route.md`](./.agents/add-route.md) — add a route to an existing feature
+- [`.agents/add-format.md`](./.agents/add-format.md) — re-add a document format (PDF, image, text, …)
 - [`.agents/regenerate-sdk.md`](./.agents/regenerate-sdk.md) — refresh the SDK after API changes
 - [`.agents/add-storage-prisma.md`](./.agents/add-storage-prisma.md) — wire Prisma + Postgres
 - [`.agents/add-storage-d1.md`](./.agents/add-storage-d1.md) — wire Cloudflare D1

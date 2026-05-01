@@ -15,7 +15,7 @@ import {
 import type { Highlight } from "@bainder/sdk";
 import { buildEpubHtml } from "./buildEpubHtml.ts";
 import { inlineEpubAssets, type AssetCache } from "./inlineAssets.ts";
-import type { HighlightTarget, ReaderHighlights } from "./useReaderHighlights.ts";
+import type { ReaderHighlights } from "./useReaderHighlights.ts";
 
 type Rect = { top: number; left: number; width: number; height: number };
 
@@ -40,7 +40,6 @@ export type EpubHtmlBodyProps = {
   html: string;
   assetBase: string;
   theme: Theme;
-  target: HighlightTarget;
   highlights: Highlight[];
   contentKey: string;
   authedFetch: typeof fetch;
@@ -54,7 +53,6 @@ export function EpubHtmlBody({
   html,
   assetBase,
   theme,
-  target,
   highlights,
   contentKey,
   authedFetch,

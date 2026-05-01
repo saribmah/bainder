@@ -11,14 +11,13 @@ export type Example = {
 };
 
 export type DocumentProgress = {
-  epubChapterOrder: number | null;
-  pdfPageNumber: number | null;
+  epubChapterOrder: number;
   updatedAt: string;
 };
 
 export type Document = {
   id: string;
-  kind: "epub" | "pdf" | "image" | "text" | "other";
+  kind: "epub";
   mimeType: string;
   originalFilename: string;
   sizeBytes: number;
@@ -40,8 +39,7 @@ export type DocumentStatus = {
 
 export type Progress = {
   documentId: string;
-  epubChapterOrder: number | null;
-  pdfPageNumber: number | null;
+  epubChapterOrder: number;
   updatedAt: string;
 };
 
@@ -97,53 +95,10 @@ export type EpubChapter = {
   linear: boolean;
 };
 
-export type PdfDocument = {
-  documentId: string;
-  pageCount: number;
-  pdfTitle: string | null;
-  pdfAuthor: string | null;
-  pdfProducer: string | null;
-  pdfCreator: string | null;
-};
-
-export type PdfPageSummary = {
-  id: string;
-  documentId: string;
-  pageNumber: number;
-  wordCount: number;
-};
-
-export type PdfDetail = {
-  pdf: PdfDocument;
-  pages: Array<PdfPageSummary>;
-};
-
-export type PdfPage = {
-  id: string;
-  documentId: string;
-  pageNumber: number;
-  text: string;
-  wordCount: number;
-};
-
-export type ImageDocument = {
-  documentId: string;
-  width: number;
-  height: number;
-  format: "jpeg" | "png" | "webp" | "gif" | "heic" | "tiff" | "bmp" | "unknown";
-};
-
-export type TextDocument = {
-  documentId: string;
-  charset: string;
-  text: string;
-};
-
 export type Highlight = {
   id: string;
   documentId: string;
-  epubChapterOrder: number | null;
-  pdfPageNumber: number | null;
+  epubChapterOrder: number;
   offsetStart: number;
   offsetEnd: number;
   textSnippet: string;
@@ -492,8 +447,7 @@ export type DocumentGetAssetResponse = DocumentGetAssetResponses[keyof DocumentG
 
 export type ProgressUpsertData = {
   body: {
-    epubChapterOrder?: number;
-    pdfPageNumber?: number;
+    epubChapterOrder: number;
   };
   path: {
     id: string;
@@ -504,7 +458,7 @@ export type ProgressUpsertData = {
 
 export type ProgressUpsertErrors = {
   /**
-   * Invalid input or target mismatched with document kind
+   * Invalid input
    */
   400: unknown;
   /**
@@ -599,152 +553,12 @@ export type DocumentGetEpubChapterResponses = {
 export type DocumentGetEpubChapterResponse =
   DocumentGetEpubChapterResponses[keyof DocumentGetEpubChapterResponses];
 
-export type DocumentGetPdfDetailData = {
-  body?: never;
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/documents/{id}/pdf";
-};
-
-export type DocumentGetPdfDetailErrors = {
-  /**
-   * Not authenticated
-   */
-  401: unknown;
-  /**
-   * Not found or wrong kind
-   */
-  404: unknown;
-  /**
-   * Document not yet processed
-   */
-  409: unknown;
-};
-
-export type DocumentGetPdfDetailResponses = {
-  /**
-   * PDF detail
-   */
-  200: PdfDetail;
-};
-
-export type DocumentGetPdfDetailResponse =
-  DocumentGetPdfDetailResponses[keyof DocumentGetPdfDetailResponses];
-
-export type DocumentGetPdfPageData = {
-  body?: never;
-  path: {
-    id: string;
-    page: string;
-  };
-  query?: never;
-  url: "/documents/{id}/pdf/pages/{page}";
-};
-
-export type DocumentGetPdfPageErrors = {
-  /**
-   * Invalid page number
-   */
-  400: unknown;
-  /**
-   * Not authenticated
-   */
-  401: unknown;
-  /**
-   * Document or page not found
-   */
-  404: unknown;
-  /**
-   * Document not yet processed
-   */
-  409: unknown;
-};
-
-export type DocumentGetPdfPageResponses = {
-  /**
-   * Page text and metadata
-   */
-  200: PdfPage;
-};
-
-export type DocumentGetPdfPageResponse =
-  DocumentGetPdfPageResponses[keyof DocumentGetPdfPageResponses];
-
-export type DocumentGetImageData = {
-  body?: never;
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/documents/{id}/image";
-};
-
-export type DocumentGetImageErrors = {
-  /**
-   * Not authenticated
-   */
-  401: unknown;
-  /**
-   * Not found or wrong kind
-   */
-  404: unknown;
-  /**
-   * Document not yet processed
-   */
-  409: unknown;
-};
-
-export type DocumentGetImageResponses = {
-  /**
-   * Image metadata
-   */
-  200: ImageDocument;
-};
-
-export type DocumentGetImageResponse = DocumentGetImageResponses[keyof DocumentGetImageResponses];
-
-export type DocumentGetTextData = {
-  body?: never;
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/documents/{id}/text";
-};
-
-export type DocumentGetTextErrors = {
-  /**
-   * Not authenticated
-   */
-  401: unknown;
-  /**
-   * Not found or wrong kind
-   */
-  404: unknown;
-  /**
-   * Document not yet processed
-   */
-  409: unknown;
-};
-
-export type DocumentGetTextResponses = {
-  /**
-   * Text content
-   */
-  200: TextDocument;
-};
-
-export type DocumentGetTextResponse = DocumentGetTextResponses[keyof DocumentGetTextResponses];
-
 export type HighlightListData = {
   body?: never;
   path?: never;
   query: {
     documentId: string;
     epubChapterOrder?: number;
-    pdfPageNumber?: number;
   };
   url: "/highlights";
 };
@@ -778,8 +592,7 @@ export type HighlightListResponse = HighlightListResponses[keyof HighlightListRe
 export type HighlightCreateData = {
   body: {
     documentId: string;
-    epubChapterOrder?: number;
-    pdfPageNumber?: number;
+    epubChapterOrder: number;
     offsetStart: number;
     offsetEnd: number;
     textSnippet: string;
@@ -793,7 +606,7 @@ export type HighlightCreateData = {
 
 export type HighlightCreateErrors = {
   /**
-   * Invalid input or target mismatched with document kind
+   * Invalid input
    */
   400: unknown;
   /**

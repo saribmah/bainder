@@ -5,43 +5,8 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1777307511349,
-      "tag": "0000_init",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1777349444754,
-      "tag": "0001_thick_living_tribunal",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1777384476593,
-      "tag": "0002_tidy_viper",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1777643000000,
-      "tag": "0003_document_unification",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1777733000000,
-      "tag": "0004_add_highlight",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "6",
-      "when": 1777819000000,
-      "tag": "0005_add_progress",
+      "when": 1777667841390,
+      "tag": "0000_tough_vanisher",
       "breakpoints": true
     }
   ]

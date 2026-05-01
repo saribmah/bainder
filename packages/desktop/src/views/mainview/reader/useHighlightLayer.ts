@@ -13,10 +13,6 @@ import {
 
 export type HighlightColor = Highlight["color"];
 
-export type HighlightTarget =
-  | { kind: "epub"; chapterOrder: number }
-  | { kind: "pdf"; pageNumber: number };
-
 export type ActiveSelection = {
   rect: DOMRect;
   charRange: CharRange;
@@ -33,18 +29,18 @@ const colorClass = (color: HighlightColor): string =>
 // and exposes CRUD that persists via `client.highlight.*`.
 //
 // `contentKey` should change whenever the body's inner HTML/text is replaced
-// (chapter switch, page switch). The wrap effect re-runs and re-applies
-// marks for the new content.
+// (chapter switch). The wrap effect re-runs and re-applies marks for the
+// new content.
 export function useHighlightLayer({
   containerRef,
   documentId,
-  target,
+  chapterOrder,
   contentKey,
   enabled,
 }: {
   containerRef: RefObject<HTMLElement | null>;
   documentId: string;
-  target: HighlightTarget | null;
+  chapterOrder: number | null;
   contentKey: string;
   enabled: boolean;
 }) {
@@ -54,20 +50,15 @@ export function useHighlightLayer({
   const [selection, setSelection] = useState<ActiveSelection | null>(null);
   const [focusedId, setFocusedId] = useState<string | null>(null);
 
-  // ---- Fetch on target change ----------------------------------------------
+  // ---- Fetch on chapter change --------------------------------------------
   useEffect(() => {
-    if (!enabled || !target) {
+    if (!enabled || chapterOrder === null) {
       setHighlights([]);
       return;
     }
     let cancelled = false;
-    const query: { documentId: string; epubChapterOrder?: number; pdfPageNumber?: number } = {
-      documentId,
-    };
-    if (target.kind === "epub") query.epubChapterOrder = target.chapterOrder;
-    if (target.kind === "pdf") query.pdfPageNumber = target.pageNumber;
     client.highlight
-      .list(query)
+      .list({ documentId, epubChapterOrder: chapterOrder })
       .then((res) => {
         if (cancelled) return;
         setHighlights(res.data?.items ?? []);
@@ -79,7 +70,7 @@ export function useHighlightLayer({
     return () => {
       cancelled = true;
     };
-  }, [client, documentId, target, enabled]);
+  }, [client, documentId, chapterOrder, enabled]);
 
   // ---- Selection tracking --------------------------------------------------
   useEffect(() => {
@@ -93,7 +84,7 @@ export function useHighlightLayer({
       }
       const range = sel.getRangeAt(0);
       // Both ends must live inside the body container, otherwise the offsets
-      // wouldn't be meaningful against `chapter.html` / `page.text`.
+      // wouldn't be meaningful against `chapter.html`.
       if (!container.contains(range.startContainer) || !container.contains(range.endContainer)) {
         setSelection(null);
         return;
@@ -177,16 +168,15 @@ export function useHighlightLayer({
   // ---- CRUD ----------------------------------------------------------------
   const create = useCallback(
     async (color: HighlightColor, note?: string) => {
-      if (!target || !selection) return;
+      if (chapterOrder === null || !selection) return;
       const params: Parameters<typeof client.highlight.create>[0] = {
         documentId,
+        epubChapterOrder: chapterOrder,
         offsetStart: selection.charRange.start,
         offsetEnd: selection.charRange.end,
         textSnippet: selection.text,
         color,
       };
-      if (target.kind === "epub") params.epubChapterOrder = target.chapterOrder;
-      if (target.kind === "pdf") params.pdfPageNumber = target.pageNumber;
       if (note !== undefined) params.note = note;
 
       const res = await client.highlight.create(params);
@@ -198,7 +188,7 @@ export function useHighlightLayer({
       }
       clearSelection();
     },
-    [client, documentId, target, selection, clearSelection, refresh],
+    [client, documentId, chapterOrder, selection, clearSelection, refresh],
   );
 
   const update = useCallback(

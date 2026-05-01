@@ -20,19 +20,11 @@ import type {
   DocumentGetEpubDetailErrors,
   DocumentGetEpubDetailResponses,
   DocumentGetErrors,
-  DocumentGetImageErrors,
-  DocumentGetImageResponses,
-  DocumentGetPdfDetailErrors,
-  DocumentGetPdfDetailResponses,
-  DocumentGetPdfPageErrors,
-  DocumentGetPdfPageResponses,
   DocumentGetRawErrors,
   DocumentGetRawResponses,
   DocumentGetResponses,
   DocumentGetStatusErrors,
   DocumentGetStatusResponses,
-  DocumentGetTextErrors,
-  DocumentGetTextResponses,
   DocumentListErrors,
   DocumentListResponses,
   DocumentUpdateErrors,
@@ -183,7 +175,7 @@ export class Document extends HeyApiClient {
   /**
    * Upload a document
    *
-   * Multipart upload. Required field `file` (binary). Optional `sensitive` (boolean string). Returns the created document with status='processing'; processing runs asynchronously via Workflow.
+   * Multipart upload. Required field `file` (binary). Optional `sensitive` (boolean string). Returns the created document with status='processing'; processing runs asynchronously via Workflow. Only EPUB is currently supported.
    */
   public create<ThrowOnError extends boolean = false>(
     parameters: {
@@ -429,114 +421,18 @@ export class Document extends HeyApiClient {
       ...params,
     });
   }
-
-  /**
-   * Get PDF detail (metadata + page summaries)
-   */
-  public getPdfDetail<ThrowOnError extends boolean = false>(
-    parameters: {
-      id: string;
-    },
-    options?: Options<never, ThrowOnError>,
-  ) {
-    const params = buildClientParams([parameters], [{ args: [{ in: "path", key: "id" }] }]);
-    return (options?.client ?? this.client).get<
-      DocumentGetPdfDetailResponses,
-      DocumentGetPdfDetailErrors,
-      ThrowOnError
-    >({
-      url: "/documents/{id}/pdf",
-      ...options,
-      ...params,
-    });
-  }
-
-  /**
-   * Get a single PDF page by page number
-   */
-  public getPdfPage<ThrowOnError extends boolean = false>(
-    parameters: {
-      id: string;
-      page: string;
-    },
-    options?: Options<never, ThrowOnError>,
-  ) {
-    const params = buildClientParams(
-      [parameters],
-      [
-        {
-          args: [
-            { in: "path", key: "id" },
-            { in: "path", key: "page" },
-          ],
-        },
-      ],
-    );
-    return (options?.client ?? this.client).get<
-      DocumentGetPdfPageResponses,
-      DocumentGetPdfPageErrors,
-      ThrowOnError
-    >({
-      url: "/documents/{id}/pdf/pages/{page}",
-      ...options,
-      ...params,
-    });
-  }
-
-  /**
-   * Get image metadata (width, height, format)
-   */
-  public getImage<ThrowOnError extends boolean = false>(
-    parameters: {
-      id: string;
-    },
-    options?: Options<never, ThrowOnError>,
-  ) {
-    const params = buildClientParams([parameters], [{ args: [{ in: "path", key: "id" }] }]);
-    return (options?.client ?? this.client).get<
-      DocumentGetImageResponses,
-      DocumentGetImageErrors,
-      ThrowOnError
-    >({
-      url: "/documents/{id}/image",
-      ...options,
-      ...params,
-    });
-  }
-
-  /**
-   * Get decoded text content
-   */
-  public getText<ThrowOnError extends boolean = false>(
-    parameters: {
-      id: string;
-    },
-    options?: Options<never, ThrowOnError>,
-  ) {
-    const params = buildClientParams([parameters], [{ args: [{ in: "path", key: "id" }] }]);
-    return (options?.client ?? this.client).get<
-      DocumentGetTextResponses,
-      DocumentGetTextErrors,
-      ThrowOnError
-    >({
-      url: "/documents/{id}/text",
-      ...options,
-      ...params,
-    });
-  }
 }
 
 export class Progress extends HeyApiClient {
   /**
    * Upsert reading progress
    *
-   * Records the caller's last position within a document. Pass `epubChapterOrder` for EPUBs or `pdfPageNumber` for PDFs (exactly one). Overwrites any existing row for this (user, document).
+   * Records the caller's last position within an EPUB document via `epubChapterOrder`. Overwrites any existing row for this (user, document).
    */
   public upsert<ThrowOnError extends boolean = false>(
     parameters: {
       id: string;
-      epubChapterOrder?: number;
-      pdfPageNumber?: number;
+      epubChapterOrder: number;
     },
     options?: Options<never, ThrowOnError>,
   ) {
@@ -547,7 +443,6 @@ export class Progress extends HeyApiClient {
           args: [
             { in: "path", key: "id" },
             { in: "body", key: "epubChapterOrder" },
-            { in: "body", key: "pdfPageNumber" },
           ],
         },
       ],
@@ -573,13 +468,12 @@ export class Highlight extends HeyApiClient {
   /**
    * List highlights for a document
    *
-   * Returns highlights owned by the caller for the given `documentId`, ordered by creation time. Optional `epubChapterOrder` or `pdfPageNumber` query params scope the result to a single chapter or page.
+   * Returns highlights owned by the caller for the given `documentId`, ordered by creation time. Optional `epubChapterOrder` query param scopes the result to a single chapter.
    */
   public list<ThrowOnError extends boolean = false>(
     parameters: {
       documentId: string;
       epubChapterOrder?: number;
-      pdfPageNumber?: number;
     },
     options?: Options<never, ThrowOnError>,
   ) {
@@ -590,7 +484,6 @@ export class Highlight extends HeyApiClient {
           args: [
             { in: "query", key: "documentId" },
             { in: "query", key: "epubChapterOrder" },
-            { in: "query", key: "pdfPageNumber" },
           ],
         },
       ],
@@ -609,13 +502,12 @@ export class Highlight extends HeyApiClient {
   /**
    * Create a highlight or note on a document
    *
-   * Creates a colour highlight (and optional note) anchored to either an EPUB chapter (`epubChapterOrder`) or a PDF page (`pdfPageNumber`). Offsets are character positions into the canonical text payload — `epub_chapter.html`'s textContent or `pdf_page.text`. Exactly one of the two target fields must be set.
+   * Creates a colour highlight (and optional note) anchored to an EPUB chapter (`epubChapterOrder`). Offsets are character positions into the chapter's canonical text — `epub_chapter.html`'s textContent.
    */
   public create<ThrowOnError extends boolean = false>(
     parameters: {
       documentId: string;
-      epubChapterOrder?: number;
-      pdfPageNumber?: number;
+      epubChapterOrder: number;
       offsetStart: number;
       offsetEnd: number;
       textSnippet: string;
@@ -631,7 +523,6 @@ export class Highlight extends HeyApiClient {
           args: [
             { in: "body", key: "documentId" },
             { in: "body", key: "epubChapterOrder" },
-            { in: "body", key: "pdfPageNumber" },
             { in: "body", key: "offsetStart" },
             { in: "body", key: "offsetEnd" },
             { in: "body", key: "textSnippet" },

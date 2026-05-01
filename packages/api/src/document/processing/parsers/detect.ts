@@ -4,6 +4,9 @@ import type { Document } from "../../document";
 // MIME type alone — browsers send `application/octet-stream` more often than
 // not. The returned `mimeType` is the canonical one we'll persist; `kind` is
 // the bucket the workflow dispatches on.
+//
+// EPUB is currently the only accepted format. Other formats (PDF, images,
+// text) will be reintroduced one at a time — see `.agents/add-format.md`.
 export type FormatDetection = {
   kind: Document.Kind;
   mimeType: string;
@@ -20,126 +23,26 @@ export const detectFormat = (
   if (signature) return signature;
 
   const ext = extensionOf(filename);
-  if (ext) {
-    const byExt = matchExtension(ext, declaredMimeType);
-    if (byExt) return byExt;
+  if (ext === ".epub") {
+    return { kind: "epub", mimeType: "application/epub+zip" };
   }
 
   if (declaredMimeType) {
-    const byMime = matchMimeType(declaredMimeType);
-    if (byMime) return byMime;
+    const normalized = declaredMimeType.toLowerCase().split(";")[0].trim();
+    if (normalized === "application/epub+zip") {
+      return { kind: "epub", mimeType: "application/epub+zip" };
+    }
   }
 
   return null;
 };
 
 const matchSignature = (bytes: Uint8Array): FormatDetection | null => {
-  // PDF: starts with "%PDF-".
-  if (bytes.byteLength >= 5 && eq(bytes, 0, [0x25, 0x50, 0x44, 0x46, 0x2d])) {
-    return { kind: "pdf", mimeType: "application/pdf" };
-  }
   // ZIP: PK\x03\x04. EPUBs are ZIPs with an "application/epub+zip" mimetype
-  // file at the start. Not all ZIPs are EPUBs, but we accept any ZIP whose
-  // mimetype member declares the EPUB type.
+  // file at the start. Plain ZIPs are not accepted.
   if (bytes.byteLength >= 4 && eq(bytes, 0, [0x50, 0x4b, 0x03, 0x04])) {
     if (looksLikeEpubZip(bytes)) return { kind: "epub", mimeType: "application/epub+zip" };
-    // Plain ZIPs aren't supported as a primary format yet.
-    return null;
   }
-  // JPEG.
-  if (bytes.byteLength >= 3 && eq(bytes, 0, [0xff, 0xd8, 0xff])) {
-    return { kind: "image", mimeType: "image/jpeg" };
-  }
-  // PNG.
-  if (bytes.byteLength >= 8 && eq(bytes, 0, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) {
-    return { kind: "image", mimeType: "image/png" };
-  }
-  // GIF.
-  if (
-    bytes.byteLength >= 6 &&
-    (eq(bytes, 0, [0x47, 0x49, 0x46, 0x38, 0x37, 0x61]) ||
-      eq(bytes, 0, [0x47, 0x49, 0x46, 0x38, 0x39, 0x61]))
-  ) {
-    return { kind: "image", mimeType: "image/gif" };
-  }
-  // WebP: "RIFF" + 4 bytes size + "WEBP".
-  if (
-    bytes.byteLength >= 12 &&
-    eq(bytes, 0, [0x52, 0x49, 0x46, 0x46]) &&
-    eq(bytes, 8, [0x57, 0x45, 0x42, 0x50])
-  ) {
-    return { kind: "image", mimeType: "image/webp" };
-  }
-  // BMP.
-  if (bytes.byteLength >= 2 && eq(bytes, 0, [0x42, 0x4d])) {
-    return { kind: "image", mimeType: "image/bmp" };
-  }
-  // TIFF.
-  if (
-    bytes.byteLength >= 4 &&
-    (eq(bytes, 0, [0x49, 0x49, 0x2a, 0x00]) || eq(bytes, 0, [0x4d, 0x4d, 0x00, 0x2a]))
-  ) {
-    return { kind: "image", mimeType: "image/tiff" };
-  }
-  // HEIC / HEIF: ftyp box at offset 4, brand "heic", "heix", "mif1", "msf1".
-  if (
-    bytes.byteLength >= 12 &&
-    eq(bytes, 4, [0x66, 0x74, 0x79, 0x70]) &&
-    (eq(bytes, 8, [0x68, 0x65, 0x69, 0x63]) ||
-      eq(bytes, 8, [0x68, 0x65, 0x69, 0x78]) ||
-      eq(bytes, 8, [0x6d, 0x69, 0x66, 0x31]) ||
-      eq(bytes, 8, [0x6d, 0x73, 0x66, 0x31]))
-  ) {
-    return { kind: "image", mimeType: "image/heic" };
-  }
-  return null;
-};
-
-const matchExtension = (ext: string, mimeType: string | null): FormatDetection | null => {
-  switch (ext) {
-    case ".epub":
-      return { kind: "epub", mimeType: "application/epub+zip" };
-    case ".pdf":
-      return { kind: "pdf", mimeType: "application/pdf" };
-    case ".jpg":
-    case ".jpeg":
-      return { kind: "image", mimeType: "image/jpeg" };
-    case ".png":
-      return { kind: "image", mimeType: "image/png" };
-    case ".gif":
-      return { kind: "image", mimeType: "image/gif" };
-    case ".webp":
-      return { kind: "image", mimeType: "image/webp" };
-    case ".heic":
-      return { kind: "image", mimeType: "image/heic" };
-    case ".bmp":
-      return { kind: "image", mimeType: "image/bmp" };
-    case ".tif":
-    case ".tiff":
-      return { kind: "image", mimeType: "image/tiff" };
-    case ".txt":
-      return { kind: "text", mimeType: "text/plain" };
-    case ".md":
-    case ".markdown":
-      return { kind: "text", mimeType: "text/markdown" };
-    default:
-      // If the extension is unknown but the declared MIME suggests text,
-      // treat as text.
-      if (mimeType && mimeType.startsWith("text/")) {
-        return { kind: "text", mimeType };
-      }
-      return null;
-  }
-};
-
-const matchMimeType = (mimeType: string): FormatDetection | null => {
-  const normalized = mimeType.toLowerCase().split(";")[0].trim();
-  if (normalized === "application/pdf") return { kind: "pdf", mimeType: "application/pdf" };
-  if (normalized === "application/epub+zip") {
-    return { kind: "epub", mimeType: "application/epub+zip" };
-  }
-  if (normalized.startsWith("image/")) return { kind: "image", mimeType: normalized };
-  if (normalized.startsWith("text/")) return { kind: "text", mimeType: normalized };
   return null;
 };
 

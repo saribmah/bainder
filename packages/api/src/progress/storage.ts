@@ -8,23 +8,20 @@ export namespace ProgressStorage {
   export type EntityRow = {
     userId: string;
     documentId: string;
-    epubChapterOrder: number | null;
-    pdfPageNumber: number | null;
+    epubChapterOrder: number;
     updatedAt: Date;
   };
 
   export const toEntity = (row: EntityRow): Progress.Entity => ({
     documentId: row.documentId,
     epubChapterOrder: row.epubChapterOrder,
-    pdfPageNumber: row.pdfPageNumber,
     updatedAt: row.updatedAt.toISOString(),
   });
 
   export type UpsertInput = {
     userId: string;
     documentId: string;
-    epubChapterOrder: number | null;
-    pdfPageNumber: number | null;
+    epubChapterOrder: number;
   };
 
   export const upsert = async (input: UpsertInput): Promise<Progress.Entity> => {
@@ -33,7 +30,6 @@ export namespace ProgressStorage {
       userId: input.userId,
       documentId: input.documentId,
       epubChapterOrder: input.epubChapterOrder,
-      pdfPageNumber: input.pdfPageNumber,
       updatedAt: now,
     };
     await Instance.db
@@ -43,7 +39,6 @@ export namespace ProgressStorage {
         target: [progress.userId, progress.documentId],
         set: {
           epubChapterOrder: row.epubChapterOrder,
-          pdfPageNumber: row.pdfPageNumber,
           updatedAt: row.updatedAt,
         },
       });

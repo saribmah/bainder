@@ -13,15 +13,6 @@ export namespace Highlight {
   );
   export type NotFoundError = InstanceType<typeof NotFoundError>;
 
-  export const InvalidTargetError = NamedError.create(
-    "HighlightInvalidTargetError",
-    z.object({
-      documentKind: z.string(),
-      message: z.string().optional(),
-    }),
-  );
-  export type InvalidTargetError = InstanceType<typeof InvalidTargetError>;
-
   // ---- Schemas ----------------------------------------------------------
   export const Color = z.enum(["pink", "yellow", "green", "blue", "purple"]);
   export type Color = z.infer<typeof Color>;
@@ -36,8 +27,7 @@ export namespace Highlight {
     .object({
       id: z.string(),
       documentId: z.string(),
-      epubChapterOrder: z.number().int().nonnegative().nullable(),
-      pdfPageNumber: z.number().int().positive().nullable(),
+      epubChapterOrder: z.number().int().nonnegative(),
       offsetStart: z.number().int().nonnegative(),
       offsetEnd: z.number().int().nonnegative(),
       textSnippet: z.string(),
@@ -52,13 +42,10 @@ export namespace Highlight {
   export const ListResponse = z.object({ items: z.array(Entity) });
   export type ListResponse = z.infer<typeof ListResponse>;
 
-  // Exactly one of `epubChapterOrder` / `pdfPageNumber` must be present —
-  // checked at the route level (zod) and again at the storage CHECK.
   export const CreateInput = z
     .object({
       documentId: z.string().min(1),
-      epubChapterOrder: z.number().int().nonnegative().optional(),
-      pdfPageNumber: z.number().int().positive().optional(),
+      epubChapterOrder: z.number().int().nonnegative(),
       offsetStart: z.number().int().nonnegative(),
       offsetEnd: z.number().int().nonnegative(),
       textSnippet: z.string().min(1).max(MAX_SNIPPET_CHARS),
@@ -68,13 +55,7 @@ export namespace Highlight {
     .refine((v) => v.offsetStart <= v.offsetEnd, {
       message: "offsetStart must be <= offsetEnd",
       path: ["offsetEnd"],
-    })
-    .refine(
-      (v) =>
-        (v.epubChapterOrder !== undefined && v.pdfPageNumber === undefined) ||
-        (v.epubChapterOrder === undefined && v.pdfPageNumber !== undefined),
-      { message: "Exactly one of epubChapterOrder or pdfPageNumber must be set" },
-    );
+    });
   export type CreateInput = z.infer<typeof CreateInput>;
 
   export const UpdateInput = z
@@ -90,7 +71,6 @@ export namespace Highlight {
   export const ListQuery = z.object({
     documentId: z.string().min(1),
     epubChapterOrder: z.number().int().nonnegative().optional(),
-    pdfPageNumber: z.number().int().positive().optional(),
   });
   export type ListQuery = z.infer<typeof ListQuery>;
 
@@ -99,27 +79,13 @@ export namespace Highlight {
     // Confirm the document exists and is owned by the caller. Document.get
     // throws NotFoundError for both missing rows and rows owned by another
     // user, which is the right behaviour to surface.
-    const doc = await Document.get(userId, input.documentId);
-
-    if (input.epubChapterOrder !== undefined && doc.kind !== "epub") {
-      throw new InvalidTargetError({
-        documentKind: doc.kind,
-        message: "epubChapterOrder is only valid for EPUB documents",
-      });
-    }
-    if (input.pdfPageNumber !== undefined && doc.kind !== "pdf") {
-      throw new InvalidTargetError({
-        documentKind: doc.kind,
-        message: "pdfPageNumber is only valid for PDF documents",
-      });
-    }
+    await Document.get(userId, input.documentId);
 
     return HighlightStorage.create({
       id: crypto.randomUUID(),
       userId,
       documentId: input.documentId,
-      epubChapterOrder: input.epubChapterOrder ?? null,
-      pdfPageNumber: input.pdfPageNumber ?? null,
+      epubChapterOrder: input.epubChapterOrder,
       offsetStart: input.offsetStart,
       offsetEnd: input.offsetEnd,
       textSnippet: input.textSnippet,

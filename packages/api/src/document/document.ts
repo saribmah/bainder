@@ -3,18 +3,15 @@ import { NamedError } from "../utils/error";
 import { DocumentAssetStore } from "./asset-store";
 import { Epub } from "./formats/epub/epub";
 import { EpubStorage } from "./formats/epub/storage";
-import { Image } from "./formats/image/image";
-import { ImageStorage } from "./formats/image/storage";
-import { Pdf } from "./formats/pdf/pdf";
-import { PdfStorage } from "./formats/pdf/storage";
-import { Text } from "./formats/text/text";
-import { TextStorage } from "./formats/text/storage";
 import { detectFormat } from "./processing/parsers/detect";
 import { DocumentStorage } from "./storage";
 
 // User-visible binder primitive. One row per uploaded file. Format-specific
-// reading data (chapters, pages, dimensions, decoded text) lives in sibling
-// tables and is fetched via the dedicated format endpoints.
+// reading data (chapters) lives in sibling tables and is fetched via the
+// dedicated format endpoints.
+//
+// EPUB is currently the only supported format. New formats are reintroduced
+// one at a time via `.agents/add-format.md`.
 export namespace Document {
   // ---- Errors -----------------------------------------------------------
   export const NotFoundError = NamedError.create(
@@ -63,7 +60,7 @@ export namespace Document {
   export type UnsupportedFormatError = InstanceType<typeof UnsupportedFormatError>;
 
   // ---- Schemas ----------------------------------------------------------
-  export const Kind = z.enum(["epub", "pdf", "image", "text", "other"]);
+  export const Kind = z.enum(["epub"]);
   export type Kind = z.infer<typeof Kind>;
 
   export const Status = z.enum(["uploading", "processing", "processed", "failed"]);
@@ -74,8 +71,7 @@ export namespace Document {
   // feature. Null when the caller hasn't opened this document yet.
   export const Progress = z
     .object({
-      epubChapterOrder: z.number().int().nonnegative().nullable(),
-      pdfPageNumber: z.number().int().positive().nullable(),
+      epubChapterOrder: z.number().int().nonnegative(),
       updatedAt: z.string(),
     })
     .meta({ ref: "DocumentProgress" });
@@ -119,9 +115,6 @@ export namespace Document {
 
   export const ChaptersResponse = z.object({ items: z.array(Epub.ChapterSummary) });
   export type ChaptersResponse = z.infer<typeof ChaptersResponse>;
-
-  export const PdfPagesResponse = z.object({ items: z.array(Pdf.PageSummary) });
-  export type PdfPagesResponse = z.infer<typeof PdfPagesResponse>;
 
   // ---- Operations -------------------------------------------------------
   export type CreateInput = {
@@ -268,47 +261,6 @@ export namespace Document {
     return chapter;
   };
 
-  export const getPdfDetail = async (userId: string, id: string): Promise<Pdf.Detail> => {
-    const entity = await getProcessed(userId, id, "pdf");
-    const [pdf, pages] = await Promise.all([
-      PdfStorage.get(id, userId),
-      PdfStorage.listPageSummaries(id, userId),
-    ]);
-    if (!pdf) {
-      throw new NotProcessedError({ id, status: entity.status, message: "PDF row missing" });
-    }
-    return { pdf, pages: pages ?? [] };
-  };
-
-  export const getPdfPage = async (
-    userId: string,
-    id: string,
-    pageNumber: number,
-  ): Promise<Pdf.Page> => {
-    await getProcessed(userId, id, "pdf");
-    const page = await PdfStorage.getPage(id, pageNumber, userId);
-    if (!page) throw new Pdf.PageNotFoundError({ documentId: id, pageNumber });
-    return page;
-  };
-
-  export const getImage = async (userId: string, id: string): Promise<Image.Entity> => {
-    const entity = await getProcessed(userId, id, "image");
-    const image = await ImageStorage.get(id, userId);
-    if (!image) {
-      throw new NotProcessedError({ id, status: entity.status, message: "Image row missing" });
-    }
-    return image;
-  };
-
-  export const getText = async (userId: string, id: string): Promise<Text.Entity> => {
-    const entity = await getProcessed(userId, id, "text");
-    const text = await TextStorage.get(id, userId);
-    if (!text) {
-      throw new NotProcessedError({ id, status: entity.status, message: "Text row missing" });
-    }
-    return text;
-  };
-
   // ---- Helpers (feature-local) ------------------------------------------
   const getProcessed = async (userId: string, id: string, expected: Kind): Promise<Entity> => {
     const entity = await DocumentStorage.get(id, userId);
@@ -338,23 +290,12 @@ export namespace Document {
     return stem.trim() || filename || "Untitled";
   };
 
-  const extensionFor = (kind: Kind, filename: string): string => {
+  const extensionFor = (_kind: Kind, filename: string): string => {
     const dot = filename.lastIndexOf(".");
     if (dot > 0) {
       const ext = filename.slice(dot).toLowerCase();
       if (/^\.[a-z0-9]{1,8}$/.test(ext)) return ext;
     }
-    switch (kind) {
-      case "epub":
-        return ".epub";
-      case "pdf":
-        return ".pdf";
-      case "image":
-        return ".bin";
-      case "text":
-        return ".txt";
-      default:
-        return ".bin";
-    }
+    return ".epub";
   };
 }

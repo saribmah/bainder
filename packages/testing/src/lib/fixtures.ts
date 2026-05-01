@@ -101,58 +101,6 @@ export const buildEpubWithImage = (): Uint8Array =>
 export const buildBrokenEpub = (): Uint8Array =>
   zipSync({ mimetype: strToU8("application/epub+zip") });
 
-// Minimal valid PNG — 1×1 transparent pixel. Real PNG header + IHDR + minimal
-// IDAT + IEND. Pixel data isn't checked, only dimensions are read from IHDR.
-export const onePxPng = (): Uint8Array =>
-  new Uint8Array([
-    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
-    0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4,
-    0x89, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9c, 0x63, 0x00, 0x01, 0x00, 0x00,
-    0x05, 0x00, 0x01, 0x0d, 0x0a, 0x2d, 0xb4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae,
-    0x42, 0x60, 0x82,
-  ]);
-
-// Minimal single-page PDF with one Type1 font and one text-showing operator.
-// pdf.js auto-recovers slightly off xref offsets, so the exact byte counts
-// here are tolerant.
-const pdfSource = `%PDF-1.4
-1 0 obj
-<< /Type /Catalog /Pages 2 0 R >>
-endobj
-2 0 obj
-<< /Type /Pages /Kids [3 0 R] /Count 1 >>
-endobj
-3 0 obj
-<< /Type /Page
-   /Parent 2 0 R
-   /MediaBox [0 0 612 792]
-   /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >>
-   /Contents 4 0 R
->>
-endobj
-4 0 obj
-<< /Length 44 >>
-stream
-BT /F1 24 Tf 100 700 Td (Bainder PDF) Tj ET
-endstream
-endobj
-xref
-0 5
-0000000000 65535 f
-0000000010 00000 n
-0000000060 00000 n
-0000000112 00000 n
-0000000282 00000 n
-trailer << /Root 1 0 R /Size 5 >>
-startxref
-372
-%%EOF
-`;
-
-export const buildPdf = (): Uint8Array => new TextEncoder().encode(pdfSource);
-
-export const buildText = (content: string): Uint8Array => new TextEncoder().encode(content);
-
 // Wrap a Uint8Array as a File the SDK's multipart serializer can accept.
 export const asFile = (bytes: Uint8Array, filename: string, mimeType: string): File =>
   new File([new Uint8Array(bytes)], filename, { type: mimeType });

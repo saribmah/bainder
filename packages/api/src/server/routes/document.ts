@@ -3,9 +3,6 @@ import { describeRoute, resolver, validator } from "hono-openapi";
 import type { AppEnv } from "../../app/context";
 import { Document } from "../../document/document";
 import { Epub } from "../../document/formats/epub/epub";
-import { Image } from "../../document/formats/image/image";
-import { Pdf } from "../../document/formats/pdf/pdf";
-import { Text } from "../../document/formats/text/text";
 import { Instance } from "../../instance";
 import { requireAuth } from "../../middleware/auth";
 import { Progress } from "../../progress/progress";
@@ -20,7 +17,7 @@ documentRouter.post(
   describeRoute({
     summary: "Upload a document",
     description:
-      "Multipart upload. Required field `file` (binary). Optional `sensitive` (boolean string). Returns the created document with status='processing'; processing runs asynchronously via Workflow.",
+      "Multipart upload. Required field `file` (binary). Optional `sensitive` (boolean string). Returns the created document with status='processing'; processing runs asynchronously via Workflow. Only EPUB is currently supported.",
     operationId: "document.create",
     requestBody: {
       required: true,
@@ -296,14 +293,14 @@ documentRouter.post(
   describeRoute({
     summary: "Upsert reading progress",
     description:
-      "Records the caller's last position within a document. Pass `epubChapterOrder` for EPUBs or `pdfPageNumber` for PDFs (exactly one). Overwrites any existing row for this (user, document).",
+      "Records the caller's last position within an EPUB document via `epubChapterOrder`. Overwrites any existing row for this (user, document).",
     operationId: "progress.upsert",
     responses: {
       200: {
         description: "Updated progress",
         content: { "application/json": { schema: resolver(Progress.Entity) } },
       },
-      400: { description: "Invalid input or target mismatched with document kind" },
+      400: { description: "Invalid input" },
       401: { description: "Not authenticated" },
       404: { description: "Document not found" },
     },
@@ -313,10 +310,7 @@ documentRouter.post(
   async (c) => {
     const id = c.req.param("id");
     const body = c.req.valid("json");
-    const mapError = createErrorMapper([
-      { error: Document.NotFoundError, status: 404 },
-      { error: Progress.InvalidTargetError, status: 400 },
-    ]);
+    const mapError = createErrorMapper([{ error: Document.NotFoundError, status: 404 }]);
     try {
       const entity = await Progress.upsert(Instance.userId, id, body);
       return c.json(entity);
@@ -396,135 +390,6 @@ documentRouter.get(
     try {
       const chapter = await Document.getEpubChapter(Instance.userId, id, order);
       return c.json(chapter);
-    } catch (error) {
-      const mapped = mapError(error);
-      if (!mapped) throw error;
-      return c.json(mapped.payload, mapped.status);
-    }
-  },
-);
-
-documentRouter.get(
-  "/:id/pdf",
-  describeRoute({
-    summary: "Get PDF detail (metadata + page summaries)",
-    operationId: "document.getPdfDetail",
-    responses: {
-      200: {
-        description: "PDF detail",
-        content: { "application/json": { schema: resolver(Pdf.Detail) } },
-      },
-      401: { description: "Not authenticated" },
-      404: { description: "Not found or wrong kind" },
-      409: { description: "Document not yet processed" },
-    },
-  }),
-  requireAuth,
-  async (c) => {
-    const id = c.req.param("id");
-    const mapError = createErrorMapper(formatErrorMappings);
-    try {
-      const detail = await Document.getPdfDetail(Instance.userId, id);
-      return c.json(detail);
-    } catch (error) {
-      const mapped = mapError(error);
-      if (!mapped) throw error;
-      return c.json(mapped.payload, mapped.status);
-    }
-  },
-);
-
-documentRouter.get(
-  "/:id/pdf/pages/:page",
-  describeRoute({
-    summary: "Get a single PDF page by page number",
-    operationId: "document.getPdfPage",
-    responses: {
-      200: {
-        description: "Page text and metadata",
-        content: { "application/json": { schema: resolver(Pdf.Page) } },
-      },
-      400: { description: "Invalid page number" },
-      401: { description: "Not authenticated" },
-      404: { description: "Document or page not found" },
-      409: { description: "Document not yet processed" },
-    },
-  }),
-  requireAuth,
-  async (c) => {
-    const id = c.req.param("id");
-    const pageRaw = c.req.param("page");
-    const pageNumber = Number(pageRaw);
-    if (!Number.isInteger(pageNumber) || pageNumber < 1) {
-      return c.json({ message: "Invalid page number" }, 400);
-    }
-    const mapError = createErrorMapper([
-      ...formatErrorMappings,
-      { error: Pdf.PageNotFoundError, status: 404 },
-    ]);
-    try {
-      const page = await Document.getPdfPage(Instance.userId, id, pageNumber);
-      return c.json(page);
-    } catch (error) {
-      const mapped = mapError(error);
-      if (!mapped) throw error;
-      return c.json(mapped.payload, mapped.status);
-    }
-  },
-);
-
-documentRouter.get(
-  "/:id/image",
-  describeRoute({
-    summary: "Get image metadata (width, height, format)",
-    operationId: "document.getImage",
-    responses: {
-      200: {
-        description: "Image metadata",
-        content: { "application/json": { schema: resolver(Image.Entity) } },
-      },
-      401: { description: "Not authenticated" },
-      404: { description: "Not found or wrong kind" },
-      409: { description: "Document not yet processed" },
-    },
-  }),
-  requireAuth,
-  async (c) => {
-    const id = c.req.param("id");
-    const mapError = createErrorMapper(formatErrorMappings);
-    try {
-      const image = await Document.getImage(Instance.userId, id);
-      return c.json(image);
-    } catch (error) {
-      const mapped = mapError(error);
-      if (!mapped) throw error;
-      return c.json(mapped.payload, mapped.status);
-    }
-  },
-);
-
-documentRouter.get(
-  "/:id/text",
-  describeRoute({
-    summary: "Get decoded text content",
-    operationId: "document.getText",
-    responses: {
-      200: {
-        description: "Text content",
-        content: { "application/json": { schema: resolver(Text.Entity) } },
-      },
-      401: { description: "Not authenticated" },
-      404: { description: "Not found or wrong kind" },
-      409: { description: "Document not yet processed" },
-    },
-  }),
-  requireAuth,
-  async (c) => {
-    const id = c.req.param("id");
-    const mapError = createErrorMapper(formatErrorMappings);
-    try {
-      const text = await Document.getText(Instance.userId, id);
-      return c.json(text);
     } catch (error) {
       const mapped = mapError(error);
       if (!mapped) throw error;

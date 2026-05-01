@@ -2,10 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import type { ApiClient, Highlight } from "@bainder/sdk";
 import type { HighlightColor } from "@bainder/ui";
 
-export type HighlightTarget =
-  | { kind: "epub"; chapterOrder: number }
-  | { kind: "pdf"; pageNumber: number };
-
 export type ReaderHighlights = {
   highlights: Highlight[];
   reload: () => void;
@@ -24,30 +20,25 @@ export type ReaderHighlights = {
 export function useReaderHighlights({
   client,
   documentId,
-  target,
+  chapterOrder,
   enabled,
 }: {
   client: ApiClient;
   documentId: string;
-  target: HighlightTarget | null;
+  chapterOrder: number | null;
   enabled: boolean;
 }): ReaderHighlights {
   const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
-    if (!enabled || !target) {
+    if (!enabled || chapterOrder === null) {
       setHighlights([]);
       return;
     }
     let cancelled = false;
-    const query: { documentId: string; epubChapterOrder?: number; pdfPageNumber?: number } = {
-      documentId,
-    };
-    if (target.kind === "epub") query.epubChapterOrder = target.chapterOrder;
-    if (target.kind === "pdf") query.pdfPageNumber = target.pageNumber;
     client.highlight
-      .list(query)
+      .list({ documentId, epubChapterOrder: chapterOrder })
       .then((res) => {
         if (cancelled) return;
         setHighlights(res.data?.items ?? []);
@@ -58,22 +49,21 @@ export function useReaderHighlights({
     return () => {
       cancelled = true;
     };
-  }, [client, documentId, target, enabled, reloadToken]);
+  }, [client, documentId, chapterOrder, enabled, reloadToken]);
 
   const reload = useCallback(() => setReloadToken((n) => n + 1), []);
 
   const create = useCallback<ReaderHighlights["create"]>(
     async (color, selection, note) => {
-      if (!target) return null;
+      if (chapterOrder === null) return null;
       const params: Parameters<typeof client.highlight.create>[0] = {
         documentId,
+        epubChapterOrder: chapterOrder,
         offsetStart: selection.offsetStart,
         offsetEnd: selection.offsetEnd,
         textSnippet: selection.text,
         color,
       };
-      if (target.kind === "epub") params.epubChapterOrder = target.chapterOrder;
-      if (target.kind === "pdf") params.pdfPageNumber = target.pageNumber;
       if (note !== undefined) params.note = note;
       const res = await client.highlight.create(params);
       if (res.data) {
@@ -83,7 +73,7 @@ export function useReaderHighlights({
       }
       return null;
     },
-    [client, documentId, target],
+    [client, documentId, chapterOrder],
   );
 
   const update = useCallback<ReaderHighlights["update"]>(

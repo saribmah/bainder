@@ -69,8 +69,8 @@ export namespace DocumentStorage {
   });
 
   const parseKind = (raw: string): Document.Kind => {
-    if (raw === "epub" || raw === "pdf" || raw === "image" || raw === "text") return raw;
-    return "other";
+    if (raw === "epub") return raw;
+    throw new Error(`Unexpected document.kind value: ${raw}`);
   };
 
   const parseStatus = (raw: string): Document.Status => {
@@ -121,24 +121,24 @@ export namespace DocumentStorage {
   const entitySelectWithProgress = {
     ...entitySelect,
     progressEpubChapterOrder: progress.epubChapterOrder,
-    progressPdfPageNumber: progress.pdfPageNumber,
     progressUpdatedAt: progress.updatedAt,
   } as const;
 
   type ProgressRow = {
     progressEpubChapterOrder: number | null;
-    progressPdfPageNumber: number | null;
     progressUpdatedAt: Date | null;
   };
 
-  const projectProgress = (row: ProgressRow): Document.Progress | null =>
-    row.progressUpdatedAt
-      ? {
-          epubChapterOrder: row.progressEpubChapterOrder,
-          pdfPageNumber: row.progressPdfPageNumber,
-          updatedAt: row.progressUpdatedAt.toISOString(),
-        }
-      : null;
+  const projectProgress = (row: ProgressRow): Document.Progress | null => {
+    // The join hits as a unit — when `updatedAt` is non-null the chapter
+    // order column is too, since both sit on the same `progress` row and
+    // the column is NOT NULL.
+    if (row.progressUpdatedAt === null || row.progressEpubChapterOrder === null) return null;
+    return {
+      epubChapterOrder: row.progressEpubChapterOrder,
+      updatedAt: row.progressUpdatedAt.toISOString(),
+    };
+  };
 
   export const get = async (
     id: string,
