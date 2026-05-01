@@ -29,6 +29,8 @@ export namespace TextStorage {
   };
 
   export const create = async (input: CreateInput): Promise<Text.Entity> => {
+    // Idempotent for Workflow retries.
+    await Instance.db.delete(textDocument).where(eq(textDocument.documentId, input.documentId));
     await Instance.db.insert(textDocument).values(input);
     return toEntity(input);
   };

@@ -7,19 +7,36 @@ export {};
 
 const baseUrl = process.env.BAINDER_API_URL ?? "http://localhost:8787";
 
-const isReachable = async (): Promise<boolean> => {
+type Reachability = "ok" | "no-server" | "no-test-mode";
+
+const probe = async (): Promise<Reachability> => {
   try {
-    const res = await fetch(`${baseUrl}/health`, { signal: AbortSignal.timeout(1500) });
-    return res.ok;
+    const res = await fetch(`${baseUrl}/__test__/status`, {
+      signal: AbortSignal.timeout(1500),
+    });
+    if (res.ok) return "ok";
+    // The route is mounted unconditionally and only the handler returns 404
+    // when TEST_MODE is off — so a 404 here means the server is up but in
+    // non-test mode, not that the route is missing.
+    if (res.status === 404) return "no-test-mode";
+    return "no-server";
   } catch {
-    return false;
+    return "no-server";
   }
 };
 
-if (!(await isReachable())) {
+const status = await probe();
+if (status === "no-server") {
   console.log(
     `[@bainder/testing] backend not reachable at ${baseUrl} — skipping. ` +
       "Start it with `bun run --filter '*/api' dev:test` to run these tests.",
+  );
+  process.exit(0);
+}
+if (status === "no-test-mode") {
+  console.log(
+    `[@bainder/testing] backend at ${baseUrl} is up but TEST_MODE is off — skipping. ` +
+      "Restart with `bun run --filter '*/api' dev:test` to run these tests.",
   );
   process.exit(0);
 }

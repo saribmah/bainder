@@ -1,4 +1,5 @@
 import { and, asc, eq } from "drizzle-orm";
+import { chunkForBindLimit } from "../../../db/chunk";
 import { document, pdfDocument, pdfPage } from "../../../db/schema";
 import { Instance } from "../../../instance";
 import { Pdf } from "./pdf";
@@ -103,12 +104,22 @@ export namespace PdfStorage {
     }));
 
     const db = Instance.db;
+    // Idempotent so Workflow retries don't fail with a primary-key conflict
+    // on the pdf_document row after a partial prior attempt.
+    await db.delete(pdfPage).where(eq(pdfPage.documentId, input.documentId));
+    await db.delete(pdfDocument).where(eq(pdfDocument.documentId, input.documentId));
     await db.insert(pdfDocument).values(docRow);
-    if (pageRows.length > 0) {
-      await db.insert(pdfPage).values(pageRows);
+    // Chunked so a many-page PDF doesn't blow past D1's 100-bind-parameter
+    // ceiling on a single multi-row insert.
+    for (const chunk of chunkForBindLimit(pageRows, PDF_PAGE_PARAMS_PER_ROW)) {
+      await db.insert(pdfPage).values(chunk);
     }
     return toEntity(docRow);
   };
+
+  // Keep in sync with the column list on `pdf_page` (id, documentId,
+  // pageNumber, text, wordCount).
+  const PDF_PAGE_PARAMS_PER_ROW = 5;
 
   export const get = async (documentId: string, userId: string): Promise<Pdf.Entity | null> => {
     const rows = await Instance.db

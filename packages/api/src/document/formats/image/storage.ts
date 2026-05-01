@@ -44,6 +44,8 @@ export namespace ImageStorage {
       height: input.height,
       format: input.format,
     };
+    // Idempotent for Workflow retries.
+    await Instance.db.delete(imageDocument).where(eq(imageDocument.documentId, input.documentId));
     await Instance.db.insert(imageDocument).values(row);
     return toEntity(row);
   };

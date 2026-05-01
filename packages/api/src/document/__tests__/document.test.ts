@@ -67,6 +67,39 @@ const buildEpub = (): Uint8Array =>
     "OEBPS/ch2.xhtml": strToU8(ch2),
   });
 
+// Synthesizes an EPUB with `chapterCount` spine entries — used to cover the
+// chunked chapter-insert path. With 9 columns per `epub_chapter` row, we'd
+// blow past D1's 100-bind-parameter ceiling at 12+ chapters in a single
+// statement, so storage chunks the inserts.
+const buildLargeEpub = (chapterCount: number): Uint8Array => {
+  const ids = Array.from({ length: chapterCount }, (_, i) => `ch${i + 1}`);
+  const manifestItems = ids
+    .map((id) => `<item id="${id}" href="${id}.xhtml" media-type="application/xhtml+xml"/>`)
+    .join("");
+  const spineItems = ids.map((id) => `<itemref idref="${id}"/>`).join("");
+  const largeOpf = `<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="bookid">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:identifier id="bookid">urn:uuid:large-test</dc:identifier>
+    <dc:title>Large Book</dc:title>
+    <dc:language>en</dc:language>
+    <dc:creator>Test Author</dc:creator>
+  </metadata>
+  <manifest>${manifestItems}</manifest>
+  <spine>${spineItems}</spine>
+</package>`;
+  const files: Record<string, Uint8Array> = {
+    mimetype: strToU8("application/epub+zip"),
+    "META-INF/container.xml": strToU8(container),
+    "OEBPS/content.opf": strToU8(largeOpf),
+  };
+  for (let i = 0; i < chapterCount; i++) {
+    files[`OEBPS/${ids[i]}.xhtml`] = strToU8(`<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"><body><h1>Chapter ${i + 1}</h1><p>Body of chapter ${i + 1}.</p></body></html>`);
+  }
+  return zipSync(files);
+};
+
 const imageOpf = `<?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="bookid">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
@@ -379,6 +412,36 @@ describe("Document feature", () => {
       });
       const asset = await Document.getAsset(userA, created.id, "cover.jpg");
       expect(asset).toBeNull();
+    });
+  });
+
+  it("ingests an EPUB with many chapters via chunked inserts", async () => {
+    await runtime.runAs(userA, async () => {
+      // 60 chapters × 9 columns per row = 540 bind parameters in a single
+      // multi-row insert — well past D1's 100-parameter cap. Storage chunks
+      // the writes; we only assert the final book/chapter counts here.
+      const created = await uploadEpub(userA, buildLargeEpub(60), "large.epub");
+      const after = await Document.get(userA, created.id);
+      expect(after.status).toBe("processed");
+
+      const detail = await Document.getEpubDetail(userA, created.id);
+      expect(detail.book.chapterCount).toBe(60);
+      expect(detail.chapters).toHaveLength(60);
+      const last = await Document.getEpubChapter(userA, created.id, 59);
+      expect(last.text).toContain("Body of chapter 60");
+    });
+  });
+
+  it("re-running the pipeline on the same document is idempotent", async () => {
+    await runtime.runAs(userA, async () => {
+      const created = await uploadEpub(userA);
+      // Re-invoking processDocument simulates a Workflow retry after a
+      // partial-success first attempt. A non-idempotent storage layer would
+      // throw a primary-key conflict on the epub_book row.
+      await processDocument(created.id);
+      const detail = await Document.getEpubDetail(userA, created.id);
+      expect(detail.book.chapterCount).toBe(2);
+      expect(detail.chapters).toHaveLength(2);
     });
   });
 

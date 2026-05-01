@@ -25,6 +25,7 @@
     "format:fix": "oxfmt --write --no-error-on-unmatched-pattern \"packages/**/*.{js,jsx,ts,tsx,mjs,cjs}\"",
     "ts-check": "bun run --workspaces --if-present ts-check",
     "test": "bun run --workspaces --if-present test",
+    "db:reset:local": "bun run --filter '*/api' db:reset:local",
     "tsgo:version": "tsgo --version",
     "prepare": "husky"
   },

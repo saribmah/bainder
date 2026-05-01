@@ -135,6 +135,20 @@ export type User = {
   updatedAt: string;
 };
 
+export type TestModeStatusResponse = {
+  enabled: true;
+};
+
+export type TestModeSignInResponse = {
+  userId: string;
+  sessionToken: string;
+};
+
+export type TestModeSignInInput = {
+  email: string;
+  name?: string;
+};
+
 export type ExampleListData = {
   body?: never;
   path?: never;
@@ -681,6 +695,75 @@ export type UserUpdateResponses = {
 };
 
 export type UserUpdateResponse = UserUpdateResponses[keyof UserUpdateResponses];
+
+export type GetTestStatusData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/__test__/status";
+};
+
+export type GetTestStatusErrors = {
+  /**
+   * Test mode disabled
+   */
+  404: unknown;
+};
+
+export type GetTestStatusResponses = {
+  /**
+   * Test mode is enabled
+   */
+  200: TestModeStatusResponse;
+};
+
+export type GetTestStatusResponse = GetTestStatusResponses[keyof GetTestStatusResponses];
+
+export type PostTestSignInData = {
+  body: TestModeSignInInput;
+  path?: never;
+  query?: never;
+  url: "/__test__/sign-in";
+};
+
+export type PostTestSignInErrors = {
+  /**
+   * Test mode disabled
+   */
+  404: unknown;
+};
+
+export type PostTestSignInResponses = {
+  /**
+   * Session minted
+   */
+  200: TestModeSignInResponse;
+};
+
+export type PostTestSignInResponse = PostTestSignInResponses[keyof PostTestSignInResponses];
+
+export type PostTestResetData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/__test__/reset";
+};
+
+export type PostTestResetErrors = {
+  /**
+   * Test mode disabled
+   */
+  404: unknown;
+};
+
+export type PostTestResetResponses = {
+  /**
+   * State wiped
+   */
+  204: void;
+};
+
+export type PostTestResetResponse = PostTestResetResponses[keyof PostTestResetResponses];
 
 export type HealthGetData = {
   body?: never;

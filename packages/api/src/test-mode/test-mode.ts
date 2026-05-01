@@ -32,6 +32,11 @@ export namespace TestMode {
     .meta({ ref: "TestModeSignInResponse" });
   export type SignInResponse = z.infer<typeof SignInResponse>;
 
+  export const StatusResponse = z.object({ enabled: z.literal(true) }).meta({
+    ref: "TestModeStatusResponse",
+  });
+  export type StatusResponse = z.infer<typeof StatusResponse>;
+
   // ---- Operations -------------------------------------------------------
   // Mints a Better Auth session for any email and returns the bearer token.
   // The bearer() plugin is already registered in createAuth(), so passing
@@ -52,6 +57,15 @@ export namespace TestMode {
   export const reset = async (): Promise<void> => {
     if (!Config.isTestMode()) throw new NotEnabledError({});
     await TestModeStorage.wipeAll();
+  };
+
+  // Non-destructive probe used by the @bainder/testing wrapper to decide
+  // whether the live backend is in test mode before running the suites.
+  // Same NotEnabledError → 404 mapping as every other test-mode route, so
+  // production never advertises it either.
+  export const status = (): StatusResponse => {
+    if (!Config.isTestMode()) throw new NotEnabledError({});
+    return { enabled: true };
   };
 
   const defaultNameFor = (email: string): string => {

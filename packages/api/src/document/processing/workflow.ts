@@ -3,8 +3,14 @@ import type { RuntimeEnv } from "../../app/context";
 import { createDb } from "../../db/db";
 import { Instance } from "../../instance";
 import { createAnonymousAuth } from "../../middleware/auth";
+import { formatErrorChain } from "../../utils/error";
 import { DocumentStorage } from "../storage";
 import { processDocument } from "./pipeline";
+
+// `error_reason` is exposed to users on the failed-document row, so cap the
+// chained message before it balloons (drizzle's query-error message alone
+// can run multiple kilobytes of bound parameters).
+const MAX_REASON_LENGTH = 2000;
 
 export type DocumentProcessorParams = { documentId: string };
 
@@ -39,7 +45,8 @@ export class DocumentProcessor extends WorkflowEntrypoint<RuntimeEnv, DocumentPr
         },
       );
     } catch (error) {
-      const reason = error instanceof Error ? error.message : "Processing failed";
+      const chained = formatErrorChain(error);
+      const reason = (chained || "Processing failed").slice(0, MAX_REASON_LENGTH);
       await step.do("markFailed", async () => {
         const db = createDb(env);
         await Instance.provide({ auth: createAnonymousAuth(), env, db }, async () => {
