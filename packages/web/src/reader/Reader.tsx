@@ -15,19 +15,26 @@ import {
   FloatingToolbarButton,
   IconButton,
   Icons,
+  Skeleton,
   ThemeProvider,
   useTheme,
 } from "@bainder/ui";
 import type {
   Document,
   EpubChapter,
+  EpubChapterSummary,
   EpubDetail,
+  EpubTocItem,
   ImageDocument,
   PdfDetail,
   PdfPage,
   TextDocument,
 } from "@bainder/sdk";
 import { useSdk } from "../sdk";
+import { HighlightLayer } from "./HighlightLayer";
+import { ReaderHighlightsProvider, useReaderHighlights } from "./highlightsRefresh";
+import { NotesSheet } from "./NotesSheet";
+import { TocSheet } from "./TocSheet";
 
 export function Reader() {
   const { id } = useParams<{ id: string }>();
@@ -69,9 +76,20 @@ export function Reader() {
 
   if (!doc) {
     return (
-      <ReaderState>
-        <span className="t-body-m text-paper-500">Loading…</span>
-      </ReaderState>
+      <main className="min-h-screen bg-paper-50 pb-32 text-paper-900">
+        <header className="sticky top-0 z-10 border-b border-paper-200 bg-paper-50">
+          <div className="mx-auto flex max-w-3xl items-center gap-3 px-6 py-4">
+            <Skeleton shape="circle" width={32} height={32} />
+            <div className="min-w-0 flex-1">
+              <Skeleton width="60%" height={14} />
+              <Skeleton width="30%" height={12} className="mt-1.5" />
+            </div>
+          </div>
+        </header>
+        <article className="mx-auto max-w-2xl px-6 py-8">
+          <ChapterSkeleton />
+        </article>
+      </main>
     );
   }
 
@@ -93,15 +111,21 @@ export function Reader() {
   return (
     <ThemeProvider defaultTheme="light">
       <ReaderPositionProvider>
-        <ReaderShell doc={doc} onClose={handleClose}>
-          {doc.kind === "epub" && <EpubBody documentId={doc.id} />}
-          {doc.kind === "pdf" && <PdfBody documentId={doc.id} />}
-          {doc.kind === "text" && <TextBody documentId={doc.id} />}
-          {doc.kind === "image" && <ImageBody documentId={doc.id} />}
-          {doc.kind === "other" && (
-            <p className="t-body-m text-paper-500">This document type isn't readable in-app yet.</p>
-          )}
-        </ReaderShell>
+        <ReaderTocProvider>
+          <ReaderHighlightsProvider>
+            <ReaderShell doc={doc} onClose={handleClose}>
+              {doc.kind === "epub" && <EpubBody documentId={doc.id} />}
+              {doc.kind === "pdf" && <PdfBody documentId={doc.id} />}
+              {doc.kind === "text" && <TextBody documentId={doc.id} />}
+              {doc.kind === "image" && <ImageBody documentId={doc.id} />}
+              {doc.kind === "other" && (
+                <p className="t-body-m text-paper-500">
+                  This document type isn't readable in-app yet.
+                </p>
+              )}
+            </ReaderShell>
+          </ReaderHighlightsProvider>
+        </ReaderTocProvider>
       </ReaderPositionProvider>
     </ThemeProvider>
   );
@@ -127,6 +151,31 @@ function useReaderPosition() {
   return ctx;
 }
 
+// ─── TOC context (EPUB-only; null when no TOC available) ─────────────────
+type TocState = {
+  toc: ReadonlyArray<EpubTocItem>;
+  chapters: ReadonlyArray<EpubChapterSummary>;
+  currentOrder: number;
+  onJump: (order: number) => void;
+};
+
+const ReaderTocContext = createContext<{
+  toc: TocState | null;
+  setToc: (t: TocState | null) => void;
+} | null>(null);
+
+function ReaderTocProvider({ children }: { children: ReactNode }) {
+  const [toc, setToc] = useState<TocState | null>(null);
+  const value = useMemo(() => ({ toc, setToc }), [toc]);
+  return <ReaderTocContext.Provider value={value}>{children}</ReaderTocContext.Provider>;
+}
+
+function useReaderToc() {
+  const ctx = useContext(ReaderTocContext);
+  if (!ctx) throw new Error("useReaderToc must be used inside <Reader>");
+  return ctx;
+}
+
 function ReaderState({ children }: { children: ReactNode }) {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-paper-50 px-6 text-paper-900">
@@ -146,6 +195,17 @@ function ReaderShell({
 }) {
   const { theme, cycleTheme } = useTheme();
   const { position } = useReaderPosition();
+  const { toc } = useReaderToc();
+  const refresh = useReaderHighlights();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [tocOpen, setTocOpen] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
+
+  const supportsHighlights = doc.kind === "epub" || doc.kind === "pdf";
+  const currentOrder =
+    doc.kind === "epub" ? Math.max(0, Number(searchParams.get("chapter") ?? 0)) : undefined;
+  const currentPage =
+    doc.kind === "pdf" ? Math.max(1, Number(searchParams.get("page") ?? 1)) : undefined;
 
   const pageBg =
     theme === "dark"
@@ -180,11 +240,54 @@ function ReaderShell({
 
       <div className="fixed bottom-6 left-1/2 z-10 -translate-x-1/2">
         <FloatingToolbar>
+          {toc && (
+            <FloatingToolbarButton aria-label="Table of contents" onClick={() => setTocOpen(true)}>
+              <Icons.List size={20} />
+            </FloatingToolbarButton>
+          )}
+          {supportsHighlights && (
+            <FloatingToolbarButton aria-label="Notes" onClick={() => setNotesOpen(true)}>
+              <Icons.Note size={20} />
+            </FloatingToolbarButton>
+          )}
           <FloatingToolbarButton aria-label={`Theme: ${theme}`} onClick={cycleTheme}>
             {theme === "dark" ? <Icons.Sun size={20} /> : <Icons.Moon size={20} />}
           </FloatingToolbarButton>
         </FloatingToolbar>
       </div>
+
+      {toc && tocOpen && (
+        <TocSheet
+          toc={toc.toc}
+          chapters={toc.chapters}
+          currentOrder={toc.currentOrder}
+          onJump={(order) => {
+            toc.onJump(order);
+            setTocOpen(false);
+          }}
+          onClose={() => setTocOpen(false)}
+        />
+      )}
+
+      {supportsHighlights && notesOpen && (
+        <NotesSheet
+          documentId={doc.id}
+          documentKind={doc.kind === "epub" ? "epub" : "pdf"}
+          chapters={toc?.chapters}
+          currentOrder={currentOrder}
+          currentPage={currentPage}
+          refreshToken={refresh?.refreshToken ?? 0}
+          onJumpEpub={(order) => {
+            setSearchParams({ chapter: String(order) });
+            setNotesOpen(false);
+          }}
+          onJumpPdf={(page) => {
+            setSearchParams({ page: String(page) });
+            setNotesOpen(false);
+          }}
+          onClose={() => setNotesOpen(false)}
+        />
+      )}
     </main>
   );
 }
@@ -194,12 +297,20 @@ function EpubBody({ documentId }: { documentId: string }) {
   const { client, baseUrl } = useSdk();
   const [searchParams, setSearchParams] = useSearchParams();
   const { setPosition } = useReaderPosition();
+  const { setToc } = useReaderToc();
   const [detail, setDetail] = useState<EpubDetail | null>(null);
   const [chapter, setChapter] = useState<EpubChapter | null>(null);
   const [error, setError] = useState<string | null>(null);
   const htmlRef = useRef<HTMLDivElement>(null);
 
   const order = Math.max(0, Number(searchParams.get("chapter") ?? 0));
+
+  const navigateTo = useCallback(
+    (next: number) => {
+      setSearchParams({ chapter: String(next) });
+    },
+    [setSearchParams],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -259,15 +370,25 @@ function EpubBody({ documentId }: { documentId: string }) {
     return () => setPosition(null);
   }, [detail, order, setPosition]);
 
+  // Publish TOC so the shell can render the TOC button + sheet.
+  useEffect(() => {
+    if (!detail || detail.toc.length === 0) {
+      setToc(null);
+      return;
+    }
+    setToc({
+      toc: detail.toc,
+      chapters: detail.chapters,
+      currentOrder: order,
+      onJump: navigateTo,
+    });
+    return () => setToc(null);
+  }, [detail, order, navigateTo, setToc]);
+
   if (error) return <p className="t-body-m text-error">{error}</p>;
-  if (!detail || !chapter) {
-    return <p className="t-body-m text-paper-500">Loading chapter…</p>;
-  }
+  if (!detail || !chapter) return <ChapterSkeleton />;
 
   const totalChapters = detail.chapters.length;
-  const navigateTo = (next: number) => {
-    setSearchParams({ chapter: String(next) });
-  };
 
   return (
     <>
@@ -279,6 +400,13 @@ function EpubBody({ documentId }: { documentId: string }) {
         ref={htmlRef}
         className="t-reading-l prose-reader"
         dangerouslySetInnerHTML={{ __html: chapter.html }}
+      />
+
+      <HighlightLayer
+        containerRef={htmlRef}
+        documentId={documentId}
+        target={{ kind: "epub", chapterOrder: order }}
+        contentKey={chapter.id}
       />
 
       <ChapterNav
@@ -301,6 +429,7 @@ function PdfBody({ documentId }: { documentId: string }) {
   const [detail, setDetail] = useState<PdfDetail | null>(null);
   const [page, setPage] = useState<PdfPage | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const pageRef = useRef<HTMLPreElement>(null);
 
   const pageNumber = Math.max(1, Number(searchParams.get("page") ?? 1));
 
@@ -350,9 +479,7 @@ function PdfBody({ documentId }: { documentId: string }) {
   }, [detail, pageNumber, setPosition]);
 
   if (error) return <p className="t-body-m text-error">{error}</p>;
-  if (!detail || !page) {
-    return <p className="t-body-m text-paper-500">Loading page…</p>;
-  }
+  if (!detail || !page) return <ChapterSkeleton />;
 
   const totalPages = detail.pdf.pageCount;
   const navigateTo = (next: number) => {
@@ -361,7 +488,16 @@ function PdfBody({ documentId }: { documentId: string }) {
 
   return (
     <>
-      <pre className="t-reading-l whitespace-pre-wrap break-words font-reading">{page.text}</pre>
+      <pre ref={pageRef} className="t-reading-l whitespace-pre-wrap break-words font-reading">
+        {page.text}
+      </pre>
+
+      <HighlightLayer
+        containerRef={pageRef}
+        documentId={documentId}
+        target={{ kind: "pdf", pageNumber }}
+        contentKey={page.id}
+      />
 
       <ChapterNav
         canPrev={pageNumber > 1}
@@ -399,7 +535,7 @@ function TextBody({ documentId }: { documentId: string }) {
   }, [client, documentId]);
 
   if (error) return <p className="t-body-m text-error">{error}</p>;
-  if (!text) return <p className="t-body-m text-paper-500">Loading…</p>;
+  if (!text) return <ChapterSkeleton />;
 
   return (
     <pre className="t-reading-l whitespace-pre-wrap break-words font-reading">{text.text}</pre>
@@ -432,7 +568,9 @@ function ImageBody({ documentId }: { documentId: string }) {
   const src = useMemo(() => `${baseUrl}/documents/${documentId}/raw`, [baseUrl, documentId]);
 
   if (error) return <p className="t-body-m text-error">{error}</p>;
-  if (!meta) return <p className="t-body-m text-paper-500">Loading…</p>;
+  if (!meta) {
+    return <Skeleton width="100%" height={420} />;
+  }
 
   return (
     <img
@@ -483,5 +621,21 @@ function ChapterNav({
         {nextLabel} →
       </Button>
     </nav>
+  );
+}
+
+// ─── Chapter skeleton (title + paragraph block) ─────────────────────────
+function ChapterSkeleton() {
+  return (
+    <div className="space-y-3">
+      <Skeleton width="70%" height={36} className="mb-6" />
+      <Skeleton width="100%" height={14} />
+      <Skeleton width="96%" height={14} />
+      <Skeleton width="100%" height={14} />
+      <Skeleton width="88%" height={14} />
+      <Skeleton width="100%" height={14} />
+      <Skeleton width="100%" height={14} />
+      <Skeleton width="62%" height={14} />
+    </div>
   );
 }

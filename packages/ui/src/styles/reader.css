@@ -87,6 +87,99 @@
   background: oklch(30% 0.012 240);
 }
 
+/* ─── Selection toolbar (annotation popover) ────────────────────────── */
+.bd-selection-toolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--paper-50);
+  border: 1px solid var(--paper-200);
+  border-radius: var(--r-pill);
+  box-shadow: var(--sh-lg);
+  color: var(--paper-800);
+}
+[data-theme="sepia"] .bd-selection-toolbar {
+  background: var(--sepia-50);
+  border-color: var(--sepia-200);
+  color: var(--sepia-800);
+}
+[data-theme="dark"] .bd-selection-toolbar {
+  background: var(--night-800);
+  border-color: oklch(30% 0.012 240);
+  color: var(--night-50);
+}
+
+.bd-color-swatch {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--paper-300);
+  border-radius: var(--r-pill);
+  cursor: pointer;
+  transition:
+    transform var(--m-fast),
+    border-color var(--m-fast);
+}
+.bd-color-swatch:hover {
+  transform: scale(1.12);
+}
+.bd-color-swatch:focus-visible {
+  outline: 2px solid var(--paper-900);
+  outline-offset: 2px;
+}
+[data-theme="dark"] .bd-color-swatch {
+  border-color: oklch(36% 0.012 240);
+}
+.bd-color-swatch-pink {
+  background: var(--hl-pink);
+}
+.bd-color-swatch-yellow {
+  background: var(--hl-yellow);
+}
+.bd-color-swatch-green {
+  background: var(--hl-green);
+}
+.bd-color-swatch-blue {
+  background: var(--hl-blue);
+}
+.bd-color-swatch-purple {
+  background: var(--hl-purple);
+}
+
+.bd-selection-toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--paper-200);
+}
+[data-theme="dark"] .bd-selection-toolbar-divider {
+  background: oklch(30% 0.012 240);
+}
+
+.bd-selection-toolbar-action {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  border-radius: var(--r-pill);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background var(--m-fast);
+}
+.bd-selection-toolbar-action:hover:not(:disabled) {
+  background: var(--paper-100);
+}
+[data-theme="sepia"] .bd-selection-toolbar-action:hover:not(:disabled) {
+  background: var(--sepia-100);
+}
+[data-theme="dark"] .bd-selection-toolbar-action:hover:not(:disabled) {
+  background: oklch(28% 0.012 240);
+}
+
 /* ─── AI sheet bits ─────────────────────────────────────────────────── */
 .bd-ai-header {
   display: inline-flex;

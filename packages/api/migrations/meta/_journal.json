@@ -29,6 +29,13 @@
       "when": 1777643000000,
       "tag": "0003_document_unification",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1777733000000,
+      "tag": "0004_add_highlight",
+      "breakpoints": true
     }
   ]
 }

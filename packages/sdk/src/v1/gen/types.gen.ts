@@ -125,6 +125,20 @@ export type TextDocument = {
   text: string;
 };
 
+export type Highlight = {
+  id: string;
+  documentId: string;
+  epubChapterOrder: number | null;
+  pdfPageNumber: number | null;
+  offsetStart: number;
+  offsetEnd: number;
+  textSnippet: string;
+  color: "pink" | "yellow" | "green" | "blue" | "purple";
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type User = {
   id: string;
   email: string;
@@ -638,6 +652,148 @@ export type DocumentGetTextResponses = {
 };
 
 export type DocumentGetTextResponse = DocumentGetTextResponses[keyof DocumentGetTextResponses];
+
+export type HighlightListData = {
+  body?: never;
+  path?: never;
+  query: {
+    documentId: string;
+    epubChapterOrder?: number;
+    pdfPageNumber?: number;
+  };
+  url: "/highlights";
+};
+
+export type HighlightListErrors = {
+  /**
+   * Invalid query
+   */
+  400: unknown;
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * Document not found
+   */
+  404: unknown;
+};
+
+export type HighlightListResponses = {
+  /**
+   * Highlights
+   */
+  200: {
+    items: Array<Highlight>;
+  };
+};
+
+export type HighlightListResponse = HighlightListResponses[keyof HighlightListResponses];
+
+export type HighlightCreateData = {
+  body: {
+    documentId: string;
+    epubChapterOrder?: number;
+    pdfPageNumber?: number;
+    offsetStart: number;
+    offsetEnd: number;
+    textSnippet: string;
+    color: "pink" | "yellow" | "green" | "blue" | "purple";
+    note?: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/highlights";
+};
+
+export type HighlightCreateErrors = {
+  /**
+   * Invalid input or target mismatched with document kind
+   */
+  400: unknown;
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * Document not found
+   */
+  404: unknown;
+};
+
+export type HighlightCreateResponses = {
+  /**
+   * Created
+   */
+  201: Highlight;
+};
+
+export type HighlightCreateResponse = HighlightCreateResponses[keyof HighlightCreateResponses];
+
+export type HighlightDeleteData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/highlights/{id}";
+};
+
+export type HighlightDeleteErrors = {
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * Highlight not found
+   */
+  404: unknown;
+};
+
+export type HighlightDeleteResponses = {
+  /**
+   * Deleted
+   */
+  204: void;
+};
+
+export type HighlightDeleteResponse = HighlightDeleteResponses[keyof HighlightDeleteResponses];
+
+export type HighlightUpdateData = {
+  body: {
+    color?: "pink" | "yellow" | "green" | "blue" | "purple";
+    note?: string | null;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/highlights/{id}";
+};
+
+export type HighlightUpdateErrors = {
+  /**
+   * Invalid input
+   */
+  400: unknown;
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * Highlight not found
+   */
+  404: unknown;
+};
+
+export type HighlightUpdateResponses = {
+  /**
+   * Updated
+   */
+  200: Highlight;
+};
+
+export type HighlightUpdateResponse = HighlightUpdateResponses[keyof HighlightUpdateResponses];
 
 export type UserMeData = {
   body?: never;

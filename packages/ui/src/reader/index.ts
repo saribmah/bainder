@@ -15,3 +15,6 @@ export type { AISheetThinkingProps } from "./AISheetThinking.tsx";
 
 export { AISheetInput } from "./AISheetInput.tsx";
 export type { AISheetInputProps } from "./AISheetInput.tsx";
+
+export { SelectionToolbar } from "./SelectionToolbar.tsx";
+export type { SelectionToolbarProps } from "./SelectionToolbar.tsx";

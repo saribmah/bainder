@@ -8,6 +8,7 @@ import {
   AISheetThinking,
   FloatingToolbar,
   FloatingToolbarButton,
+  SelectionToolbar,
   Sheet,
 } from "../reader/index.ts";
 import { ThemeProvider } from "../theme/index.ts";
@@ -141,5 +142,19 @@ describe("AISheetInput", () => {
 describe("AISheetThinking", () => {
   test("without status", () => {
     expect(html(<AISheetThinking />)).toMatchSnapshot();
+  });
+});
+
+describe("SelectionToolbar", () => {
+  test("default colors with note action", () => {
+    expect(
+      html(<SelectionToolbar onPickColor={() => {}} onAddNote={() => {}} />),
+    ).toMatchSnapshot();
+  });
+
+  test("colors only (no note)", () => {
+    expect(
+      html(<SelectionToolbar colors={["yellow", "pink"]} onPickColor={() => {}} />),
+    ).toMatchSnapshot();
   });
 });

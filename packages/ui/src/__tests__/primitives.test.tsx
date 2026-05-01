@@ -12,6 +12,7 @@ import {
   Input,
   MatchBadge,
   Progress,
+  Skeleton,
   Tab,
   Tabs,
   Toast,
@@ -199,6 +200,20 @@ describe("BookCover", () => {
         />,
       ),
     ).toMatchSnapshot();
+  });
+});
+
+describe("Skeleton", () => {
+  test("rect default", () => {
+    expect(html(<Skeleton width={120} height={16} />)).toMatchSnapshot();
+  });
+
+  test("circle", () => {
+    expect(html(<Skeleton shape="circle" width={32} height={32} />)).toMatchSnapshot();
+  });
+
+  test("text", () => {
+    expect(html(<Skeleton shape="text" width="60%" />)).toMatchSnapshot();
   });
 });
 

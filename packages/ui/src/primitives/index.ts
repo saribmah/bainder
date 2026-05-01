@@ -33,3 +33,6 @@ export type { BookCoverProps } from "./BookCover.tsx";
 
 export { Highlight } from "./Highlight.tsx";
 export type { HighlightColor, HighlightProps } from "./Highlight.tsx";
+
+export { Skeleton } from "./Skeleton.tsx";
+export type { SkeletonProps, SkeletonShape } from "./Skeleton.tsx";
