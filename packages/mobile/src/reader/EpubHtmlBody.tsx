@@ -41,6 +41,7 @@ export type EpubHtmlBodyProps = {
   assetBase: string;
   theme: Theme;
   highlights: Highlight[];
+  fontSize?: number;
   contentKey: string;
   authedFetch: typeof fetch;
   assetCache: AssetCache;
@@ -54,6 +55,7 @@ export function EpubHtmlBody({
   assetBase,
   theme,
   highlights,
+  fontSize = 17,
   contentKey,
   authedFetch,
   assetCache,
@@ -94,8 +96,8 @@ export function EpubHtmlBody({
 
   const wrapped = useMemo(() => {
     if (resolvedHtml === null) return null;
-    return buildEpubHtml(resolvedHtml, palette.surface, palette.text);
-  }, [resolvedHtml, palette.surface, palette.text]);
+    return buildEpubHtml(resolvedHtml, palette.bg, palette.text, fontSize);
+  }, [resolvedHtml, palette.bg, palette.text, fontSize]);
 
   // Push highlights into the WebView once it signals ready, and again whenever
   // the highlights array changes.

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
@@ -12,6 +12,7 @@ import {
   Skeleton,
   ThemeProvider,
   color,
+  font,
   themeColors,
   useTheme,
   type Theme,
@@ -35,6 +36,8 @@ type NotesContext = {
   refreshToken: number;
   onJumpEpub?: (order: number) => void;
 };
+
+type ReaderFontScale = "standard" | "large";
 
 export default function ReaderScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -118,28 +121,32 @@ function ReaderShell({ doc, onClose }: { doc: Document; onClose: () => void }) {
   const [notesState, setNotesState] = useState<NotesContext | null>(null);
   const [tocOpen, setTocOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [fontScale, setFontScale] = useState<ReaderFontScale>("standard");
+
+  const toggleFontScale = useCallback(() => {
+    setFontScale((curr) => (curr === "standard" ? "large" : "standard"));
+  }, []);
 
   return (
-    <View style={[shellStyles.root, { backgroundColor: palette.surface }]}>
+    <View style={[shellStyles.root, { backgroundColor: palette.bg }]}>
       <View
         style={[
           shellStyles.header,
           { paddingTop: insets.top + 8, borderBottomColor: borderForTheme(theme) },
         ]}
       >
-        <IconButton aria-label="Close" size="sm" onPress={onClose}>
+        <IconButton aria-label="Close reader" size="sm" onPress={onClose}>
           <Icons.Close size={16} color={palette.text} />
         </IconButton>
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={[shellStyles.title, { color: palette.text }]} numberOfLines={1}>
-            {doc.title}
+        <Text style={[shellStyles.title, { color: palette.text }]} numberOfLines={1}>
+          {doc.title}
+        </Text>
+        {position && (
+          <Text style={[shellStyles.position, { color: mutedForTheme(theme) }]} numberOfLines={1}>
+            {position}
           </Text>
-          {position && (
-            <Text style={[shellStyles.position, { color: mutedForTheme(theme) }]} numberOfLines={1}>
-              {position}
-            </Text>
-          )}
-        </View>
+        )}
       </View>
 
       <ScrollView
@@ -153,27 +160,43 @@ function ReaderShell({ doc, onClose }: { doc: Document; onClose: () => void }) {
           onPosition={setPosition}
           onTocChange={setTocState}
           onNotesChange={setNotesState}
+          fontScale={fontScale}
         />
       </ScrollView>
 
-      <View style={[shellStyles.toolbarWrap, { bottom: insets.bottom + 16 }]}>
+      <View style={[shellStyles.toolbarWrap, { bottom: insets.bottom + 24 }]}>
         <FloatingToolbar style={{ backgroundColor: floatingBgForTheme(theme) }}>
-          {tocState && (
-            <FloatingToolbarButton aria-label="Table of contents" onPress={() => setTocOpen(true)}>
-              <Icons.List size={20} color={palette.text} />
-            </FloatingToolbarButton>
-          )}
-          {notesState && (
-            <FloatingToolbarButton aria-label="Notes" onPress={() => setNotesOpen(true)}>
-              <Icons.Note size={20} color={palette.text} />
-            </FloatingToolbarButton>
-          )}
           <FloatingToolbarButton aria-label={`Theme: ${theme}`} onPress={cycleTheme}>
             {theme === "dark" ? (
               <Icons.Sun size={20} color={palette.text} />
             ) : (
               <Icons.Moon size={20} color={palette.text} />
             )}
+          </FloatingToolbarButton>
+          <FloatingToolbarButton
+            aria-label="Table of contents"
+            disabled={!tocState}
+            onPress={() => setTocOpen(true)}
+          >
+            <Icons.BookOpen size={20} color={palette.text} />
+          </FloatingToolbarButton>
+          <FloatingToolbarButton aria-label="Ask Bainder" onPress={() => setAiOpen(true)}>
+            <Icons.Headphones size={20} color={palette.text} />
+          </FloatingToolbarButton>
+          <FloatingToolbarButton
+            aria-label={
+              fontScale === "standard" ? "Use larger reader type" : "Use standard reader type"
+            }
+            onPress={toggleFontScale}
+          >
+            <Icons.Type size={20} color={palette.text} />
+          </FloatingToolbarButton>
+          <FloatingToolbarButton
+            aria-label="Notes"
+            disabled={!notesState}
+            onPress={() => setNotesOpen(true)}
+          >
+            <Icons.Settings size={20} color={palette.text} />
           </FloatingToolbarButton>
         </FloatingToolbar>
       </View>
@@ -208,6 +231,13 @@ function ReaderShell({ doc, onClose }: { doc: Document; onClose: () => void }) {
           }}
         />
       )}
+
+      <ReaderAiSheet
+        visible={aiOpen}
+        onClose={() => setAiOpen(false)}
+        theme={theme}
+        chapterLabel={position ?? "Current chapter"}
+      />
     </View>
   );
 }
@@ -220,6 +250,7 @@ function EpubBody({
   onPosition,
   onTocChange,
   onNotesChange,
+  fontScale,
 }: {
   documentId: string;
   initialOrder: number;
@@ -234,6 +265,7 @@ function EpubBody({
     } | null,
   ) => void;
   onNotesChange: (s: NotesContext | null) => void;
+  fontScale: ReaderFontScale;
 }) {
   const { client, baseUrl, authedFetch } = useSdk();
   const [order, setOrder] = useState(Math.max(0, initialOrder));
@@ -295,7 +327,7 @@ function EpubBody({
   // Publish position label.
   useEffect(() => {
     if (!detail) return;
-    onPosition(`Chapter ${order + 1} of ${detail.chapters.length}`);
+    onPosition(`${order + 1}/${detail.chapters.length}`);
     return () => onPosition(null);
   }, [detail, order, onPosition]);
 
@@ -342,9 +374,13 @@ function EpubBody({
   if (!detail || !chapter) return <ChapterSkeleton />;
 
   const totalChapters = detail.chapters.length;
+  const readerFontSize = fontScale === "large" ? 19 : 17;
 
   return (
     <>
+      <Text style={[shellStyles.chapterKicker, { color: themeColors(theme).text }]}>
+        Chapter {String(order + 1).padStart(2, "0")}
+      </Text>
       <Text style={[shellStyles.chapterTitle, { color: themeColors(theme).text }]}>
         {chapter.title}
       </Text>
@@ -352,6 +388,7 @@ function EpubBody({
         html={chapter.html}
         assetBase={`${baseUrl}/documents/${documentId}/`}
         theme={theme}
+        fontSize={readerFontSize}
         contentKey={`${documentId}:${order}`}
         highlights={highlightLayer.highlights}
         authedFetch={authedFetch}
@@ -494,6 +531,74 @@ function TocSheet({
   );
 }
 
+function ReaderAiSheet({
+  visible,
+  onClose,
+  theme,
+  chapterLabel,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  theme: Theme;
+  chapterLabel: string;
+}) {
+  const palette = themeColors(theme);
+  const muted = mutedForTheme(theme);
+  return (
+    <Sheet visible={visible} onClose={onClose} style={{ backgroundColor: palette.bg }}>
+      <View style={aiStyles.header}>
+        <View style={aiStyles.brandRow}>
+          <Icons.Sparkles size={18} color={palette.accent} />
+          <Text style={[aiStyles.brand, { color: palette.accent }]}>Bainder</Text>
+        </View>
+        <Text style={[aiStyles.chapter, { color: muted }]}>{chapterLabel}</Text>
+      </View>
+      <View style={[aiStyles.quote, { backgroundColor: palette.surfaceRaised }]}>
+        <Text style={[aiStyles.quoteText, { color: palette.fgSubtle }]}>
+          "Affordances define what actions are possible. Signifiers specify how people discover
+          those possibilities."
+        </Text>
+      </View>
+      <View style={aiStyles.promptRow}>
+        <View style={[aiStyles.promptBubble, { backgroundColor: palette.action }]}>
+          <Text style={[aiStyles.promptText, { color: palette.actionFg }]}>
+            What's the difference between these two terms?
+          </Text>
+        </View>
+      </View>
+      <Text style={[aiStyles.answer, { color: palette.fgSubtle }]}>
+        Norman is drawing a careful line. An affordance is what is possible. A signifier is the
+        visible cue that tells you that possibility exists.
+      </Text>
+      <View style={aiStyles.chips}>
+        {["Give me an example", "Why does this matter?", "Save to notes"].map((item) => (
+          <Pressable
+            key={item}
+            accessibilityRole="button"
+            style={[aiStyles.chip, { borderColor: palette.borderStrong }]}
+          >
+            <Text style={[aiStyles.chipText, { color: palette.fgSubtle }]}>{item}</Text>
+          </Pressable>
+        ))}
+      </View>
+      <View style={[aiStyles.inputRow, { backgroundColor: palette.surfaceRaised }]}>
+        <TextInput
+          placeholder="Ask a follow-up..."
+          placeholderTextColor={muted}
+          style={[aiStyles.input, { color: palette.text }]}
+        />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Send"
+          style={[aiStyles.send, { backgroundColor: palette.action }]}
+        >
+          <Icons.Send size={14} color={palette.actionFg} />
+        </Pressable>
+      </View>
+    </Sheet>
+  );
+}
+
 function ReaderState({ children }: { children: React.ReactNode }) {
   return (
     <View style={shellStyles.stateRoot}>
@@ -540,20 +645,38 @@ const shellStyles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingHorizontal: 18,
+    paddingBottom: 14,
     borderBottomWidth: 1,
   },
-  title: { fontSize: 15, fontWeight: "500" },
-  position: { marginTop: 2, fontSize: 13 },
-  body: { flex: 1 },
-  bodyContent: { paddingHorizontal: 20, paddingTop: 24 },
-  chapterTitle: {
-    fontSize: 28,
+  title: {
+    flex: 1,
+    minWidth: 0,
+    fontFamily: font.nativeFamily.ui,
+    fontSize: 15,
     fontWeight: "500",
-    marginBottom: 24,
-    letterSpacing: -0.3,
-    lineHeight: 32,
+  },
+  position: {
+    fontFamily: font.nativeFamily.mono,
+    fontSize: 12,
+  },
+  body: { flex: 1 },
+  bodyContent: { paddingHorizontal: 24, paddingTop: 28 },
+  chapterKicker: {
+    fontFamily: font.nativeFamily.display,
+    fontSize: 22,
+    fontWeight: "500",
+    lineHeight: 27,
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  chapterTitle: {
+    fontFamily: font.nativeFamily.display,
+    fontSize: 22,
+    fontWeight: "400",
+    marginBottom: 28,
+    lineHeight: 27,
+    textAlign: "center",
   },
   readingText: {
     fontSize: 19,
@@ -584,4 +707,99 @@ const tocStyles = StyleSheet.create({
     paddingBottom: 4,
   },
   title: { fontSize: 15, fontWeight: "500" },
+});
+
+const aiStyles = StyleSheet.create({
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  brandRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  brand: {
+    fontFamily: font.nativeFamily.ui,
+    fontSize: 15,
+    fontWeight: "500",
+  },
+  chapter: {
+    flexShrink: 1,
+    fontFamily: font.nativeFamily.ui,
+    fontSize: 13,
+  },
+  quote: {
+    borderLeftWidth: 2,
+    borderLeftColor: color.wine[700],
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  quoteText: {
+    fontFamily: font.nativeFamily.reading,
+    fontSize: 13,
+    fontStyle: "italic",
+    lineHeight: 20,
+  },
+  promptRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+  },
+  promptBubble: {
+    maxWidth: "78%",
+    borderRadius: 18,
+    borderBottomRightRadius: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  promptText: {
+    fontFamily: font.nativeFamily.ui,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  answer: {
+    fontFamily: font.nativeFamily.reading,
+    fontSize: 15,
+    lineHeight: 23,
+  },
+  chips: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  chip: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  chipText: {
+    fontFamily: font.nativeFamily.ui,
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  inputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderRadius: 999,
+    padding: 6,
+  },
+  input: {
+    flex: 1,
+    height: 36,
+    paddingHorizontal: 12,
+    fontFamily: font.nativeFamily.ui,
+    fontSize: 15,
+  },
+  send: {
+    width: 36,
+    height: 36,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });

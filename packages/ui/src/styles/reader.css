@@ -259,6 +259,66 @@
   }
 }
 
+/* ─── EPUB reading body ─────────────────────────────────────────────── */
+.bd-reader-prose {
+  font-family: var(--font-reading);
+  font-size: var(--bd-reader-font-size, 19px);
+  line-height: 1.7;
+  color: var(--bd-fg-subtle);
+}
+
+.bd-reader-prose > * + * {
+  margin-top: 1.1em;
+}
+
+.bd-reader-prose p {
+  margin: 0;
+}
+
+.bd-reader-prose h1,
+.bd-reader-prose h2,
+.bd-reader-prose h3,
+.bd-reader-prose h4,
+.bd-reader-prose h5,
+.bd-reader-prose h6 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--bd-fg);
+  margin: 1.4em 0 0.65em;
+}
+
+.bd-reader-prose h1 {
+  font-size: 1.45em;
+}
+
+.bd-reader-prose h2 {
+  font-size: 1.25em;
+}
+
+.bd-reader-prose h3 {
+  font-size: 1.12em;
+}
+
+.bd-reader-prose blockquote {
+  margin: 1.2em 0;
+  padding-left: 1em;
+  border-left: 2px solid var(--bd-border-strong);
+  color: var(--bd-fg-muted);
+}
+
+.bd-reader-prose img {
+  max-width: 100%;
+  height: auto;
+}
+
+.bd-reader-prose a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
 /* ─── AI input row (pill input + send button) ───────────────────────── */
 .bd-ai-input {
   display: flex;
