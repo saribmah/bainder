@@ -123,10 +123,18 @@ function classSuffix(key: string): string {
   return key.replace(/([A-Z]+)/g, "-$1").toLowerCase();
 }
 
+function fontFamilyToken(family: string): string {
+  if (family === font.family.display) return "var(--font-display)";
+  if (family === font.family.reading) return "var(--font-reading)";
+  if (family === font.family.ui) return "var(--font-ui)";
+  if (family === font.family.mono) return "var(--font-mono)";
+  return family;
+}
+
 const presetBlocks: string[] = [];
 for (const [key, preset] of Object.entries(typography)) {
   const props: string[] = [
-    `  font-family: ${preset.fontFamily};`,
+    `  font-family: ${fontFamilyToken(preset.fontFamily)};`,
     `  font-weight: ${preset.fontWeight};`,
     `  font-size: ${preset.fontSize}px;`,
     `  line-height: ${preset.lineHeight};`,
