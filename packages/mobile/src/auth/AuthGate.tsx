@@ -9,8 +9,9 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const segments = useSegments();
   const pathname = usePathname();
   const inSignIn = segments[0] === "signin";
+  const inSignUp = segments[0] === "signup";
   const inLanding = pathname === "/";
-  const inPublicRoute = inLanding || inSignIn;
+  const inPublicRoute = inLanding || inSignIn || inSignUp;
   const isAuthed = !!session.data?.user;
 
   if (session.isPending) {
@@ -23,7 +24,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (!isAuthed && !inPublicRoute) {
     return <Redirect href="/" />;
   }
-  if (isAuthed && inSignIn) {
+  if (isAuthed && (inSignIn || inSignUp)) {
     return <Redirect href="/library" />;
   }
   return <>{children}</>;

@@ -7,6 +7,7 @@ export function LandingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const goToSignIn = () => router.push("/signin");
+  const goToSignUp = () => router.push("/signup");
 
   return (
     <ScrollView
@@ -57,7 +58,7 @@ export function LandingScreen() {
       </View>
 
       <View style={styles.actions}>
-        <Button size="md" fullWidth onPress={goToSignIn}>
+        <Button size="md" fullWidth onPress={goToSignUp}>
           Get started · free
         </Button>
         <Button variant="ghost" size="sm" fullWidth onPress={goToSignIn}>

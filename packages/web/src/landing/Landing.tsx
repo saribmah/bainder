@@ -40,6 +40,7 @@ export function Landing() {
   }
 
   const goToSignIn = () => navigate("/signin");
+  const goToSignUp = () => navigate("/signup");
   const scrollToWhy = () => document.getElementById("why-bainder")?.scrollIntoView();
 
   return (
@@ -70,7 +71,7 @@ export function Landing() {
           <Button variant="ghost" size="sm" onClick={goToSignIn}>
             Sign in
           </Button>
-          <Button size="sm" onClick={goToSignIn}>
+          <Button size="sm" onClick={goToSignUp}>
             Get started
           </Button>
         </div>
@@ -90,7 +91,7 @@ export function Landing() {
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Button size="lg" onClick={goToSignIn}>
+            <Button size="lg" onClick={goToSignUp}>
               Start reading free
             </Button>
             <Button variant="secondary" size="lg" onClick={scrollToWhy}>
