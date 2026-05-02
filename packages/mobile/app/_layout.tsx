@@ -5,7 +5,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ThemeProvider } from "@bainder/ui";
-import { AuthGate } from "../src/auth/AuthGate.tsx";
+import { AuthGate } from "../src/features/auth";
 import { SDKProvider } from "../src/sdk/sdk.provider.tsx";
 
 void SplashScreen.preventAutoHideAsync();

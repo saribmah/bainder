@@ -6,7 +6,7 @@ import {
   type ReactElement,
 } from "react";
 import { createApiClient, type ApiClient } from "@bainder/sdk";
-import { authClient } from "../auth/auth.client.ts";
+import { authClient } from "../features/auth";
 import { API_URL } from "../config.ts";
 
 type SDKContextValue = {

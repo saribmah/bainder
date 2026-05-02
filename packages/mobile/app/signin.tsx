@@ -1,4 +1,4 @@
-import { AuthScreen } from "../src/auth/AuthScreen.tsx";
+import { AuthScreen } from "../src/features/auth";
 
 export default function SignInScreen() {
   return <AuthScreen mode="signin" />;

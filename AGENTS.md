@@ -170,8 +170,9 @@ When asked to do specific kinds of work, read the matching recipe first:
 - Update SDK consumers (`packages/web`, downstream apps) in the same change
   when generated types/contracts shift.
 - Never manually edit `packages/sdk/src/v1/gen/*` or `packages/sdk/lib/*`.
-- `packages/web/` consumes the API exclusively via `@bainder/sdk`. Do
-  not import directly from `packages/api/` or hand-roll `fetch` calls.
+- `packages/web/` and `packages/mobile/` consume the API exclusively via
+  `@bainder/sdk`. Do not import directly from `packages/api/` or hand-roll
+  `fetch` calls.
 - See [`.agents/regenerate-sdk.md`](./.agents/regenerate-sdk.md) for the
   regeneration recipe.
 
@@ -204,6 +205,37 @@ When asked to do specific kinds of work, read the matching recipe first:
 - `auth` owns Better Auth client setup, auth pages, auth guards, and auth-only
   UI components.
 
+### Mobile feature organization (`packages/mobile`)
+
+- Organize Expo/React Native product code under
+  `packages/mobile/src/features/<feature>/`.
+- Expo Router files under `packages/mobile/app/` should stay thin. They route
+  to feature screens, configure redirects, or provide app shell wiring only.
+- Do not recreate top-level product folders such as `src/auth`, `src/library`,
+  `src/dashboard`, `src/landing`, or `src/reader`. New product UI belongs in
+  `src/features/*`.
+- Keep feature directories small and responsibility-specific. Prefer
+  subfolders such as `components/`, `hooks/`, `pages/`, `utils/`, and
+  feature-local `*.styles.ts` files when a feature needs shared native styles.
+- Each feature should export its public surface from `src/features/<feature>/index.ts`.
+  Route files and cross-feature imports should go through that public surface.
+- Feature pages compose hooks/components; they should not own large all-in-one
+  implementations. Extract reusable cards, dialogs, bottom tabs, empty states,
+  native style objects, and data hooks before a screen becomes hard to scan.
+- `dashboard` is the current signed-in home surface on mobile. The historical
+  `app/library.tsx` naming was wrong; do not put dashboard implementation
+  there.
+- There is currently no mobile `library` feature. Create
+  `src/features/library/` only when implementing a real library capability
+  distinct from dashboard.
+- The canonical signed-in mobile route is `/dashboard`. Keep `/library` only
+  as a compatibility redirect unless the real library feature is introduced.
+- `profile` owns signed-in user/profile helpers and sign-out affordances.
+  Dashboard should consume these from `profile` instead of owning profile
+  logic directly.
+- `auth` owns Better Auth client setup, auth screens, auth gates, and auth-only
+  UI components.
+
 ## Workspace commands
 
 From repo root:
@@ -231,6 +263,14 @@ Web only:
 
 - `bun run --filter '*/web' dev`
 - `bun run --filter '*/web' build`
+
+Mobile only:
+
+- `bun run --filter '*/mobile' start`
+- `bun run --filter '*/mobile' ios`
+- `bun run --filter '*/mobile' lint`
+- `bun run --filter '*/mobile' format`
+- `bun run --filter '*/mobile' ts-check`
 
 ## Required verification
 
