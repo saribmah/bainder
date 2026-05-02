@@ -43,14 +43,14 @@ the EPUB branch of `processing/pipeline.ts`. Mirror that structure exactly.
 - **Parser dep** — third-party library required (e.g. `unpdf` for PDF).
   Bun + Cloudflare Workers compatibility matters.
 
-## Step 1 — Parser
+## Step 1 — Parser (private to the format)
 
-Add `packages/api/src/document/processing/parsers/<fmt>.ts` exporting a
-pure `parse<Fmt>Bytes(bytes: Uint8Array)` that returns the canonical
-parsed shape (or throws `ParseFailure` on malformed input — see how
-`parsers/epub.ts` does it).
+Add `packages/api/src/document/formats/<fmt>/parser.ts` exporting a pure
+`parse<Fmt>Bytes(bytes: Uint8Array)` that returns the canonical parsed
+shape (or throws an internal `ParseFailure` sentinel on malformed input —
+see how `formats/epub/parser.ts` does it).
 
-The parser's return shape should give the pipeline what it needs to write
+The parser's return shape should give the workflow what it needs to write
 manifest + content + assets:
 
 - An ordered list of sections, each with `order`, `title`, `wordCount`,
@@ -61,7 +61,7 @@ manifest + content + assets:
 - Top-level metadata (title, language, cover image path, plus
   format-specific fields).
 
-Update `parsers/detect.ts` to recognise the format:
+Update `processing/detect.ts` to recognise the format:
 
 - Add a magic-byte signature in `matchSignature` if applicable.
 - Add the file extension(s) to the extension match.
@@ -73,6 +73,9 @@ Update `parsers/detect.ts` to recognise the format:
 Create `packages/api/src/document/formats/<fmt>/<fmt>.ts` exporting a
 namespace with:
 
+- **`parse(bytes)`** — re-export the parser as `<Fmt>.parse` so consumers
+  reach the parser through the namespace, not via `./parser` directly.
+  Mirror `Epub.parse`.
 - **Errors** scoped to the format (e.g. `Pdf.InvalidFormatError`,
   `Pdf.EmptyError`). Keep them inside the namespace, not in a shared
   errors module.
@@ -112,51 +115,106 @@ In `packages/api/src/document/document.ts`:
 `Document.SectionSummary` is already type-agnostic — every format reuses
 it. Don't redefine it per format.
 
-## Step 4 — Pipeline branch
+## Step 4 — Workflow steps + class
 
-In `packages/api/src/document/processing/pipeline.ts`:
+Each format owns a Cloudflare Workflow. Mirror the EPUB layout:
 
-- Import the parser and the format namespace.
-- Add a `process<Fmt>(documentId, userId, bytes)` function that mirrors
-  `processEpub`:
-  1. Parse, mapping `ParseFailure` to `<Fmt>.InvalidFormatError`.
-  2. Write asset files via `DocumentAssetStore.putAsset`.
-  3. Write per-section `content/${padOrder(order)}-${slugify(title, ...)}.{html,txt}`
-     via `DocumentAssetStore.putContent`. Use `uniqueName` to avoid
-     collisions. Mint `sectionKey` via `<Fmt>.sectionKey(order)`.
-  4. Build the manifest object (`schemaVersion: 1`, `kind: "<fmt>"`,
-     section list, format-specific metadata).
-  5. Write manifest LAST via `DocumentAssetStore.putManifest`. Its
-     presence is the source-of-truth that processing succeeded.
-  6. Return `{ title, coverImage }` for the row update.
-- Add a `switch` on `row.kindParsed` (or the equivalent dispatch) so the
-  new format's processor is selected. Today there's only one branch; the
-  switch is the place to grow it.
+- `formats/<fmt>/steps.ts` — pure step bodies + `run<Fmt>Inline` for tests.
+  No `cloudflare:workers` import here so the unit-test runtime can load it.
+- `formats/<fmt>/workflow.ts` — `<Fmt>Workflow` class extending
+  `WorkflowEntrypoint`, importing the step bodies and stitching them with
+  `step.do(...)` checkpoints.
 
-`processDocument` already calls `DocumentAssetStore.removeRendered` first
-to wipe partial-failure state from a prior run — your branch inherits
-that for free.
+Step bodies (idempotent, returning small JSON-serializable values so
+checkpoint state stays bounded):
 
-## Step 5 — Tests
+1. **`loadDocument(documentId)`** — Read D1 row, assert `kind === "<fmt>"`,
+   return `{ userId, originalKey }`.
+2. **`resetRendered(userId, documentId)`** — Idempotent R2 sweep
+   (`removeRendered` preserves `original.*`).
+3. **`parseAndRender(userId, documentId, originalKey)`** — Read original
+   bytes, call `<Fmt>.parse`, map `ParseFailure` to
+   `<Fmt>.InvalidFormatError`, write image assets via
+   `DocumentAssetStore.putAsset`, write per-section
+   `content/${padOrder(order)}-${slugify(title, ...)}.{html,txt}` via
+   `DocumentAssetStore.putContent`. Build and return the
+   `<Fmt>Manifest`-shaped payload.
+4. **`writeManifest(userId, documentId, manifest)`** — Persist `manifest.json`
+   via `DocumentAssetStore.putManifest`. Return `{ title, coverImage }` for
+   the next step.
+5. **`markProcessed(documentId, finalized)`** — Update the D1 row to
+   `processed` with `title` + `coverImage`.
+
+Plus `recordFailure(documentId, error)` for the catch-all → `markFailed`.
+And `run<Fmt>Inline(documentId)` — the inline version that calls steps 1-5
+in sequence, wrapping with try/catch + recordFailure to mirror the
+class's end-state semantics. Tests use this through the fake binding.
+
+The Workflow class itself is small: it only stitches the steps with
+`step.do(name, retryPolicy, () => provide(() => stepFn(...)))`. Pick
+retry/timeout policies that reflect the step's failure mode (transient
+binding I/O = more retries with short backoff; deterministic parse =
+fewer retries with longer backoff). Reuse the EPUB policies as a starting
+point.
+
+## Step 5 — Wire the workflow binding + dispatcher
+
+For each new Workflow class you need three small wirings:
+
+1. **`wrangler.jsonc`** — add a workflows entry in BOTH `env.dev` and
+   `env.production`:
+   ```jsonc
+   {
+     "binding": "<FMT>_PROCESSOR",
+     "name": "bainder-<fmt>-processor",       // and -dev for the dev env
+     "class_name": "<Fmt>Workflow"
+   }
+   ```
+2. **`packages/api/src/index.ts`** — export the class so wrangler can
+   resolve `class_name`:
+   ```ts
+   export { PdfWorkflow } from "./document/formats/pdf/workflow";
+   ```
+3. **`packages/api/src/document/processing/processor.ts`** — add an arm to
+   `Processor.bindingFor`:
+   ```ts
+   case "pdf": return Instance.env.PDF_PROCESSOR;
+   ```
+
+Then run `bun run --filter '*/api' cf-typegen` to refresh
+`worker-configuration.d.ts`.
+
+In the test runtime (`packages/api/src/document/__tests__/test-db.ts`),
+add the new binding to the fake env so `Processor.trigger` resolves:
+```ts
+const env = {
+  // ...
+  EPUB_PROCESSOR: createFakeEpubProcessor(),
+  PDF_PROCESSOR: createFakePdfProcessor(),  // mirrors the EPUB fake, calls runPdfInline
+} as RuntimeEnv;
+```
+
+## Step 6 — Tests
 
 - `packages/api/src/document/__tests__/document.test.ts` — at least one
   happy-path upload+process test for the new format that asserts:
   - `manifest.kind === "<fmt>"`
   - section count + a sample section's `sectionKey` shape
   - `getSectionHtml` / `getSectionText` round-trip a known string
-- `packages/api/src/document/__tests__/test-db.ts` — extend the fake R2
-  if your parser needs an asset shape it doesn't already handle.
+- `packages/api/src/document/__tests__/test-db.ts` — register the fake
+  binding (Step 5) and extend the fake R2 if your parser needs an asset
+  shape it doesn't already handle.
 - `packages/testing/src/lib/fixtures.ts` — add a `build<Fmt>()` fixture.
 - `packages/testing/src/__tests__/document.test.ts` — integration test
   that uploads the new format, waits for processed, fetches the manifest,
   and reads back at least one section.
-- Negative path: `parsers/detect.ts` rejects malformed bytes →
+- Negative path: `processing/detect.ts` rejects malformed bytes →
   `UnsupportedFormatError` → 415.
 
 If you change `Document.Manifest`, regenerate the SDK in the same change
-(see Step 6).
+(see Step 7).
 
-## Step 6 — Regenerate SDK + smoke clients
+## Step 7 — Regenerate SDK + smoke clients
 
 ```bash
 bun run --filter '*/sdk' build
@@ -196,7 +254,7 @@ checking doesn't catch broken render paths.
 1. **One format per change.** Don't add two formats in one PR; each gets
    its own contained, tested change.
 2. **Detection is the gate.** A format is "supported" only after its
-   detector arm is in `parsers/detect.ts`. Until then, the gate rejects
+   detector arm is in `processing/detect.ts`. Until then, the gate rejects
    it with `UnsupportedFormatError` → 415.
 3. **No format-specific routes.** The reader API
    (`/manifest`, `/sections/:order/html|text`, `/raw`, `/:name`) is the

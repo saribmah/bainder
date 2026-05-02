@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { strToU8, zipSync } from "fflate";
 import { Document } from "../document";
-import { processDocument } from "../processing/pipeline";
+import { runEpubInline } from "../formats/epub/steps";
 import { createTestRuntime } from "./test-db";
 
 const opf = `<?xml version="1.0" encoding="UTF-8"?>
@@ -132,21 +132,17 @@ const buildImageEpub = (): Uint8Array =>
     "OEBPS/images/cover.jpg": new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0xc0, 0xff, 0xee]),
   });
 
-// Inline trigger that runs the pipeline synchronously inside the same
-// Instance frame as the caller. The route would instead enqueue a workflow.
-const inlineTrigger = (documentId: string): Promise<void> => processDocument(documentId);
-
+// The test runtime stubs the `EPUB_PROCESSOR` workflow binding with a fake
+// that runs `runEpubInline` synchronously, so by the time `Document.create`
+// returns the document row is already in its terminal state (see test-db.ts).
 const uploadEpub = (userId: string, bytes = buildEpub(), filename = "test.epub") =>
-  Document.create(
-    {
-      userId,
-      bytes,
-      filename,
-      declaredMimeType: "application/epub+zip",
-      sensitive: false,
-    },
-    inlineTrigger,
-  );
+  Document.create({
+    userId,
+    bytes,
+    filename,
+    declaredMimeType: "application/epub+zip",
+    sensitive: false,
+  });
 
 // Drain a ReadableStream<Uint8Array> into a string for assertions on
 // section HTML/text endpoints (which now stream R2 objects directly).
@@ -249,16 +245,13 @@ describe("Document feature", () => {
   it("rejects an empty body", async () => {
     await runtime.runAs(userA, async () => {
       await expect(
-        Document.create(
-          {
-            userId: userA,
-            bytes: new Uint8Array(),
-            filename: "empty.bin",
-            declaredMimeType: null,
-            sensitive: false,
-          },
-          inlineTrigger,
-        ),
+        Document.create({
+          userId: userA,
+          bytes: new Uint8Array(),
+          filename: "empty.bin",
+          declaredMimeType: null,
+          sensitive: false,
+        }),
       ).rejects.toMatchObject({ name: "DocumentUploadEmptyError" });
     });
   });
@@ -266,16 +259,13 @@ describe("Document feature", () => {
   it("rejects bytes whose format we don't recognize", async () => {
     await runtime.runAs(userA, async () => {
       await expect(
-        Document.create(
-          {
-            userId: userA,
-            bytes: new Uint8Array([0xde, 0xad, 0xbe, 0xef]),
-            filename: "weird.xyz",
-            declaredMimeType: null,
-            sensitive: false,
-          },
-          inlineTrigger,
-        ),
+        Document.create({
+          userId: userA,
+          bytes: new Uint8Array([0xde, 0xad, 0xbe, 0xef]),
+          filename: "weird.xyz",
+          declaredMimeType: null,
+          sensitive: false,
+        }),
       ).rejects.toMatchObject({ name: "DocumentUnsupportedFormatError" });
     });
   });
@@ -286,16 +276,13 @@ describe("Document feature", () => {
       // as `pdf`; the EPUB-only gate must reject it.
       const pdfBytes = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34, 0x0a]);
       await expect(
-        Document.create(
-          {
-            userId: userA,
-            bytes: pdfBytes,
-            filename: "doc.pdf",
-            declaredMimeType: "application/pdf",
-            sensitive: false,
-          },
-          inlineTrigger,
-        ),
+        Document.create({
+          userId: userA,
+          bytes: pdfBytes,
+          filename: "doc.pdf",
+          declaredMimeType: "application/pdf",
+          sensitive: false,
+        }),
       ).rejects.toMatchObject({ name: "DocumentUnsupportedFormatError" });
     });
   });
@@ -305,16 +292,13 @@ describe("Document feature", () => {
       // ZIP with the EPUB mimetype member but no container.xml — passes
       // detection (`looksLikeEpubZip`) but parsing throws.
       const broken = zipSync({ mimetype: strToU8("application/epub+zip") });
-      const created = await Document.create(
-        {
-          userId: userA,
-          bytes: broken,
-          filename: "broken.epub",
-          declaredMimeType: "application/epub+zip",
-          sensitive: false,
-        },
-        inlineTrigger,
-      );
+      const created = await Document.create({
+        userId: userA,
+        bytes: broken,
+        filename: "broken.epub",
+        declaredMimeType: "application/epub+zip",
+        sensitive: false,
+      });
       const after = await Document.get(userA, created.id);
       expect(after.status).toBe("failed");
       expect(after.errorReason ?? "").not.toBe("");
@@ -435,10 +419,10 @@ describe("Document feature", () => {
   it("re-running the pipeline on the same document is idempotent", async () => {
     await runtime.runAs(userA, async () => {
       const created = await uploadEpub(userA);
-      // Re-invoking processDocument simulates a Workflow retry. The
-      // pipeline purges + rewrites manifest + content, so a second run
-      // ends in the same state.
-      await processDocument(created.id);
+      // Re-invoking the inline runner simulates a Workflow retry. The
+      // `resetRendered` step purges manifest + content + assets, so a
+      // second pass ends in the same final state.
+      await runEpubInline(created.id);
       const manifest = await Document.getManifest(userA, created.id);
       expect(manifest.chapterCount).toBe(2);
       expect(manifest.sections).toHaveLength(2);
