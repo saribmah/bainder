@@ -35,15 +35,24 @@ packages/
 │   │   ├── server/         # routes (HTTP transport) + error mapping
 │   │   ├── middleware/     # auth, error handler
 │   │   ├── instance/       # AsyncLocalStorage request context
-│   │   ├── utils/          # Context, Log, NamedError
+│   │   ├── utils/          # Context, Log, NamedError, slug
 │   │   ├── config/         # typed env accessors
 │   │   ├── health/         # health endpoint
-│   │   └── example/        # reference feature (delete or rename)
+│   │   ├── document/       # document ingest, processing, R2 manifest API
+│   │   │   └── formats/    # per-format namespaces (epub today; pdf/article next)
+│   │   ├── highlight/      # type-agnostic highlights (sectionKey + position)
+│   │   ├── progress/       # type-agnostic reading progress
+│   │   ├── user/           # user profile
+│   │   └── example/        # reference feature for new contributors
+│   ├── migrations/         # drizzle SQL migrations
 │   ├── scripts/            # generate-openapi
-│   └── wrangler.jsonc      # Cloudflare config
+│   └── wrangler.jsonc      # Cloudflare config (D1, R2, Workflow bindings)
 ├── sdk/                    # TypeScript SDK (generated from API OpenAPI)
-└── web/                    # React + Vite frontend (delete if API-only)
-    └── src/
+├── ui/                     # shared cross-platform UI primitives
+├── testing/                # integration test harness against a live worker
+├── web/                    # React 19 + Vite frontend
+├── mobile/                 # Expo / React Native client
+└── desktop/                # Electrobun desktop client
 ```
 
 ### Backend pattern (per feature)
@@ -68,6 +77,7 @@ Layering: `routes → feature → storage`, one-way only. Errors are typed
 | -------------------------- | ------------------------------------------------------------------- |
 | Add a feature              | [`.agents/add-feature.md`](./.agents/add-feature.md)                |
 | Add a route                | [`.agents/add-route.md`](./.agents/add-route.md)                    |
+| Add a document format      | [`.agents/add-format.md`](./.agents/add-format.md)                  |
 | Regenerate SDK after API   | [`.agents/regenerate-sdk.md`](./.agents/regenerate-sdk.md)          |
 | Wire Prisma + Postgres     | [`.agents/add-storage-prisma.md`](./.agents/add-storage-prisma.md)  |
 | Wire Cloudflare D1         | [`.agents/add-storage-d1.md`](./.agents/add-storage-d1.md)          |
@@ -79,8 +89,10 @@ Layering: `routes → feature → storage`, one-way only. Errors are typed
 # In one terminal:
 bun run --filter '*/api' dev      # wrangler dev on :8787
 
-# In another:
-bun run --filter '*/web' dev      # vite on :3002 (proxies /api → :8787)
+# In another, pick whichever client you're working on:
+bun run --filter '*/web' dev      # vite (proxies /api → :8787)
+bun run --filter '*/mobile' start # expo
+bun run --filter '*/desktop' dev  # electrobun
 ```
 
 The web app's Vite config proxies `/api/*` to the local wrangler dev server,
