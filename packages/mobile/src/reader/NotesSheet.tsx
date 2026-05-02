@@ -15,7 +15,9 @@ export type NotesSheetProps = {
   onJumpEpub?: (chapterOrder: number) => void;
 };
 
-const RELATIVE_THRESHOLDS: Array<[number, Intl.RelativeTimeFormatUnit]> = [
+type RelativeUnit = "second" | "minute" | "hour" | "day" | "week" | "month" | "year";
+
+const RELATIVE_THRESHOLDS: Array<[number, RelativeUnit]> = [
   [60, "second"],
   [60, "minute"],
   [24, "hour"],
@@ -25,15 +27,20 @@ const RELATIVE_THRESHOLDS: Array<[number, Intl.RelativeTimeFormatUnit]> = [
   [Number.POSITIVE_INFINITY, "year"],
 ];
 
+const formatRelativeUnit = (value: number, unit: RelativeUnit): string => {
+  if (value === 0) return "now";
+  const abs = Math.abs(value);
+  const label = `${abs} ${unit}${abs === 1 ? "" : "s"}`;
+  return value < 0 ? `${label} ago` : `in ${label}`;
+};
+
 const formatRelativeTime = (iso: string): string => {
-  const fmt = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
-  const diffMs = new Date(iso).getTime() - Date.now();
-  let value = diffMs / 1000;
+  let value = (new Date(iso).getTime() - Date.now()) / 1000;
   for (const [step, unit] of RELATIVE_THRESHOLDS) {
-    if (Math.abs(value) < step) return fmt.format(Math.round(value), unit);
+    if (Math.abs(value) < step) return formatRelativeUnit(Math.round(value), unit);
     value /= step;
   }
-  return fmt.format(Math.round(value), "year");
+  return formatRelativeUnit(Math.round(value), "year");
 };
 
 export function NotesSheet({

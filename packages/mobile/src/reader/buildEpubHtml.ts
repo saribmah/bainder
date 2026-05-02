@@ -6,19 +6,19 @@ const HL = color.highlight;
 // CSS for the rendered chapter document. Highlight classes mirror the web
 // reader's `bd-highlight*` classes so stored colors are interchangeable
 // across platforms.
-function readerCss(bg: string, fg: string): string {
+function readerCss(bg: string, fg: string, fontSize: number): string {
   return `
   html, body { margin: 0; padding: 0; background: ${bg}; color: ${fg}; }
   body {
-    font-family: 'Iowan Old Style', 'Charter', Georgia, serif;
-    font-size: 19px;
+    font-family: 'Newsreader', 'Iowan Old Style', 'Charter', Georgia, serif;
+    font-size: ${fontSize}px;
     line-height: 1.65;
-    padding: 4px 0 16px;
+    padding: 0 0 16px;
     -webkit-text-size-adjust: 100%;
   }
   p { margin: 0.85em 0; }
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Times New Roman', serif;
+    font-family: 'Fraunces', 'Times New Roman', serif;
     font-weight: 500;
     line-height: 1.2;
     margin: 1.2em 0 0.6em;
@@ -250,13 +250,13 @@ const READER_RUNTIME = `
 })();
 `;
 
-export function buildEpubHtml(inner: string, bg: string, fg: string): string {
+export function buildEpubHtml(inner: string, bg: string, fg: string, fontSize = 17): string {
   return `<!doctype html>
 <html>
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-<style>${readerCss(bg, fg)}</style>
+<style>${readerCss(bg, fg, fontSize)}</style>
 </head>
 <body>
 ${inner}
