@@ -25,7 +25,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
     return <Redirect href="/" />;
   }
   if (isAuthed && (inSignIn || inSignUp)) {
-    return <Redirect href="/library" />;
+    return <Redirect href="/dashboard" />;
   }
   return <>{children}</>;
 }

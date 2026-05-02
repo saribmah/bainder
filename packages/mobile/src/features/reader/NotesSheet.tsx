@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { IconButton, Icons, Sheet, color, themeColors, type Theme } from "@bainder/ui";
 import type { EpubChapterSummary, Highlight } from "@bainder/sdk";
-import { useSdk } from "../sdk/sdk.provider.tsx";
+import { useSdk } from "../../sdk/sdk.provider.tsx";
 
 export type NotesSheetProps = {
   visible: boolean;
