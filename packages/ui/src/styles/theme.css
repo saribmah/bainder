@@ -2,31 +2,71 @@
    Apply via [data-theme="..."] on html/body or a containing element. */
 
 :root,
-[data-theme="light"] {
-  background: var(--paper-50);
-  color: var(--paper-900);
-}
-
-[data-theme="sepia"] {
-  background: var(--sepia-50);
-  color: var(--sepia-900);
-}
-
-[data-theme="dark"] {
-  background: var(--night-900);
-  color: var(--night-50);
-}
-
-/* Legacy class hooks — kept for parity with the design prototype. */
+[data-theme="light"],
 .bd-theme-light {
-  background: var(--paper-50);
-  color: var(--paper-900);
+  --bd-bg: var(--paper-50);
+  --bd-surface: var(--paper-50);
+  --bd-surface-raised: var(--paper-100);
+  --bd-surface-hover: var(--paper-100);
+  --bd-border: var(--paper-200);
+  --bd-border-strong: var(--paper-300);
+  --bd-fg: var(--paper-900);
+  --bd-fg-subtle: var(--paper-700);
+  --bd-fg-muted: var(--paper-500);
+  --bd-action: var(--paper-900);
+  --bd-action-hover: var(--paper-800);
+  --bd-action-fg: var(--paper-50);
+  --bd-accent: var(--wine-700);
+  --bd-accent-hover: var(--wine-600);
+  --bd-accent-fg: var(--paper-50);
+  --bd-focus: var(--paper-900);
+
+  background: var(--bd-bg);
+  color: var(--bd-fg);
 }
+
+[data-theme="sepia"],
 .bd-theme-sepia {
-  background: var(--sepia-50);
-  color: var(--sepia-900);
+  --bd-bg: var(--sepia-50);
+  --bd-surface: var(--sepia-50);
+  --bd-surface-raised: var(--sepia-100);
+  --bd-surface-hover: var(--sepia-100);
+  --bd-border: var(--sepia-200);
+  --bd-border-strong: var(--sepia-200);
+  --bd-fg: var(--sepia-900);
+  --bd-fg-subtle: var(--sepia-700);
+  --bd-fg-muted: var(--sepia-700);
+  --bd-action: var(--sepia-900);
+  --bd-action-hover: var(--sepia-800);
+  --bd-action-fg: var(--sepia-50);
+  --bd-accent: var(--wine-700);
+  --bd-accent-hover: var(--wine-600);
+  --bd-accent-fg: var(--paper-50);
+  --bd-focus: var(--sepia-900);
+
+  background: var(--bd-bg);
+  color: var(--bd-fg);
 }
+
+[data-theme="dark"],
 .bd-theme-dark {
-  background: var(--night-900);
-  color: var(--night-50);
+  --bd-bg: var(--night-900);
+  --bd-surface: var(--night-800);
+  --bd-surface-raised: var(--night-700);
+  --bd-surface-hover: var(--night-700);
+  --bd-border: var(--night-700);
+  --bd-border-strong: var(--night-500);
+  --bd-fg: var(--night-50);
+  --bd-fg-subtle: var(--night-200);
+  --bd-fg-muted: var(--night-200);
+  --bd-action: var(--night-50);
+  --bd-action-hover: var(--night-200);
+  --bd-action-fg: var(--night-900);
+  --bd-accent: var(--wine-300);
+  --bd-accent-hover: var(--wine-100);
+  --bd-accent-fg: var(--night-900);
+  --bd-focus: var(--night-50);
+
+  background: var(--bd-bg);
+  color: var(--bd-fg);
 }
