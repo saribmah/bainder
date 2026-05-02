@@ -31,7 +31,7 @@ import type {
   EpubTocItem,
   Highlight,
 } from "@bainder/sdk";
-import { useSdk } from "../sdk";
+import { useSdk } from "../../sdk";
 import { HighlightLayer } from "./HighlightLayer";
 import { ReaderHighlightsProvider, useReaderHighlights } from "./highlightsRefresh";
 import { NotesSheet } from "./NotesSheet";
@@ -62,14 +62,14 @@ export function Reader() {
     };
   }, [id, client]);
 
-  const handleClose = () => navigate("/library");
+  const handleClose = () => navigate("/dashboard");
 
   if (error) {
     return (
       <ReaderState>
         <p className="t-body-m text-error">{error}</p>
         <Button variant="secondary" onClick={handleClose}>
-          Back to library
+          Back to dashboard
         </Button>
       </ReaderState>
     );
@@ -103,7 +103,7 @@ export function Reader() {
             : "This document is still being processed. Please wait a moment and try again."}
         </p>
         <Button variant="secondary" onClick={handleClose}>
-          Back to library
+          Back to dashboard
         </Button>
       </ReaderState>
     );

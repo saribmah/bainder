@@ -1,6 +1,6 @@
 import { useNavigate, Navigate } from "react-router-dom";
 import { Button, Icons, Wordmark } from "@bainder/ui";
-import { authClient } from "../auth/auth.client";
+import { authClient } from "../auth";
 
 const navItems = ["Why Bainder", "For students", "For readers", "Pricing"];
 const formats = ["EPUB", "PDF", "Articles", "Web links"];
@@ -36,7 +36,7 @@ export function Landing() {
   }
 
   if (session.data?.user) {
-    return <Navigate to="/library" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   const goToSignIn = () => navigate("/signin");

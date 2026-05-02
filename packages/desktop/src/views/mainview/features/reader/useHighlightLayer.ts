@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { RefObject } from "react";
 import type { Highlight } from "@bainder/sdk";
-import { useSdk } from "../sdk";
+import { useSdk } from "../../sdk";
 import { useReaderHighlights } from "./highlightsRefresh";
 import {
   charOffsetsToRange,
