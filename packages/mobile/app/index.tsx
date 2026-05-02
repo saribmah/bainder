@@ -2,6 +2,7 @@ import { Redirect } from "expo-router";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { color } from "@bainder/ui";
 import { authClient } from "../src/auth/auth.client.ts";
+import { LandingScreen } from "../src/landing/LandingScreen.tsx";
 
 export default function Index() {
   const session = authClient.useSession();
@@ -12,7 +13,10 @@ export default function Index() {
       </View>
     );
   }
-  return <Redirect href={session.data?.user ? "/library" : "/signin"} />;
+  if (session.data?.user) {
+    return <Redirect href="/library" />;
+  }
+  return <LandingScreen />;
 }
 
 const styles = StyleSheet.create({
