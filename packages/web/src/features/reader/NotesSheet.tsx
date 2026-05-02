@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { IconButton, Icons, Sheet, useTheme } from "@bainder/ui";
 import type { EpubChapterSummary, Highlight } from "@bainder/sdk";
-import { useSdk } from "../sdk";
+import { useSdk } from "../../sdk";
 
 export type NotesSheetProps = {
   documentId: string;

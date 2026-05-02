@@ -1,9 +1,8 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import { RequireAuth } from "./auth/RequireAuth";
-import { SignIn, SignUp } from "./auth/SignIn";
-import { Landing } from "./landing/Landing";
-import { Library } from "./library/Library";
-import { Reader } from "./reader/Reader";
+import { RequireAuth, SignIn, SignUp } from "./features/auth";
+import { Dashboard } from "./features/dashboard";
+import { Landing } from "./features/landing";
+import { Reader } from "./features/reader";
 
 export function App() {
   return (
@@ -13,7 +12,8 @@ export function App() {
         <Route path="/signin" element={<SignIn />} />
         <Route path="/signup" element={<SignUp />} />
         <Route element={<RequireAuth />}>
-          <Route path="/library" element={<Library />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/library" element={<Navigate to="/dashboard" replace />} />
           <Route path="/read/:id" element={<Reader />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
