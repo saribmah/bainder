@@ -3,10 +3,10 @@ import type { RuntimeEnv } from "./app/context";
 
 export { openApiDocumentation } from "./app/app";
 
-// Workflow class export so wrangler can locate it via its `class_name` in
-// wrangler.jsonc. The DOCUMENT_PROCESSOR binding is invoked from the upload
-// route to run parsing outside the request path.
-export { DocumentProcessor } from "./document/processing/workflow";
+// Workflow class exports so wrangler can locate them via `class_name` in
+// wrangler.jsonc. One Workflow class per document kind; `Processor.trigger`
+// dispatches uploads to the matching binding.
+export { EpubWorkflow } from "./document/formats/epub/workflow";
 
 const hostnameOf = (value: string | null | undefined): string | null => {
   if (!value) return null;

@@ -51,12 +51,20 @@ collections.
   - `content/{slug}.html` + `content/{slug}.txt` — per-section render +
     canonical text, slug-prefixed by reading order
   - `assets/*` — extracted images / fonts referenced by content
-- **Format dispatch** (`packages/api/src/document/formats/`): one folder per
-  format. Today only `epub/` is wired (parser at
-  `processing/parsers/epub.ts`, format namespace at `formats/epub/epub.ts`
-  contributing the EPUB arm of `Document.Manifest`). Adding a format means
-  one parser + one manifest arm + one pipeline branch — no new routes, no
-  new SDK methods.
+- **Format dispatch** (`packages/api/src/document/formats/`): one folder
+  per format with its parser, namespace, workflow steps, and Cloudflare
+  Workflow class colocated. Today only `epub/` is wired:
+  `formats/epub/parser.ts` (private), `formats/epub/epub.ts` (`Epub`
+  namespace — `parse`, `sectionKey`, errors, manifest schemas),
+  `formats/epub/steps.ts` (idempotent step bodies + `runEpubInline`),
+  `formats/epub/workflow.ts` (`EpubWorkflow` class). Adding a format means
+  one parser + one manifest arm + one workflow + one binding — no new
+  routes, no new SDK methods.
+- **Processor dispatch** (`packages/api/src/document/processing/`): the
+  `Processor` namespace picks the right Workflow binding by `kind`.
+  `Document.create` calls `Processor.trigger(kind, id)` after persisting
+  the row + original blob; format detection happens in
+  `processing/detect.ts` before the trigger fires.
 - **Type-agnostic locators** for cross-document features: `highlight` and
   `progress` reference sections by `sectionKey` (e.g. `"epub:section:5"`,
   minted via `Epub.sectionKey(order)`) plus a JSON `position`. Adding a new

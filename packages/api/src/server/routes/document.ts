@@ -74,15 +74,13 @@ documentRouter.post(
     ]);
 
     try {
-      const entity = await Document.create(
-        { userId: Instance.userId, bytes, filename, declaredMimeType, sensitive },
-        async (documentId) => {
-          await Instance.env.DOCUMENT_PROCESSOR.create({
-            id: documentId,
-            params: { documentId },
-          });
-        },
-      );
+      const entity = await Document.create({
+        userId: Instance.userId,
+        bytes,
+        filename,
+        declaredMimeType,
+        sensitive,
+      });
       return c.json(entity, 201);
     } catch (error) {
       const mapped = mapError(error);

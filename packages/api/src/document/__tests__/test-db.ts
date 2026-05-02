@@ -6,6 +6,7 @@ import type { AuthContext, RuntimeEnv } from "../../app/context";
 import type { Db } from "../../db/db";
 import { user } from "../../db/schema";
 import { Instance } from "../../instance";
+import { runEpubInline } from "../formats/epub/steps";
 
 // Bun:sqlite-backed test harness for storage-touching feature tests.
 //
@@ -39,7 +40,11 @@ export const createTestRuntime = (users: TestUser[]) => {
       .run();
   }
 
-  const env = { DB: {} as unknown, BUCKET: createFakeR2Bucket() } as RuntimeEnv;
+  const env = {
+    DB: {} as unknown,
+    BUCKET: createFakeR2Bucket(),
+    EPUB_PROCESSOR: createFakeEpubProcessor(),
+  } as RuntimeEnv;
 
   const runAs = async <R>(userId: string, fn: () => Promise<R>): Promise<R> => {
     const auth: AuthContext = {
@@ -129,4 +134,21 @@ const createFakeR2Bucket = (): R2Bucket => {
     },
   };
   return fake as unknown as R2Bucket;
+};
+
+// Workflow binding fake. `Document.create` calls `Processor.trigger`, which
+// hits the binding's `create`. Production enqueues a workflow run that
+// proceeds asynchronously; here we run `runEpubInline` synchronously so
+// the document row is in its terminal state by the time `Document.create`
+// returns. `runEpubInline` already wraps its body in try/catch + markFailed,
+// so the post-trigger state matches production for both happy and parse-
+// failure paths.
+const createFakeEpubProcessor = (): Workflow => {
+  const fake = {
+    create: async (init: { id?: string; params: { documentId: string } }) => {
+      await runEpubInline(init.params.documentId);
+      return { id: init.id ?? init.params.documentId };
+    },
+  };
+  return fake as unknown as Workflow;
 };

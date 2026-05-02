@@ -1,4 +1,4 @@
-import type { Document } from "../../document";
+import type { Document } from "../document";
 
 // Magic-byte + extension based format detection. We don't trust the declared
 // MIME type alone — browsers send `application/octet-stream` more often than

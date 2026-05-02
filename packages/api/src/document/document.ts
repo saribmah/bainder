@@ -2,7 +2,8 @@ import { z } from "zod";
 import { NamedError } from "../utils/error";
 import { DocumentAssetStore } from "./asset-store";
 import { Epub } from "./formats/epub/epub";
-import { detectFormat } from "./processing/parsers/detect";
+import { detectFormat } from "./processing/detect";
+import { Processor } from "./processing/processor";
 import { DocumentStorage } from "./storage";
 
 // User-visible binder primitive. One row per uploaded file. Format-specific
@@ -183,14 +184,11 @@ export namespace Document {
     sensitive: boolean;
   };
 
-  // Inline pipeline runner: parse + persist + mark processed. The Workflow
-  // (`processing/workflow.ts`) calls into this with a documentId to do the
-  // heavy work outside the request path. Tests can call `processInline`
-  // directly without standing up a workflow.
-  export const create = async (
-    input: CreateInput,
-    triggerProcessing: (documentId: string) => Promise<void>,
-  ): Promise<Entity> => {
+  // Persist the upload, kick off async processing, and return the row in
+  // its `processing` state. The actual parse + render runs inside the
+  // per-kind Cloudflare Workflow that `Processor.trigger` enqueues; tests
+  // swap the binding's `create` for an inline runner via the test runtime.
+  export const create = async (input: CreateInput): Promise<Entity> => {
     if (input.bytes.byteLength === 0) {
       throw new UploadEmptyError({ message: "Empty upload body" });
     }
@@ -232,7 +230,7 @@ export namespace Document {
     }
 
     try {
-      await triggerProcessing(id);
+      await Processor.trigger(detection.kind, id);
     } catch (e) {
       // Workflow trigger failed (e.g. binding misconfigured). Leave the row
       // and blob so a manual reprocess is possible, but surface the failure
