@@ -20,25 +20,25 @@ export type ReaderHighlights = {
 export function useReaderHighlights({
   client,
   documentId,
-  chapterOrder,
+  sectionKey,
   enabled,
 }: {
   client: ApiClient;
   documentId: string;
-  chapterOrder: number | null;
+  sectionKey: string | null;
   enabled: boolean;
 }): ReaderHighlights {
   const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
-    if (!enabled || chapterOrder === null) {
+    if (!enabled || sectionKey === null) {
       setHighlights([]);
       return;
     }
     let cancelled = false;
     client.highlight
-      .list({ documentId, epubChapterOrder: chapterOrder })
+      .list({ documentId, sectionKey })
       .then((res) => {
         if (cancelled) return;
         setHighlights(res.data?.items ?? []);
@@ -49,18 +49,17 @@ export function useReaderHighlights({
     return () => {
       cancelled = true;
     };
-  }, [client, documentId, chapterOrder, enabled, reloadToken]);
+  }, [client, documentId, sectionKey, enabled, reloadToken]);
 
   const reload = useCallback(() => setReloadToken((n) => n + 1), []);
 
   const create = useCallback<ReaderHighlights["create"]>(
     async (color, selection, note) => {
-      if (chapterOrder === null) return null;
+      if (sectionKey === null) return null;
       const params: Parameters<typeof client.highlight.create>[0] = {
         documentId,
-        epubChapterOrder: chapterOrder,
-        offsetStart: selection.offsetStart,
-        offsetEnd: selection.offsetEnd,
+        sectionKey,
+        position: { offsetStart: selection.offsetStart, offsetEnd: selection.offsetEnd },
         textSnippet: selection.text,
         color,
       };
@@ -73,7 +72,7 @@ export function useReaderHighlights({
       }
       return null;
     },
-    [client, documentId, chapterOrder],
+    [client, documentId, sectionKey],
   );
 
   const update = useCallback<ReaderHighlights["update"]>(

@@ -99,10 +99,15 @@ const createFakeR2Bucket = (): R2Bucket => {
   const fake = {
     put: async (
       key: string,
-      value: ArrayBuffer | Uint8Array,
+      value: ArrayBuffer | Uint8Array | string,
       options?: { httpMetadata?: { contentType?: string } },
     ) => {
-      const bytes = value instanceof Uint8Array ? value : new Uint8Array(value);
+      const bytes =
+        typeof value === "string"
+          ? new TextEncoder().encode(value)
+          : value instanceof Uint8Array
+            ? value
+            : new Uint8Array(value);
       const contentType = options?.httpMetadata?.contentType ?? "application/octet-stream";
       store.set(key, { bytes, contentType });
       return { key, size: bytes.byteLength };

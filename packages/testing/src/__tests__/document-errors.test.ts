@@ -78,21 +78,21 @@ describe("document errors", () => {
     expect(terminal.errorReason).not.toBeNull();
 
     // status !== "processed" → NotProcessedError → 409.
-    const detail = await client.document.getEpubDetail({ id: documentId });
-    expect(detail.error).toBeDefined();
-    expect(detail.response.status).toBe(409);
+    const manifest = await client.document.getManifest({ id: documentId });
+    expect(manifest.error).toBeDefined();
+    expect(manifest.response.status).toBe(409);
   }, 90000);
 
-  test("400 when EPUB chapter order is invalid", async () => {
+  test("400 when section order is invalid", async () => {
     const { client } = await signInAs("badorder@bainder.test");
     // Route validates the order param before hitting the feature, so it 400s
     // even on a non-existent document — a real document isn't required.
-    const chapter = await client.document.getEpubChapter({
+    const section = await client.document.getSectionHtml({
       id: crypto.randomUUID(),
       order: "-1",
     });
-    expect(chapter.error).toBeDefined();
-    expect(chapter.response.status).toBe(400);
+    expect(section.error).toBeDefined();
+    expect(section.response.status).toBe(400);
   });
 
   test(
@@ -119,8 +119,8 @@ describe("document errors", () => {
       const bobStatus = await b.client.document.getStatus({ id: documentId });
       expect(bobStatus.response.status).toBe(404);
 
-      const bobDetail = await b.client.document.getEpubDetail({ id: documentId });
-      expect(bobDetail.response.status).toBe(404);
+      const bobManifest = await b.client.document.getManifest({ id: documentId });
+      expect(bobManifest.response.status).toBe(404);
 
       const bobDelete = await b.client.document.delete({ id: documentId });
       expect(bobDelete.response.status).toBe(404);

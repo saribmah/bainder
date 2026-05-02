@@ -41,15 +41,34 @@ collections.
 
 ## Current focus
 
-- **EPUB ingest scaffold** (`packages/api/src/epub/`): in-memory `Epub` feature
-  that parses EPUB bytes (fflate + fast-xml-parser) into book metadata,
-  ordered chapters (cleaned HTML + plain text), and a flat TOC, plus a
-  `getContext` op that assembles AI-ready text across a chapter range.
-  Routes mounted at `/epubs`. Storage is in-memory — wire to R2 (chapter
-  blobs) + Postgres/D1 (rows + metadata) when persistence is needed.
-- Planned siblings: `pdf`, `receipt`, `image` features — each its own
-  self-contained module following the same Entity/storage pattern. A future
-  cross-corpus binder/search feature will compose across them.
+- **Document ingest** (`packages/api/src/document/`): unified `Document`
+  feature that owns upload, async processing (Cloudflare Workflow), and a
+  type-agnostic reader API. D1 keeps lightweight rows; R2 holds rendered
+  content per document at `users/{userId}/documents/{id}/`:
+  - `original.{ext}` — raw upload
+  - `manifest.json` — canonical index (sections, metadata, TOC) — written
+    last; its presence is the source-of-truth that processing succeeded
+  - `content/{slug}.html` + `content/{slug}.txt` — per-section render +
+    canonical text, slug-prefixed by reading order
+  - `assets/*` — extracted images / fonts referenced by content
+- **Format dispatch** (`packages/api/src/document/formats/`): one folder per
+  format. Today only `epub/` is wired (parser at
+  `processing/parsers/epub.ts`, format namespace at `formats/epub/epub.ts`
+  contributing the EPUB arm of `Document.Manifest`). Adding a format means
+  one parser + one manifest arm + one pipeline branch — no new routes, no
+  new SDK methods.
+- **Type-agnostic locators** for cross-document features: `highlight` and
+  `progress` reference sections by `sectionKey` (e.g. `"epub:section:5"`,
+  minted via `Epub.sectionKey(order)`) plus a JSON `position`. Adding a new
+  format does not change the highlight/progress schemas.
+- **Reader API surface**: `GET /documents/:id/manifest`,
+  `GET /documents/:id/sections/:order/{html,text}`, `GET /documents/:id/raw`,
+  `GET /documents/:id/{name}` (assets). Same endpoints work for every
+  format.
+- Planned siblings: `pdf`, `article`, `image` formats — each adds a parser
+  and a manifest arm. A future cross-corpus binder/search feature will
+  compose across them by reading from R2 in an AI sandbox (no
+  embeddings/vectors).
 
 ## Notes
 

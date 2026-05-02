@@ -17,13 +17,7 @@ import {
   useTheme,
   type Theme,
 } from "@bainder/ui";
-import type {
-  Document,
-  EpubChapter,
-  EpubChapterSummary,
-  EpubDetail,
-  EpubTocItem,
-} from "@bainder/sdk";
+import type { Document, DocumentManifest, DocumentSectionSummary, EpubTocItem } from "@bainder/sdk";
 import { useSdk } from "../../../sdk/sdk.provider.tsx";
 import { EpubHtmlBody } from "../EpubHtmlBody.tsx";
 import type { AssetCache } from "../inlineAssets.ts";
@@ -31,10 +25,17 @@ import { NotesSheet } from "../NotesSheet.tsx";
 import { useReaderHighlights } from "../useReaderHighlights.ts";
 
 type NotesContext = {
-  chapters?: ReadonlyArray<EpubChapterSummary>;
+  sections?: ReadonlyArray<DocumentSectionSummary>;
   currentOrder?: number;
   refreshToken: number;
-  onJumpEpub?: (order: number) => void;
+  onJumpToOrder?: (order: number) => void;
+};
+
+type TocContext = {
+  toc: ReadonlyArray<EpubTocItem>;
+  sections: ReadonlyArray<DocumentSectionSummary>;
+  currentOrder: number;
+  onJump: (order: number) => void;
 };
 
 type ReaderFontScale = "standard" | "large";
@@ -112,12 +113,7 @@ function ReaderShell({ doc, onClose }: { doc: Document; onClose: () => void }) {
   const { theme, cycleTheme } = useTheme();
   const palette = themeColors(theme);
   const [position, setPosition] = useState<string | null>(null);
-  const [tocState, setTocState] = useState<{
-    toc: ReadonlyArray<EpubTocItem>;
-    chapters: ReadonlyArray<EpubChapterSummary>;
-    currentOrder: number;
-    onJump: (order: number) => void;
-  } | null>(null);
+  const [tocState, setTocState] = useState<TocContext | null>(null);
   const [notesState, setNotesState] = useState<NotesContext | null>(null);
   const [tocOpen, setTocOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
@@ -153,9 +149,8 @@ function ReaderShell({ doc, onClose }: { doc: Document; onClose: () => void }) {
         style={shellStyles.body}
         contentContainerStyle={[shellStyles.bodyContent, { paddingBottom: insets.bottom + 120 }]}
       >
-        <EpubBody
-          documentId={doc.id}
-          initialOrder={doc.progress?.epubChapterOrder ?? 0}
+        <ReaderBody
+          doc={doc}
           theme={theme}
           onPosition={setPosition}
           onTocChange={setTocState}
@@ -206,7 +201,7 @@ function ReaderShell({ doc, onClose }: { doc: Document; onClose: () => void }) {
           visible={tocOpen}
           onClose={() => setTocOpen(false)}
           toc={tocState.toc}
-          chapters={tocState.chapters}
+          sections={tocState.sections}
           currentOrder={tocState.currentOrder}
           onJump={(order) => {
             tocState.onJump(order);
@@ -222,11 +217,11 @@ function ReaderShell({ doc, onClose }: { doc: Document; onClose: () => void }) {
           onClose={() => setNotesOpen(false)}
           documentId={doc.id}
           theme={theme}
-          chapters={notesState.chapters}
+          sections={notesState.sections}
           currentOrder={notesState.currentOrder}
           refreshToken={notesState.refreshToken}
-          onJumpEpub={(order) => {
-            notesState.onJumpEpub?.(order);
+          onJumpToOrder={(order) => {
+            notesState.onJumpToOrder?.(order);
             setNotesOpen(false);
           }}
         />
@@ -242,52 +237,52 @@ function ReaderShell({ doc, onClose }: { doc: Document; onClose: () => void }) {
   );
 }
 
-// ─── EPUB body ──────────────────────────────────────────────────────────
-function EpubBody({
-  documentId,
-  initialOrder,
+// ─── Reader body ─────────────────────────────────────────────────────────
+function ReaderBody({
+  doc,
   theme,
   onPosition,
   onTocChange,
   onNotesChange,
   fontScale,
 }: {
-  documentId: string;
-  initialOrder: number;
+  doc: Document;
   theme: Theme;
   onPosition: (p: string | null) => void;
-  onTocChange: (
-    s: {
-      toc: ReadonlyArray<EpubTocItem>;
-      chapters: ReadonlyArray<EpubChapterSummary>;
-      currentOrder: number;
-      onJump: (order: number) => void;
-    } | null,
-  ) => void;
+  onTocChange: (s: TocContext | null) => void;
   onNotesChange: (s: NotesContext | null) => void;
   fontScale: ReaderFontScale;
 }) {
   const { client, baseUrl, authedFetch } = useSdk();
+  const documentId = doc.id;
+  const initialOrder = doc.progress?.sectionKey
+    ? (parseSectionOrder(doc.progress.sectionKey) ?? 0)
+    : 0;
   const [order, setOrder] = useState(Math.max(0, initialOrder));
-  const [detail, setDetail] = useState<EpubDetail | null>(null);
-  const [chapter, setChapter] = useState<EpubChapter | null>(null);
+  const [manifest, setManifest] = useState<DocumentManifest | null>(null);
+  const [chapterHtml, setChapterHtml] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const assetCacheRef = useRef<AssetCache>(new Map());
+
+  const currentSection = useMemo(
+    () => manifest?.sections.find((s) => s.order === order) ?? null,
+    [manifest, order],
+  );
 
   const highlightLayer = useReaderHighlights({
     client,
     documentId,
-    chapterOrder: order,
+    sectionKey: currentSection?.sectionKey ?? null,
     enabled: true,
   });
 
   useEffect(() => {
     let cancelled = false;
     client.document
-      .getEpubDetail({ id: documentId })
+      .getManifest({ id: documentId })
       .then((res) => {
         if (cancelled) return;
-        if (res.data) setDetail(res.data);
+        if (res.data) setManifest(res.data);
         else setError("Failed to load book details");
       })
       .catch((err: unknown) => {
@@ -300,12 +295,12 @@ function EpubBody({
 
   useEffect(() => {
     let cancelled = false;
-    setChapter(null);
+    setChapterHtml(null);
     client.document
-      .getEpubChapter({ id: documentId, order: String(order) })
+      .getSectionHtml({ id: documentId, order: String(order) })
       .then((res) => {
         if (cancelled) return;
-        if (res.data) setChapter(res.data);
+        if (typeof res.data === "string") setChapterHtml(res.data);
         else setError("Failed to load chapter");
       })
       .catch((err: unknown) => {
@@ -318,33 +313,41 @@ function EpubBody({
 
   // Persist progress after the user stabilizes on a chapter for ~1s.
   useEffect(() => {
+    if (!manifest || !currentSection) return;
     const handle = setTimeout(() => {
-      client.progress.upsert({ id: documentId, epubChapterOrder: order }).catch(() => undefined);
+      const params: Parameters<typeof client.progress.upsert>[0] = {
+        id: documentId,
+        sectionKey: currentSection.sectionKey,
+      };
+      if (manifest.chapterCount > 0) {
+        params.progressPercent = (order + 1) / manifest.chapterCount;
+      }
+      client.progress.upsert(params).catch(() => undefined);
     }, 1000);
     return () => clearTimeout(handle);
-  }, [client, documentId, order]);
+  }, [client, documentId, order, currentSection, manifest]);
 
   // Publish position label.
   useEffect(() => {
-    if (!detail) return;
-    onPosition(`${order + 1}/${detail.chapters.length}`);
+    if (!manifest) return;
+    onPosition(`${order + 1}/${manifest.chapterCount}`);
     return () => onPosition(null);
-  }, [detail, order, onPosition]);
+  }, [manifest, order, onPosition]);
 
   // Publish TOC for the floating toolbar.
   useEffect(() => {
-    if (!detail || detail.toc.length === 0) {
+    if (!manifest || manifest.kind !== "epub" || manifest.toc.length === 0) {
       onTocChange(null);
       return;
     }
     onTocChange({
-      toc: detail.toc,
-      chapters: detail.chapters,
+      toc: manifest.toc,
+      sections: manifest.sections,
       currentOrder: order,
       onJump: (next) => setOrder(next),
     });
     return () => onTocChange(null);
-  }, [detail, order, onTocChange]);
+  }, [manifest, order, onTocChange]);
 
   // Publish notes context. The refresh token is the highlights array length
   // plus a hash of the latest update timestamp so NotesSheet reloads after CRUD.
@@ -357,23 +360,23 @@ function EpubBody({
   }, [highlightLayer.highlights]);
 
   useEffect(() => {
-    if (!detail) {
+    if (!manifest) {
       onNotesChange(null);
       return;
     }
     onNotesChange({
-      chapters: detail.chapters,
+      sections: manifest.sections,
       currentOrder: order,
       refreshToken,
-      onJumpEpub: (next) => setOrder(next),
+      onJumpToOrder: (next) => setOrder(next),
     });
     return () => onNotesChange(null);
-  }, [detail, order, refreshToken, onNotesChange]);
+  }, [manifest, order, refreshToken, onNotesChange]);
 
   if (error) return <Text style={shellStyles.errorText}>{error}</Text>;
-  if (!detail || !chapter) return <ChapterSkeleton />;
+  if (!manifest || chapterHtml === null || !currentSection) return <ChapterSkeleton />;
 
-  const totalChapters = detail.chapters.length;
+  const totalChapters = manifest.chapterCount;
   const readerFontSize = fontScale === "large" ? 19 : 17;
 
   return (
@@ -382,14 +385,14 @@ function EpubBody({
         Chapter {String(order + 1).padStart(2, "0")}
       </Text>
       <Text style={[shellStyles.chapterTitle, { color: themeColors(theme).text }]}>
-        {chapter.title}
+        {currentSection.title}
       </Text>
       <EpubHtmlBody
-        html={chapter.html}
+        html={chapterHtml}
         assetBase={`${baseUrl}/documents/${documentId}/`}
         theme={theme}
         fontSize={readerFontSize}
-        contentKey={`${documentId}:${order}`}
+        contentKey={currentSection.sectionKey}
         highlights={highlightLayer.highlights}
         authedFetch={authedFetch}
         assetCache={assetCacheRef.current}
@@ -456,7 +459,7 @@ function TocSheet({
   visible,
   onClose,
   toc,
-  chapters,
+  sections,
   currentOrder,
   onJump,
   theme,
@@ -464,18 +467,18 @@ function TocSheet({
   visible: boolean;
   onClose: () => void;
   toc: ReadonlyArray<EpubTocItem>;
-  chapters: ReadonlyArray<EpubChapterSummary>;
+  sections: ReadonlyArray<DocumentSectionSummary>;
   currentOrder: number;
   onJump: (order: number) => void;
   theme: Theme;
 }) {
   const orderByFile = useMemo(() => {
     const map = new Map<string, number>();
-    for (const ch of chapters) {
+    for (const ch of sections) {
       if (!map.has(ch.href)) map.set(ch.href, ch.order);
     }
     return map;
-  }, [chapters]);
+  }, [sections]);
 
   const palette = themeColors(theme);
   const muted = mutedForTheme(theme);
@@ -606,6 +609,14 @@ function ReaderState({ children }: { children: React.ReactNode }) {
     </View>
   );
 }
+
+// Section keys mint as `${kind}:section:${order}`. The dashboard / progress
+// UI reads the order back out of the stored key without a manifest fetch.
+const parseSectionOrder = (sectionKey: string): number | null => {
+  const match = /:section:(\d+)$/.exec(sectionKey);
+  if (!match) return null;
+  return Number(match[1]);
+};
 
 // ─── Theme helpers ──────────────────────────────────────────────────────
 function borderForTheme(theme: Theme): string {

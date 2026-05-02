@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useRef } from "react";
 import { Icons, Sheet, useTheme } from "@bainder/ui";
-import type { EpubChapterSummary, EpubTocItem } from "@bainder/sdk";
+import type { DocumentSectionSummary, EpubTocItem } from "@bainder/sdk";
 
 export type TocSheetProps = {
   toc: ReadonlyArray<EpubTocItem>;
-  chapters: ReadonlyArray<EpubChapterSummary>;
+  sections: ReadonlyArray<DocumentSectionSummary>;
   currentOrder: number;
   onJump: (order: number) => void;
   onClose: () => void;
 };
 
-export function TocSheet({ toc, chapters, currentOrder, onJump, onClose }: TocSheetProps) {
+export function TocSheet({ toc, sections, currentOrder, onJump, onClose }: TocSheetProps) {
   const { theme } = useTheme();
   const sheetRef = useRef<HTMLDivElement>(null);
 
@@ -19,11 +19,11 @@ export function TocSheet({ toc, chapters, currentOrder, onJump, onClose }: TocSh
   // for a file so anchors deeper in the chapter still jump to the chapter.
   const orderByFile = useMemo(() => {
     const map = new Map<string, number>();
-    for (const ch of chapters) {
+    for (const ch of sections) {
       if (!map.has(ch.href)) map.set(ch.href, ch.order);
     }
     return map;
-  }, [chapters]);
+  }, [sections]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

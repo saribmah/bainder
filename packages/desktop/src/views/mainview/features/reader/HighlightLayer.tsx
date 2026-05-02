@@ -8,22 +8,22 @@ const TOOLBAR_HEIGHT_ESTIMATE = 44;
 export type HighlightLayerProps = {
   containerRef: RefObject<HTMLElement | null>;
   documentId: string;
-  chapterOrder: number | null;
+  sectionKey: string | null;
   contentKey: string;
 };
 
 export function HighlightLayer({
   containerRef,
   documentId,
-  chapterOrder,
+  sectionKey,
   contentKey,
 }: HighlightLayerProps) {
   const layer = useHighlightLayer({
     containerRef,
     documentId,
-    chapterOrder,
+    sectionKey,
     contentKey,
-    enabled: chapterOrder !== null,
+    enabled: sectionKey !== null,
   });
 
   // `noteDraft` is non-null while the user is editing or composing a note.
@@ -33,7 +33,7 @@ export function HighlightLayer({
     null,
   );
 
-  if (chapterOrder === null) return null;
+  if (sectionKey === null) return null;
 
   return (
     <>

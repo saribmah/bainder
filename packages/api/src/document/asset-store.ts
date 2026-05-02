@@ -1,8 +1,16 @@
+import type { ZodType } from "zod";
 import { Config } from "../config/config";
 
 // R2-backed asset store for documents. Keys live under
 // `users/{userId}/documents/{documentId}/` so a per-user purge is one prefix
 // sweep and original blobs are never co-mingled across owners.
+//
+// Layout:
+//   original.{ext}          - raw upload, written at create time
+//   manifest.json           - canonical document index (toc, sections, metadata)
+//   content/{name}          - per-section render payload (.html) and canonical
+//                             text (.txt). Names are slug-prefixed by order.
+//   assets/{name}           - extracted images / fonts referenced by content
 export namespace DocumentAssetStore {
   const docPrefix = (userId: string, documentId: string): string =>
     `users/${userId}/documents/${documentId}/`;
@@ -12,6 +20,12 @@ export namespace DocumentAssetStore {
 
   const assetKey = (userId: string, documentId: string, name: string): string =>
     `${docPrefix(userId, documentId)}assets/${name}`;
+
+  const contentKey = (userId: string, documentId: string, name: string): string =>
+    `${docPrefix(userId, documentId)}content/${name}`;
+
+  const manifestKey = (userId: string, documentId: string): string =>
+    `${docPrefix(userId, documentId)}manifest.json`;
 
   export type Asset = {
     body: ReadableStream<Uint8Array>;
@@ -40,6 +54,33 @@ export namespace DocumentAssetStore {
   ): Promise<void> => {
     await Config.requireR2Bucket().put(assetKey(userId, documentId, name), bytes, {
       httpMetadata: { contentType },
+    });
+  };
+
+  export const putContent = async (
+    userId: string,
+    documentId: string,
+    name: string,
+    body: string | Uint8Array,
+    contentType: string,
+  ): Promise<void> => {
+    await Config.requireR2Bucket().put(contentKey(userId, documentId, name), body, {
+      httpMetadata: { contentType },
+    });
+  };
+
+  // Manifest is written last in the pipeline — its presence is the
+  // source-of-truth that processing succeeded. A partial-failure run leaves
+  // chapter content in place but no manifest, so a reprocess does
+  // `removeAll` then writes everything fresh.
+  export const putManifest = async (
+    userId: string,
+    documentId: string,
+    manifest: unknown,
+  ): Promise<void> => {
+    const json = JSON.stringify(manifest);
+    await Config.requireR2Bucket().put(manifestKey(userId, documentId), json, {
+      httpMetadata: { contentType: "application/json" },
     });
   };
 
@@ -75,6 +116,36 @@ export namespace DocumentAssetStore {
     };
   };
 
+  export const getContent = async (
+    userId: string,
+    documentId: string,
+    name: string,
+  ): Promise<Asset | null> => {
+    const obj = await Config.requireR2Bucket().get(contentKey(userId, documentId, name));
+    if (!obj) return null;
+    return {
+      body: obj.body,
+      contentType: obj.httpMetadata?.contentType ?? "application/octet-stream",
+      size: obj.size,
+    };
+  };
+
+  // Reads + validates manifest.json against the supplied zod schema. Returns
+  // null when the manifest is missing (still-processing or partial-failure
+  // states). A schema mismatch throws — that's a corrupted manifest and
+  // callers should let the error bubble so the workflow can re-process.
+  export const getManifest = async <T>(
+    userId: string,
+    documentId: string,
+    schema: ZodType<T>,
+  ): Promise<T | null> => {
+    const obj = await Config.requireR2Bucket().get(manifestKey(userId, documentId));
+    if (!obj) return null;
+    const text = await obj.text();
+    const parsed: unknown = JSON.parse(text);
+    return schema.parse(parsed);
+  };
+
   export const getOriginalBytes = async (
     userId: string,
     documentId: string,
@@ -87,12 +158,28 @@ export namespace DocumentAssetStore {
     return new Uint8Array(buffer);
   };
 
-  // Idempotent prefix sweep across both `original.*` and `assets/*` for a
-  // single document. R2 list returns at most 1000 keys per page; we paginate
-  // defensively for asset-heavy documents.
+  // Idempotent prefix sweep across `original.*`, `manifest.json`,
+  // `content/*`, and `assets/*` for a single document. R2 list returns at
+  // most 1000 keys per page; we paginate defensively for asset-heavy docs.
   export const removeAll = async (userId: string, documentId: string): Promise<void> => {
-    const bucket = Config.requireR2Bucket();
+    await sweep(docPrefix(userId, documentId));
+  };
+
+  // Drop everything the pipeline produces (manifest, content, assets) but
+  // preserve `original.{ext}` so a reprocess doesn't need to re-upload.
+  // Used at the top of the pipeline so partial-failure state from a prior
+  // run doesn't leave orphan files alongside the fresh output.
+  export const removeRendered = async (userId: string, documentId: string): Promise<void> => {
     const prefix = docPrefix(userId, documentId);
+    await Promise.all([
+      sweep(`${prefix}manifest.json`),
+      sweep(`${prefix}content/`),
+      sweep(`${prefix}assets/`),
+    ]);
+  };
+
+  const sweep = async (prefix: string): Promise<void> => {
+    const bucket = Config.requireR2Bucket();
     let cursor: string | undefined;
     while (true) {
       const page = await bucket.list({ prefix, cursor });

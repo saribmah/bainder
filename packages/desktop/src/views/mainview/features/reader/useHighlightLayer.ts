@@ -34,13 +34,13 @@ const colorClass = (color: HighlightColor): string =>
 export function useHighlightLayer({
   containerRef,
   documentId,
-  chapterOrder,
+  sectionKey,
   contentKey,
   enabled,
 }: {
   containerRef: RefObject<HTMLElement | null>;
   documentId: string;
-  chapterOrder: number | null;
+  sectionKey: string | null;
   contentKey: string;
   enabled: boolean;
 }) {
@@ -52,13 +52,13 @@ export function useHighlightLayer({
 
   // ---- Fetch on chapter change --------------------------------------------
   useEffect(() => {
-    if (!enabled || chapterOrder === null) {
+    if (!enabled || sectionKey === null) {
       setHighlights([]);
       return;
     }
     let cancelled = false;
     client.highlight
-      .list({ documentId, epubChapterOrder: chapterOrder })
+      .list({ documentId, sectionKey })
       .then((res) => {
         if (cancelled) return;
         setHighlights(res.data?.items ?? []);
@@ -70,7 +70,7 @@ export function useHighlightLayer({
     return () => {
       cancelled = true;
     };
-  }, [client, documentId, chapterOrder, enabled]);
+  }, [client, documentId, sectionKey, enabled]);
 
   // ---- Selection tracking --------------------------------------------------
   useEffect(() => {
@@ -84,7 +84,7 @@ export function useHighlightLayer({
       }
       const range = sel.getRangeAt(0);
       // Both ends must live inside the body container, otherwise the offsets
-      // wouldn't be meaningful against `chapter.html`.
+      // wouldn't be meaningful against the section's canonical text.
       if (!container.contains(range.startContainer) || !container.contains(range.endContainer)) {
         setSelection(null);
         return;
@@ -131,12 +131,18 @@ export function useHighlightLayer({
     // confuse the next pass. Wrapping in offset order is robust because
     // each pass operates on the freshly-normalised tree.
     const ordered = [...highlights].sort((a, b) => {
-      if (a.offsetStart !== b.offsetStart) return a.offsetStart - b.offsetStart;
-      return b.offsetEnd - b.offsetStart - (a.offsetEnd - a.offsetStart);
+      if (a.position.offsetStart !== b.position.offsetStart) {
+        return a.position.offsetStart - b.position.offsetStart;
+      }
+      return (
+        b.position.offsetEnd -
+        b.position.offsetStart -
+        (a.position.offsetEnd - a.position.offsetStart)
+      );
     });
 
     for (const h of ordered) {
-      const range = charOffsetsToRange(container, h.offsetStart, h.offsetEnd);
+      const range = charOffsetsToRange(container, h.position.offsetStart, h.position.offsetEnd);
       if (!range) continue;
       wrapRangeWithMarks(range, {
         className: colorClass(h.color),
@@ -168,12 +174,14 @@ export function useHighlightLayer({
   // ---- CRUD ----------------------------------------------------------------
   const create = useCallback(
     async (color: HighlightColor, note?: string) => {
-      if (chapterOrder === null || !selection) return;
+      if (sectionKey === null || !selection) return;
       const params: Parameters<typeof client.highlight.create>[0] = {
         documentId,
-        epubChapterOrder: chapterOrder,
-        offsetStart: selection.charRange.start,
-        offsetEnd: selection.charRange.end,
+        sectionKey,
+        position: {
+          offsetStart: selection.charRange.start,
+          offsetEnd: selection.charRange.end,
+        },
         textSnippet: selection.text,
         color,
       };
@@ -188,7 +196,7 @@ export function useHighlightLayer({
       }
       clearSelection();
     },
-    [client, documentId, chapterOrder, selection, clearSelection, refresh],
+    [client, documentId, sectionKey, selection, clearSelection, refresh],
   );
 
   const update = useCallback(

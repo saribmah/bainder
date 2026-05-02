@@ -41,26 +41,36 @@ describe("document", () => {
       expect(get.data?.status).toBe("processed");
       expect(get.data?.title).toBe("Bainder Test Book");
 
-      const detail = await client.document.getEpubDetail({ id: documentId });
-      expect(detail.error).toBeUndefined();
-      expect(detail.data?.book.documentId).toBe(documentId);
-      expect(detail.data?.book.chapterCount).toBe(2);
-      expect(detail.data?.chapters).toHaveLength(2);
-      expect(detail.data?.toc.length).toBeGreaterThan(0);
-      // Chapter titles come from the TOC's navLabel, not the chapter <h1>.
-      expect(detail.data?.chapters[0]?.title).toBe("The Beginning");
-      expect(detail.data?.chapters[1]?.title).toBe("The End");
+      const manifest = await client.document.getManifest({ id: documentId });
+      expect(manifest.error).toBeUndefined();
+      expect(manifest.data?.kind).toBe("epub");
+      expect(manifest.data?.chapterCount).toBe(2);
+      expect(manifest.data?.sections).toHaveLength(2);
+      // Section titles come from the TOC's navLabel, not the section <h1>.
+      expect(manifest.data?.sections[0]?.title).toBe("The Beginning");
+      expect(manifest.data?.sections[1]?.title).toBe("The End");
+      if (manifest.data?.kind === "epub") {
+        expect(manifest.data.toc.length).toBeGreaterThan(0);
+      }
 
-      const chapter = await client.document.getEpubChapter({
+      const sectionHtml = await client.document.getSectionHtml({
         id: documentId,
         order: "0",
       });
-      expect(chapter.error).toBeUndefined();
-      expect(chapter.data?.html).toContain("Chapter One");
-      expect(chapter.data?.text).toContain("Hello world");
+      expect(sectionHtml.error).toBeUndefined();
+      const html = typeof sectionHtml.data === "string" ? sectionHtml.data : "";
+      expect(html).toContain("Chapter One");
       // Sanitized: <script> stripped, inline <style> stripped.
-      expect(chapter.data?.html.toLowerCase()).not.toContain("<script");
-      expect(chapter.data?.html.toLowerCase()).not.toContain("<style");
+      expect(html.toLowerCase()).not.toContain("<script");
+      expect(html.toLowerCase()).not.toContain("<style");
+
+      const sectionText = await client.document.getSectionText({
+        id: documentId,
+        order: "0",
+      });
+      expect(sectionText.error).toBeUndefined();
+      const text = typeof sectionText.data === "string" ? sectionText.data : "";
+      expect(text).toContain("Hello world");
 
       const raw = await client.document.getRaw({ id: documentId });
       expect(raw.error).toBeUndefined();
@@ -90,9 +100,13 @@ describe("document", () => {
       const terminal = await waitForProcessed(client, documentId);
       expect(terminal.status).toBe("processed");
 
-      const detail = await client.document.getEpubDetail({ id: documentId });
-      expect(detail.error).toBeUndefined();
-      expect(detail.data?.book.coverImage).toBe("assets/cover.jpg");
+      const fetched = await client.document.get({ id: documentId });
+      expect(fetched.error).toBeUndefined();
+      expect(fetched.data?.coverImage).toBe("assets/cover.jpg");
+
+      const manifest = await client.document.getManifest({ id: documentId });
+      expect(manifest.error).toBeUndefined();
+      expect(manifest.data?.coverImage).toBe("assets/cover.jpg");
 
       const asset = await client.document.getAsset({ id: documentId, name: "cover.jpg" });
       expect(asset.error).toBeUndefined();

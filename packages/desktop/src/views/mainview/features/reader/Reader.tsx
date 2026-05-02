@@ -25,9 +25,8 @@ import {
 } from "@bainder/ui";
 import type {
   Document,
-  EpubChapter,
-  EpubChapterSummary,
-  EpubDetail,
+  DocumentManifest,
+  DocumentSectionSummary,
   EpubTocItem,
   Highlight,
 } from "@bainder/sdk";
@@ -116,7 +115,7 @@ export function Reader() {
           <ReaderTocProvider>
             <ReaderHighlightsProvider>
               <ReaderShell doc={doc} onClose={handleClose}>
-                <EpubBody documentId={doc.id} initialOrder={doc.progress?.epubChapterOrder ?? 0} />
+                <ReaderBody doc={doc} />
               </ReaderShell>
             </ReaderHighlightsProvider>
           </ReaderTocProvider>
@@ -172,7 +171,7 @@ function useReaderMeta() {
 
 type TocState = {
   toc: ReadonlyArray<EpubTocItem>;
-  chapters: ReadonlyArray<EpubChapterSummary>;
+  sections: ReadonlyArray<DocumentSectionSummary>;
   currentOrder: number;
   onJump: (order: number) => void;
 };
@@ -311,7 +310,7 @@ function ReaderShell({
           {toc ? (
             <ContentsRail
               toc={toc.toc}
-              chapters={toc.chapters}
+              sections={toc.sections}
               currentOrder={toc.currentOrder}
               onJump={toc.onJump}
             />
@@ -332,10 +331,10 @@ function ReaderShell({
         >
           <NotesRail
             documentId={doc.id}
-            chapters={toc?.chapters}
+            sections={toc?.sections}
             currentOrder={currentOrder}
             refreshToken={refresh?.refreshToken ?? 0}
-            onJumpEpub={(order) => setSearchParams({ chapter: String(order) })}
+            onJumpToOrder={(order) => setSearchParams({ chapter: String(order) })}
           />
         </aside>
       </div>
@@ -372,7 +371,7 @@ function ReaderShell({
       {toc && tocOpen && (
         <TocSheet
           toc={toc.toc}
-          chapters={toc.chapters}
+          sections={toc.sections}
           currentOrder={toc.currentOrder}
           onJump={(order) => {
             toc.onJump(order);
@@ -385,10 +384,10 @@ function ReaderShell({
       {notesOpen && (
         <NotesSheet
           documentId={doc.id}
-          chapters={toc?.chapters}
+          sections={toc?.sections}
           currentOrder={currentOrder}
           refreshToken={refresh?.refreshToken ?? 0}
-          onJumpEpub={(order) => {
+          onJumpToOrder={(order) => {
             setSearchParams({ chapter: String(order) });
             setNotesOpen(false);
           }}
@@ -412,19 +411,24 @@ function ReaderShell({
   );
 }
 
-function EpubBody({ documentId, initialOrder }: { documentId: string; initialOrder: number }) {
+function ReaderBody({ doc }: { doc: Document }) {
   const { client, baseUrl } = useSdk();
   const [searchParams, setSearchParams] = useSearchParams();
   const { setPosition } = useReaderPosition();
   const { setMeta } = useReaderMeta();
   const { setToc } = useReaderToc();
-  const [detail, setDetail] = useState<EpubDetail | null>(null);
-  const [chapter, setChapter] = useState<EpubChapter | null>(null);
+  const [manifest, setManifest] = useState<DocumentManifest | null>(null);
+  const [chapterHtml, setChapterHtml] = useState<string | null>(null);
+  const [chapterText, setChapterText] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const htmlRef = useRef<HTMLDivElement>(null);
 
+  const initialOrder = doc.progress?.sectionKey
+    ? (parseSectionOrder(doc.progress.sectionKey) ?? 0)
+    : 0;
   const orderParam = searchParams.get("chapter");
   const order = orderParam !== null ? Math.max(0, Number(orderParam)) : Math.max(0, initialOrder);
+  const documentId = doc.id;
 
   useEffect(() => {
     if (orderParam === null) {
@@ -442,10 +446,10 @@ function EpubBody({ documentId, initialOrder }: { documentId: string; initialOrd
   useEffect(() => {
     let cancelled = false;
     client.document
-      .getEpubDetail({ id: documentId })
+      .getManifest({ id: documentId })
       .then((res) => {
         if (cancelled) return;
-        if (res.data) setDetail(res.data);
+        if (res.data) setManifest(res.data);
         else setError("Failed to load book details");
       })
       .catch((err: unknown) => {
@@ -458,12 +462,12 @@ function EpubBody({ documentId, initialOrder }: { documentId: string; initialOrd
 
   useEffect(() => {
     let cancelled = false;
-    setChapter(null);
+    setChapterHtml(null);
     client.document
-      .getEpubChapter({ id: documentId, order: String(order) })
+      .getSectionHtml({ id: documentId, order: String(order) })
       .then((res) => {
         if (cancelled) return;
-        if (res.data) setChapter(res.data);
+        if (typeof res.data === "string") setChapterHtml(res.data);
         else setError("Failed to load chapter");
       })
       .catch((err: unknown) => {
@@ -474,67 +478,97 @@ function EpubBody({ documentId, initialOrder }: { documentId: string; initialOrd
     };
   }, [client, documentId, order]);
 
+  // Canonical text drives the AI quote excerpt and underpins highlight
+  // offset reasoning. Best-effort: a failure here doesn't block rendering.
   useEffect(() => {
-    if (!htmlRef.current || !chapter) return;
+    let cancelled = false;
+    setChapterText("");
+    client.document
+      .getSectionText({ id: documentId, order: String(order) })
+      .then((res) => {
+        if (cancelled) return;
+        if (typeof res.data === "string") setChapterText(res.data);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [client, documentId, order]);
+
+  useEffect(() => {
+    if (!htmlRef.current || chapterHtml === null) return;
     htmlRef.current.querySelectorAll('img[src^="assets/"]').forEach((img) => {
       const src = img.getAttribute("src");
       if (src) {
         img.setAttribute("src", `${baseUrl}/documents/${documentId}/${src}`);
       }
     });
-  }, [chapter, baseUrl, documentId]);
+  }, [chapterHtml, baseUrl, documentId]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
     document.querySelector("[data-reader-scroll]")?.scrollTo({ top: 0, behavior: "instant" });
   }, [order]);
 
+  const currentSection = useMemo(
+    () => manifest?.sections.find((s) => s.order === order) ?? null,
+    [manifest, order],
+  );
+
   useEffect(() => {
+    if (!manifest || !currentSection) return;
     const handle = setTimeout(() => {
-      client.progress.upsert({ id: documentId, epubChapterOrder: order }).catch(() => {});
+      const params: Parameters<typeof client.progress.upsert>[0] = {
+        id: documentId,
+        sectionKey: currentSection.sectionKey,
+      };
+      if (manifest.chapterCount > 0) {
+        params.progressPercent = (order + 1) / manifest.chapterCount;
+      }
+      client.progress.upsert(params).catch(() => undefined);
     }, 1000);
     return () => clearTimeout(handle);
-  }, [client, documentId, order]);
+  }, [client, documentId, order, currentSection, manifest]);
 
   useEffect(() => {
-    if (!detail) return;
-    setPosition(`Chapter ${order + 1} of ${detail.chapters.length}`);
+    if (!manifest) return;
+    setPosition(`Chapter ${order + 1} of ${manifest.chapterCount}`);
     return () => setPosition(null);
-  }, [detail, order, setPosition]);
+  }, [manifest, order, setPosition]);
 
   useEffect(() => {
-    if (!detail || !chapter) {
+    if (!manifest || !currentSection) {
       setMeta(null);
       return;
     }
     setMeta({
-      authors: detail.book.authors,
-      chapterTitle: chapter.title,
+      authors: manifest.kind === "epub" ? manifest.metadata.authors : [],
+      chapterTitle: currentSection.title,
       chapterOrder: order,
-      chapterCount: detail.chapters.length,
-      quote: excerptText(chapter.text, 220),
+      chapterCount: manifest.chapterCount,
+      quote: excerptText(chapterText, 220),
     });
     return () => setMeta(null);
-  }, [chapter, detail, order, setMeta]);
+  }, [manifest, currentSection, order, chapterText, setMeta]);
 
   useEffect(() => {
-    if (!detail || detail.toc.length === 0) {
+    if (!manifest || manifest.kind !== "epub" || manifest.toc.length === 0) {
       setToc(null);
       return;
     }
     setToc({
-      toc: detail.toc,
-      chapters: detail.chapters,
+      toc: manifest.toc,
+      sections: manifest.sections,
       currentOrder: order,
       onJump: navigateTo,
     });
     return () => setToc(null);
-  }, [detail, order, navigateTo, setToc]);
+  }, [manifest, order, navigateTo, setToc]);
 
   if (error) return <p className="t-body-m text-error">{error}</p>;
-  if (!detail || !chapter) return <ChapterSkeleton />;
+  if (!manifest || chapterHtml === null || !currentSection) return <ChapterSkeleton />;
 
-  const totalChapters = detail.chapters.length;
+  const totalChapters = manifest.chapterCount;
 
   return (
     <>
@@ -543,21 +577,21 @@ function EpubBody({ documentId, initialOrder }: { documentId: string; initialOrd
           Chapter {String(order + 1).padStart(2, "0")}
         </div>
         <h1 className="mt-2 font-display text-[28px] leading-tight font-normal tracking-[0] text-[var(--bd-fg)]">
-          {chapter.title}
+          {currentSection.title}
         </h1>
       </header>
 
       <div
         ref={htmlRef}
         className="bd-reader-prose"
-        dangerouslySetInnerHTML={{ __html: chapter.html }}
+        dangerouslySetInnerHTML={{ __html: chapterHtml }}
       />
 
       <HighlightLayer
         containerRef={htmlRef}
         documentId={documentId}
-        chapterOrder={order}
-        contentKey={chapter.id}
+        sectionKey={currentSection.sectionKey}
+        contentKey={currentSection.sectionKey}
       />
 
       <ChapterNav
@@ -590,22 +624,22 @@ function withReaderFont(children: ReactNode, scale: ReaderFontScale) {
 
 function ContentsRail({
   toc,
-  chapters,
+  sections,
   currentOrder,
   onJump,
 }: {
   toc: ReadonlyArray<EpubTocItem>;
-  chapters: ReadonlyArray<EpubChapterSummary>;
+  sections: ReadonlyArray<DocumentSectionSummary>;
   currentOrder: number;
   onJump: (order: number) => void;
 }) {
   const orderByFile = useMemo(() => {
     const map = new Map<string, number>();
-    for (const ch of chapters) {
+    for (const ch of sections) {
       if (!map.has(ch.href)) map.set(ch.href, ch.order);
     }
     return map;
-  }, [chapters]);
+  }, [sections]);
 
   const chapterRows =
     toc.length > 0
@@ -615,10 +649,10 @@ function ContentsRail({
           order: orderByFile.get(item.fileHref),
           depth: item.depth,
         }))
-      : chapters.map((chapter) => ({
-          key: chapter.id,
-          title: chapter.title,
-          order: chapter.order,
+      : sections.map((section) => ({
+          key: section.sectionKey,
+          title: section.title,
+          order: section.order,
           depth: 0,
         }));
 
@@ -815,28 +849,28 @@ function ReaderAiSheet({
 
 function NotesRail({
   documentId,
-  chapters,
+  sections,
   currentOrder,
   refreshToken,
-  onJumpEpub,
+  onJumpToOrder,
 }: {
   documentId: string;
-  chapters?: ReadonlyArray<EpubChapterSummary>;
+  sections?: ReadonlyArray<DocumentSectionSummary>;
   currentOrder?: number;
   refreshToken: number;
-  onJumpEpub: (chapterOrder: number) => void;
+  onJumpToOrder: (order: number) => void;
 }) {
   const { client } = useSdk();
   const [items, setItems] = useState<ReadonlyArray<Highlight> | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const titleByOrder = useMemo(() => {
-    const map = new Map<number, string>();
-    if (chapters) {
-      for (const ch of chapters) map.set(ch.order, ch.title);
+  const sectionInfoByKey = useMemo(() => {
+    const map = new Map<string, { order: number; title: string }>();
+    if (sections) {
+      for (const s of sections) map.set(s.sectionKey, { order: s.order, title: s.title });
     }
     return map;
-  }, [chapters]);
+  }, [sections]);
 
   useEffect(() => {
     let cancelled = false;
@@ -875,8 +909,9 @@ function NotesRail({
           </p>
         )}
         {items?.map((h) => {
-          const isCurrent = h.epubChapterOrder === currentOrder;
-          const label = labelFor(h, titleByOrder);
+          const info = sectionInfoByKey.get(h.sectionKey);
+          const isCurrent = info?.order === currentOrder;
+          const label = labelFor(info);
           return (
             <button
               key={h.id}
@@ -886,7 +921,9 @@ function NotesRail({
                 background: "var(--bd-surface-raised)",
                 boxShadow: isCurrent ? "inset 0 0 0 1px var(--bd-border-strong)" : undefined,
               }}
-              onClick={() => onJumpEpub(h.epubChapterOrder)}
+              onClick={() => {
+                if (info) onJumpToOrder(info.order);
+              }}
             >
               <div className="flex items-center gap-2">
                 <span
@@ -992,13 +1029,22 @@ const formatRelativeTime = (iso: string): string => {
   return fmt.format(Math.round(value), "year");
 };
 
-const labelFor = (h: Highlight, titleByOrder: Map<number, string>): string => {
-  const title = titleByOrder.get(h.epubChapterOrder);
-  return title ? `Ch. ${h.epubChapterOrder + 1} · ${title}` : `Chapter ${h.epubChapterOrder + 1}`;
+const labelFor = (info: { order: number; title: string } | undefined): string => {
+  if (!info) return "Section";
+  return `Ch. ${info.order + 1} · ${info.title}`;
 };
 
 const excerptText = (text: string, max: number): string => {
   const clean = text.replace(/\s+/g, " ").trim();
   if (clean.length <= max) return clean;
   return `${clean.slice(0, max).trim()}...`;
+};
+
+// Section keys mint as `${kind}:section:${order}`. Reading the order back
+// out lets the dashboard / progress UI display "Chapter N" without
+// needing the manifest.
+const parseSectionOrder = (sectionKey: string): number | null => {
+  const match = /:section:(\d+)$/.exec(sectionKey);
+  if (!match) return null;
+  return Number(match[1]);
 };

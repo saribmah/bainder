@@ -40,17 +40,28 @@
       "DocumentProgress": {
         "type": "object",
         "properties": {
-          "epubChapterOrder": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
+          "sectionKey": {
+            "type": "string"
+          },
+          "progressPercent": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "updatedAt": {
             "type": "string"
           }
         },
         "required": [
-          "epubChapterOrder",
+          "sectionKey",
+          "progressPercent",
           "updatedAt"
         ]
       },
@@ -105,6 +116,26 @@
               }
             ]
           },
+          "coverImage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sourceUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "progress": {
             "anyOf": [
               {
@@ -133,6 +164,8 @@
           "sensitive",
           "status",
           "errorReason",
+          "coverImage",
+          "sourceUrl",
           "progress",
           "createdAt",
           "updatedAt"
@@ -170,16 +203,50 @@
           "errorReason"
         ]
       },
+      "ProgressPosition": {
+        "type": "object",
+        "properties": {
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        }
+      },
       "Progress": {
         "type": "object",
         "properties": {
           "documentId": {
             "type": "string"
           },
-          "epubChapterOrder": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
+          "sectionKey": {
+            "type": "string",
+            "minLength": 1
+          },
+          "position": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProgressPosition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "progressPercent": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string"
           },
           "updatedAt": {
             "type": "string"
@@ -187,24 +254,72 @@
         },
         "required": [
           "documentId",
-          "epubChapterOrder",
+          "sectionKey",
+          "position",
+          "progressPercent",
+          "createdAt",
           "updatedAt"
         ]
       },
-      "EpubBook": {
+      "DocumentSectionSummary": {
         "type": "object",
         "properties": {
-          "documentId": {
+          "sectionKey": {
             "type": "string"
           },
+          "order": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "title": {
+            "type": "string"
+          },
+          "wordCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "linear": {
+            "type": "boolean"
+          },
+          "href": {
+            "type": "string"
+          },
+          "files": {
+            "type": "object",
+            "properties": {
+              "html": {
+                "type": "string"
+              },
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "html",
+              "text"
+            ]
+          }
+        },
+        "required": [
+          "sectionKey",
+          "order",
+          "title",
+          "wordCount",
+          "linear",
+          "href",
+          "files"
+        ]
+      },
+      "EpubManifestMetadata": {
+        "type": "object",
+        "properties": {
           "authors": {
             "type": "array",
             "items": {
               "type": "string"
             }
-          },
-          "language": {
-            "type": "string"
           },
           "description": {
             "anyOf": [
@@ -247,40 +362,15 @@
             "items": {
               "type": "string"
             }
-          },
-          "coverImage": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "chapterCount": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          },
-          "wordCount": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
           }
         },
         "required": [
-          "documentId",
           "authors",
-          "language",
           "description",
           "publisher",
           "publishedDate",
           "identifiers",
-          "subjects",
-          "coverImage",
-          "chapterCount",
-          "wordCount"
+          "subjects"
         ]
       },
       "EpubTocItem": {
@@ -331,115 +421,96 @@
           "anchor"
         ]
       },
-      "EpubChapterSummary": {
+      "EpubManifest": {
         "type": "object",
         "properties": {
-          "id": {
-            "type": "string"
-          },
-          "documentId": {
-            "type": "string"
-          },
-          "order": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          },
-          "href": {
-            "type": "string"
+          "schemaVersion": {
+            "type": "number",
+            "const": 1
           },
           "title": {
             "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "coverImage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "chapterCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
           },
           "wordCount": {
             "type": "integer",
             "minimum": 0,
             "maximum": 9007199254740991
           },
-          "linear": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "id",
-          "documentId",
-          "order",
-          "href",
-          "title",
-          "wordCount",
-          "linear"
-        ]
-      },
-      "EpubDetail": {
-        "type": "object",
-        "properties": {
-          "book": {
-            "$ref": "#/components/schemas/EpubBook"
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentSectionSummary"
+            }
+          },
+          "kind": {
+            "type": "string",
+            "const": "epub"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/EpubManifestMetadata"
           },
           "toc": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/EpubTocItem"
             }
-          },
-          "chapters": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/EpubChapterSummary"
-            }
           }
         },
         "required": [
-          "book",
-          "toc",
-          "chapters"
+          "schemaVersion",
+          "title",
+          "language",
+          "coverImage",
+          "chapterCount",
+          "wordCount",
+          "sections",
+          "kind",
+          "metadata",
+          "toc"
         ]
       },
-      "EpubChapter": {
+      "DocumentManifest": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/EpubManifest"
+          }
+        ]
+      },
+      "HighlightPosition": {
         "type": "object",
         "properties": {
-          "id": {
-            "type": "string"
-          },
-          "documentId": {
-            "type": "string"
-          },
-          "order": {
+          "offsetStart": {
             "type": "integer",
             "minimum": 0,
             "maximum": 9007199254740991
           },
-          "href": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "html": {
-            "type": "string"
-          },
-          "text": {
-            "type": "string"
-          },
-          "wordCount": {
+          "offsetEnd": {
             "type": "integer",
             "minimum": 0,
             "maximum": 9007199254740991
-          },
-          "linear": {
-            "type": "boolean"
           }
         },
         "required": [
-          "id",
-          "documentId",
-          "order",
-          "href",
-          "title",
-          "html",
-          "text",
-          "wordCount",
-          "linear"
+          "offsetStart",
+          "offsetEnd"
         ]
       },
       "Highlight": {
@@ -451,20 +522,11 @@
           "documentId": {
             "type": "string"
           },
-          "epubChapterOrder": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
+          "sectionKey": {
+            "type": "string"
           },
-          "offsetStart": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          },
-          "offsetEnd": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
+          "position": {
+            "$ref": "#/components/schemas/HighlightPosition"
           },
           "textSnippet": {
             "type": "string"
@@ -499,9 +561,8 @@
         "required": [
           "id",
           "documentId",
-          "epubChapterOrder",
-          "offsetStart",
-          "offsetEnd",
+          "sectionKey",
+          "position",
           "textSnippet",
           "color",
           "note",
@@ -1017,7 +1078,7 @@
       "post": {
         "operationId": "progress.upsert",
         "summary": "Upsert reading progress",
-        "description": "Records the caller's last position within an EPUB document via `epubChapterOrder`. Overwrites any existing row for this (user, document).",
+        "description": "Records the caller's reading state. `sectionKey` is the manifest section identifier; optional `position` and `progressPercent` carry within-section offset and overall completion. Overwrites any existing row for this (user, document).",
         "responses": {
           "200": {
             "description": "Updated progress",
@@ -1046,14 +1107,22 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "epubChapterOrder": {
-                    "type": "integer",
+                  "sectionKey": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "position": {
+                    "$ref": "#/components/schemas/ProgressPosition"
+                  },
+                  "progressPercent": {
+                    "type": "number",
                     "minimum": 0,
-                    "maximum": 9007199254740991
+                    "maximum": 1
                   }
                 },
                 "required": [
-                  "epubChapterOrder"
+                  "sectionKey"
                 ]
               }
             }
@@ -1071,17 +1140,18 @@
         ]
       }
     },
-    "/documents/{id}/epub": {
+    "/documents/{id}/manifest": {
       "get": {
-        "operationId": "document.getEpubDetail",
-        "summary": "Get EPUB book detail (book metadata + TOC + chapter summaries)",
+        "operationId": "document.getManifest",
+        "summary": "Get the document manifest (type-agnostic index)",
+        "description": "Returns the canonical manifest for the document — discriminated by `kind`, with format-specific metadata in the matching arm and a uniform `sections[]` for navigation.",
         "responses": {
           "200": {
-            "description": "EPUB detail",
+            "description": "Document manifest",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EpubDetail"
+                  "$ref": "#/components/schemas/DocumentManifest"
                 }
               }
             }
@@ -1090,7 +1160,7 @@
             "description": "Not authenticated"
           },
           "404": {
-            "description": "Not found or wrong kind"
+            "description": "Not found"
           },
           "409": {
             "description": "Document not yet processed"
@@ -1108,29 +1178,78 @@
         ]
       }
     },
-    "/documents/{id}/epub/chapters/{order}": {
+    "/documents/{id}/sections/{order}/html": {
       "get": {
-        "operationId": "document.getEpubChapter",
-        "summary": "Get a single EPUB chapter by linear order",
+        "operationId": "document.getSectionHtml",
+        "summary": "Stream a section's rendered HTML",
         "responses": {
           "200": {
-            "description": "Chapter content (cleaned HTML and plain text)",
+            "description": "Section HTML",
             "content": {
-              "application/json": {
+              "text/html": {
                 "schema": {
-                  "$ref": "#/components/schemas/EpubChapter"
+                  "type": "string"
                 }
               }
             }
           },
           "400": {
-            "description": "Invalid chapter order"
+            "description": "Invalid section order"
           },
           "401": {
             "description": "Not authenticated"
           },
           "404": {
-            "description": "Document or chapter not found"
+            "description": "Document or section not found"
+          },
+          "409": {
+            "description": "Document not yet processed"
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "order",
+            "required": true
+          }
+        ]
+      }
+    },
+    "/documents/{id}/sections/{order}/text": {
+      "get": {
+        "operationId": "document.getSectionText",
+        "summary": "Stream a section's canonical plain text",
+        "description": "The `.txt` payload that highlight offsets reference and the AI sandbox consumes. Identical text content to the HTML endpoint with markup stripped.",
+        "responses": {
+          "200": {
+            "description": "Section plain text",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid section order"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "404": {
+            "description": "Document or section not found"
           },
           "409": {
             "description": "Document not yet processed"
@@ -1160,7 +1279,7 @@
       "post": {
         "operationId": "highlight.create",
         "summary": "Create a highlight or note on a document",
-        "description": "Creates a colour highlight (and optional note) anchored to an EPUB chapter (`epubChapterOrder`). Offsets are character positions into the chapter's canonical text — `epub_chapter.html`'s textContent.",
+        "description": "Creates a colour highlight (and optional note) anchored to a document section via `sectionKey` (from the manifest). `position.offsetStart` / `offsetEnd` are character positions into the section's canonical `.txt` payload.",
         "responses": {
           "201": {
             "description": "Created",
@@ -1193,20 +1312,13 @@
                     "type": "string",
                     "minLength": 1
                   },
-                  "epubChapterOrder": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "maximum": 9007199254740991
+                  "sectionKey": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
                   },
-                  "offsetStart": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "maximum": 9007199254740991
-                  },
-                  "offsetEnd": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "maximum": 9007199254740991
+                  "position": {
+                    "$ref": "#/components/schemas/HighlightPosition"
                   },
                   "textSnippet": {
                     "type": "string",
@@ -1230,9 +1342,8 @@
                 },
                 "required": [
                   "documentId",
-                  "epubChapterOrder",
-                  "offsetStart",
-                  "offsetEnd",
+                  "sectionKey",
+                  "position",
                   "textSnippet",
                   "color"
                 ]
@@ -1244,7 +1355,7 @@
       "get": {
         "operationId": "highlight.list",
         "summary": "List highlights for a document",
-        "description": "Returns highlights owned by the caller for the given `documentId`, ordered by creation time. Optional `epubChapterOrder` query param scopes the result to a single chapter.",
+        "description": "Returns highlights owned by the caller for the given `documentId`, ordered by creation time. Optional `sectionKey` query param scopes the result to a single section (e.g. one EPUB chapter).",
         "parameters": [
           {
             "name": "documentId",
@@ -1255,12 +1366,11 @@
             }
           },
           {
-            "name": "epubChapterOrder",
+            "name": "sectionKey",
             "in": "query",
             "required": false,
             "schema": {
-              "type": "integer",
-              "minimum": 0
+              "type": "string"
             }
           }
         ],

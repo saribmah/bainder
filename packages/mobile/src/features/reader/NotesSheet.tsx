@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { IconButton, Icons, Sheet, color, themeColors, type Theme } from "@bainder/ui";
-import type { EpubChapterSummary, Highlight } from "@bainder/sdk";
+import type { DocumentSectionSummary, Highlight } from "@bainder/sdk";
 import { useSdk } from "../../sdk/sdk.provider.tsx";
 
 export type NotesSheetProps = {
@@ -9,10 +9,10 @@ export type NotesSheetProps = {
   onClose: () => void;
   documentId: string;
   theme: Theme;
-  chapters?: ReadonlyArray<EpubChapterSummary>;
+  sections?: ReadonlyArray<DocumentSectionSummary>;
   currentOrder?: number;
   refreshToken: number;
-  onJumpEpub?: (chapterOrder: number) => void;
+  onJumpToOrder?: (order: number) => void;
 };
 
 type RelativeUnit = "second" | "minute" | "hour" | "day" | "week" | "month" | "year";
@@ -48,22 +48,22 @@ export function NotesSheet({
   onClose,
   documentId,
   theme,
-  chapters,
+  sections,
   currentOrder,
   refreshToken,
-  onJumpEpub,
+  onJumpToOrder,
 }: NotesSheetProps) {
   const { client } = useSdk();
   const [items, setItems] = useState<Highlight[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const titleByOrder = useMemo(() => {
-    const map = new Map<number, string>();
-    if (chapters) {
-      for (const ch of chapters) map.set(ch.order, ch.title);
+  const sectionInfoByKey = useMemo(() => {
+    const map = new Map<string, { order: number; title: string }>();
+    if (sections) {
+      for (const s of sections) map.set(s.sectionKey, { order: s.order, title: s.title });
     }
     return map;
-  }, [chapters]);
+  }, [sections]);
 
   useEffect(() => {
     if (!visible) return;
@@ -119,12 +119,15 @@ export function NotesSheet({
           </Text>
         )}
         {items?.map((h) => {
-          const positionLabel = labelFor(h, titleByOrder);
-          const isCurrent = h.epubChapterOrder === currentOrder;
+          const info = sectionInfoByKey.get(h.sectionKey);
+          const positionLabel = labelFor(info);
+          const isCurrent = info?.order === currentOrder;
           return (
             <Pressable
               key={h.id}
-              onPress={() => onJumpEpub?.(h.epubChapterOrder)}
+              onPress={() => {
+                if (info) onJumpToOrder?.(info.order);
+              }}
               style={({ pressed }) => [
                 styles.card,
                 { backgroundColor: cardBg },
@@ -159,9 +162,9 @@ export function NotesSheet({
   );
 }
 
-const labelFor = (h: Highlight, titleByOrder: Map<number, string>): string => {
-  const title = titleByOrder.get(h.epubChapterOrder);
-  return title ? `Ch. ${h.epubChapterOrder + 1} · ${title}` : `Chapter ${h.epubChapterOrder + 1}`;
+const labelFor = (info: { order: number; title: string } | undefined): string => {
+  if (!info) return "Section";
+  return `Ch. ${info.order + 1} · ${info.title}`;
 };
 
 function mutedFor(theme: Theme): string {

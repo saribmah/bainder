@@ -15,14 +15,16 @@ import type {
   DocumentDeleteResponses,
   DocumentGetAssetErrors,
   DocumentGetAssetResponses,
-  DocumentGetEpubChapterErrors,
-  DocumentGetEpubChapterResponses,
-  DocumentGetEpubDetailErrors,
-  DocumentGetEpubDetailResponses,
   DocumentGetErrors,
+  DocumentGetManifestErrors,
+  DocumentGetManifestResponses,
   DocumentGetRawErrors,
   DocumentGetRawResponses,
   DocumentGetResponses,
+  DocumentGetSectionHtmlErrors,
+  DocumentGetSectionHtmlResponses,
+  DocumentGetSectionTextErrors,
+  DocumentGetSectionTextResponses,
   DocumentGetStatusErrors,
   DocumentGetStatusResponses,
   DocumentListErrors,
@@ -43,12 +45,14 @@ import type {
   HighlightDeleteResponses,
   HighlightListErrors,
   HighlightListResponses,
+  HighlightPosition,
   HighlightUpdateErrors,
   HighlightUpdateResponses,
   PostTestResetErrors,
   PostTestResetResponses,
   PostTestSignInErrors,
   PostTestSignInResponses,
+  ProgressPosition,
   ProgressUpsertErrors,
   ProgressUpsertResponses,
   TestModeSignInInput,
@@ -370,9 +374,11 @@ export class Document extends HeyApiClient {
   }
 
   /**
-   * Get EPUB book detail (book metadata + TOC + chapter summaries)
+   * Get the document manifest (type-agnostic index)
+   *
+   * Returns the canonical manifest for the document — discriminated by `kind`, with format-specific metadata in the matching arm and a uniform `sections[]` for navigation.
    */
-  public getEpubDetail<ThrowOnError extends boolean = false>(
+  public getManifest<ThrowOnError extends boolean = false>(
     parameters: {
       id: string;
     },
@@ -380,20 +386,20 @@ export class Document extends HeyApiClient {
   ) {
     const params = buildClientParams([parameters], [{ args: [{ in: "path", key: "id" }] }]);
     return (options?.client ?? this.client).get<
-      DocumentGetEpubDetailResponses,
-      DocumentGetEpubDetailErrors,
+      DocumentGetManifestResponses,
+      DocumentGetManifestErrors,
       ThrowOnError
     >({
-      url: "/documents/{id}/epub",
+      url: "/documents/{id}/manifest",
       ...options,
       ...params,
     });
   }
 
   /**
-   * Get a single EPUB chapter by linear order
+   * Stream a section's rendered HTML
    */
-  public getEpubChapter<ThrowOnError extends boolean = false>(
+  public getSectionHtml<ThrowOnError extends boolean = false>(
     parameters: {
       id: string;
       order: string;
@@ -412,11 +418,45 @@ export class Document extends HeyApiClient {
       ],
     );
     return (options?.client ?? this.client).get<
-      DocumentGetEpubChapterResponses,
-      DocumentGetEpubChapterErrors,
+      DocumentGetSectionHtmlResponses,
+      DocumentGetSectionHtmlErrors,
       ThrowOnError
     >({
-      url: "/documents/{id}/epub/chapters/{order}",
+      url: "/documents/{id}/sections/{order}/html",
+      ...options,
+      ...params,
+    });
+  }
+
+  /**
+   * Stream a section's canonical plain text
+   *
+   * The `.txt` payload that highlight offsets reference and the AI sandbox consumes. Identical text content to the HTML endpoint with markup stripped.
+   */
+  public getSectionText<ThrowOnError extends boolean = false>(
+    parameters: {
+      id: string;
+      order: string;
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "id" },
+            { in: "path", key: "order" },
+          ],
+        },
+      ],
+    );
+    return (options?.client ?? this.client).get<
+      DocumentGetSectionTextResponses,
+      DocumentGetSectionTextErrors,
+      ThrowOnError
+    >({
+      url: "/documents/{id}/sections/{order}/text",
       ...options,
       ...params,
     });
@@ -427,12 +467,14 @@ export class Progress extends HeyApiClient {
   /**
    * Upsert reading progress
    *
-   * Records the caller's last position within an EPUB document via `epubChapterOrder`. Overwrites any existing row for this (user, document).
+   * Records the caller's reading state. `sectionKey` is the manifest section identifier; optional `position` and `progressPercent` carry within-section offset and overall completion. Overwrites any existing row for this (user, document).
    */
   public upsert<ThrowOnError extends boolean = false>(
     parameters: {
       id: string;
-      epubChapterOrder: number;
+      sectionKey: string;
+      position?: ProgressPosition;
+      progressPercent?: number;
     },
     options?: Options<never, ThrowOnError>,
   ) {
@@ -442,7 +484,9 @@ export class Progress extends HeyApiClient {
         {
           args: [
             { in: "path", key: "id" },
-            { in: "body", key: "epubChapterOrder" },
+            { in: "body", key: "sectionKey" },
+            { in: "body", key: "position" },
+            { in: "body", key: "progressPercent" },
           ],
         },
       ],
@@ -468,12 +512,12 @@ export class Highlight extends HeyApiClient {
   /**
    * List highlights for a document
    *
-   * Returns highlights owned by the caller for the given `documentId`, ordered by creation time. Optional `epubChapterOrder` query param scopes the result to a single chapter.
+   * Returns highlights owned by the caller for the given `documentId`, ordered by creation time. Optional `sectionKey` query param scopes the result to a single section (e.g. one EPUB chapter).
    */
   public list<ThrowOnError extends boolean = false>(
     parameters: {
       documentId: string;
-      epubChapterOrder?: number;
+      sectionKey?: string;
     },
     options?: Options<never, ThrowOnError>,
   ) {
@@ -483,7 +527,7 @@ export class Highlight extends HeyApiClient {
         {
           args: [
             { in: "query", key: "documentId" },
-            { in: "query", key: "epubChapterOrder" },
+            { in: "query", key: "sectionKey" },
           ],
         },
       ],
@@ -502,14 +546,13 @@ export class Highlight extends HeyApiClient {
   /**
    * Create a highlight or note on a document
    *
-   * Creates a colour highlight (and optional note) anchored to an EPUB chapter (`epubChapterOrder`). Offsets are character positions into the chapter's canonical text — `epub_chapter.html`'s textContent.
+   * Creates a colour highlight (and optional note) anchored to a document section via `sectionKey` (from the manifest). `position.offsetStart` / `offsetEnd` are character positions into the section's canonical `.txt` payload.
    */
   public create<ThrowOnError extends boolean = false>(
     parameters: {
       documentId: string;
-      epubChapterOrder: number;
-      offsetStart: number;
-      offsetEnd: number;
+      sectionKey: string;
+      position: HighlightPosition;
       textSnippet: string;
       color: "pink" | "yellow" | "green" | "blue" | "purple";
       note?: string;
@@ -522,9 +565,8 @@ export class Highlight extends HeyApiClient {
         {
           args: [
             { in: "body", key: "documentId" },
-            { in: "body", key: "epubChapterOrder" },
-            { in: "body", key: "offsetStart" },
-            { in: "body", key: "offsetEnd" },
+            { in: "body", key: "sectionKey" },
+            { in: "body", key: "position" },
             { in: "body", key: "textSnippet" },
             { in: "body", key: "color" },
             { in: "body", key: "note" },

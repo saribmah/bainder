@@ -20,6 +20,8 @@ export namespace DocumentStorage {
     sensitive: document.sensitive,
     status: document.status,
     errorReason: document.errorReason,
+    coverImage: document.coverImage,
+    sourceUrl: document.sourceUrl,
     r2KeyOriginal: document.r2KeyOriginal,
     createdAt: document.createdAt,
     updatedAt: document.updatedAt,
@@ -37,6 +39,8 @@ export namespace DocumentStorage {
     sensitive: boolean;
     status: string;
     errorReason: string | null;
+    coverImage: string | null;
+    sourceUrl: string | null;
     r2KeyOriginal: string;
     createdAt: Date;
     updatedAt: Date;
@@ -49,7 +53,7 @@ export namespace DocumentStorage {
   // truthful state for a freshly-created (unread) row.
   export const toEntity = (
     row: EntityRow,
-    progress: Document.Progress | null = null,
+    progressSnapshot: Document.ProgressSnapshot | null = null,
   ): EntityWithKey => ({
     id: row.id,
     userId: row.userId,
@@ -62,7 +66,9 @@ export namespace DocumentStorage {
     sensitive: row.sensitive,
     status: parseStatus(row.status),
     errorReason: row.errorReason,
-    progress,
+    coverImage: row.coverImage,
+    sourceUrl: row.sourceUrl,
+    progress: progressSnapshot,
     r2KeyOriginal: row.r2KeyOriginal,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
@@ -108,6 +114,8 @@ export namespace DocumentStorage {
       sensitive: input.sensitive,
       status: input.status,
       errorReason: null,
+      coverImage: null,
+      sourceUrl: null,
       r2KeyOriginal: input.r2KeyOriginal,
       createdAt: now,
       updatedAt: now,
@@ -120,22 +128,25 @@ export namespace DocumentStorage {
   // are nullable for documents the caller hasn't opened yet.
   const entitySelectWithProgress = {
     ...entitySelect,
-    progressEpubChapterOrder: progress.epubChapterOrder,
+    progressSectionKey: progress.sectionKey,
+    progressPercent: progress.progressPercent,
     progressUpdatedAt: progress.updatedAt,
   } as const;
 
   type ProgressRow = {
-    progressEpubChapterOrder: number | null;
+    progressSectionKey: string | null;
+    progressPercent: number | null;
     progressUpdatedAt: Date | null;
   };
 
-  const projectProgress = (row: ProgressRow): Document.Progress | null => {
-    // The join hits as a unit — when `updatedAt` is non-null the chapter
-    // order column is too, since both sit on the same `progress` row and
-    // the column is NOT NULL.
-    if (row.progressUpdatedAt === null || row.progressEpubChapterOrder === null) return null;
+  const projectProgress = (row: ProgressRow): Document.ProgressSnapshot | null => {
+    // The join hits as a unit — when `updatedAt` is non-null the section_key
+    // column is too, since both sit on the same `progress` row and that
+    // column is NOT NULL.
+    if (row.progressUpdatedAt === null || row.progressSectionKey === null) return null;
     return {
-      epubChapterOrder: row.progressEpubChapterOrder,
+      sectionKey: row.progressSectionKey,
+      progressPercent: row.progressPercent,
       updatedAt: row.progressUpdatedAt.toISOString(),
     };
   };
@@ -174,15 +185,23 @@ export namespace DocumentStorage {
     return rows.length > 0;
   };
 
-  export const updateTitleAndStatus = async (
-    id: string,
-    title: string,
-    status: Document.Status,
-  ): Promise<void> => {
-    await Instance.db
-      .update(document)
-      .set({ title, status, updatedAt: new Date(), errorReason: null })
-      .where(eq(document.id, id));
+  // Used by the pipeline after manifest write — sets title (parsed from the
+  // file) and cover_image (R2 path) atomically alongside the processed
+  // status flip.
+  export type MarkProcessedInput = {
+    title: string | null;
+    coverImage: string | null;
+  };
+
+  export const markProcessed = async (id: string, input: MarkProcessedInput): Promise<void> => {
+    const set: Record<string, unknown> = {
+      status: "processed",
+      errorReason: null,
+      updatedAt: new Date(),
+      coverImage: input.coverImage,
+    };
+    if (input.title) set["title"] = input.title;
+    await Instance.db.update(document).set(set).where(eq(document.id, id));
   };
 
   // User-facing rename. Scoped to the caller; returns null when the row is
@@ -200,16 +219,6 @@ export namespace DocumentStorage {
     const row = rows[0];
     if (!row) return null;
     return projectEntity(toEntity(row));
-  };
-
-  export const markProcessed = async (id: string, title: string | null): Promise<void> => {
-    const set: Record<string, unknown> = {
-      status: "processed",
-      errorReason: null,
-      updatedAt: new Date(),
-    };
-    if (title) set["title"] = title;
-    await Instance.db.update(document).set(set).where(eq(document.id, id));
   };
 
   export const markFailed = async (id: string, reason: string): Promise<void> => {
@@ -248,6 +257,8 @@ export namespace DocumentStorage {
     sensitive: entity.sensitive,
     status: entity.status,
     errorReason: entity.errorReason,
+    coverImage: entity.coverImage,
+    sourceUrl: entity.sourceUrl,
     progress: entity.progress,
     createdAt: entity.createdAt,
     updatedAt: entity.updatedAt,

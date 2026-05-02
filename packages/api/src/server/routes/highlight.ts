@@ -19,7 +19,7 @@ highlightRouter.post(
   describeRoute({
     summary: "Create a highlight or note on a document",
     description:
-      "Creates a colour highlight (and optional note) anchored to an EPUB chapter (`epubChapterOrder`). Offsets are character positions into the chapter's canonical text — `epub_chapter.html`'s textContent.",
+      "Creates a colour highlight (and optional note) anchored to a document section via `sectionKey` (from the manifest). `position.offsetStart` / `offsetEnd` are character positions into the section's canonical `.txt` payload.",
     operationId: "highlight.create",
     responses: {
       201: {
@@ -52,15 +52,15 @@ highlightRouter.get(
   describeRoute({
     summary: "List highlights for a document",
     description:
-      "Returns highlights owned by the caller for the given `documentId`, ordered by creation time. Optional `epubChapterOrder` query param scopes the result to a single chapter.",
+      "Returns highlights owned by the caller for the given `documentId`, ordered by creation time. Optional `sectionKey` query param scopes the result to a single section (e.g. one EPUB chapter).",
     operationId: "highlight.list",
     parameters: [
       { name: "documentId", in: "query", required: true, schema: { type: "string" } },
       {
-        name: "epubChapterOrder",
+        name: "sectionKey",
         in: "query",
         required: false,
-        schema: { type: "integer", minimum: 0 },
+        schema: { type: "string" },
       },
     ],
     responses: {
@@ -78,22 +78,18 @@ highlightRouter.get(
     const documentId = c.req.query("documentId");
     if (!documentId) return c.json({ message: "documentId is required" }, 400);
 
-    const chapterRaw = c.req.query("epubChapterOrder");
-    let epubChapterOrder: number | undefined;
-    if (chapterRaw !== undefined) {
-      const n = Number(chapterRaw);
-      if (!Number.isInteger(n) || n < 0) {
-        return c.json({ message: "Invalid epubChapterOrder" }, 400);
+    const sectionKey = c.req.query("sectionKey");
+    const query: Highlight.ListQuery = { documentId };
+    if (sectionKey !== undefined) {
+      if (sectionKey.length === 0 || sectionKey.length > 200) {
+        return c.json({ message: "Invalid sectionKey" }, 400);
       }
-      epubChapterOrder = n;
+      query.sectionKey = sectionKey;
     }
 
     const mapError = createErrorMapper(errorMappings);
     try {
-      const items = await Highlight.list(Instance.userId, {
-        documentId,
-        epubChapterOrder,
-      });
+      const items = await Highlight.list(Instance.userId, query);
       return c.json({ items });
     } catch (error) {
       const mapped = mapError(error);

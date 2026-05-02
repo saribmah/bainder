@@ -8,16 +8,30 @@ Cloudflare Workers backend built on Hono + hono-openapi.
 - **`src/server/`** — Routers (HTTP transport), error mapping, OpenAPI plumbing
 - **`src/middleware/`** — Cross-cutting middleware (auth, error handler)
 - **`src/instance/`** — Per-request `AsyncLocalStorage` context (`env`, `auth`)
-- **`src/utils/`** — Shared utilities (`Context`, `Log`, `NamedError`)
+- **`src/utils/`** — Shared utilities (`Context`, `Log`, `NamedError`, slug)
 - **`src/config/`** — Typed env-derived configuration accessors
+- **`src/db/`** — Drizzle schema (auth tables + `document`, `highlight`, `progress`)
 - **`src/health/`** — Health endpoint
-- **`src/<feature>/`** — Domain feature modules (namespaces). One per business capability.
+- **`src/document/`** — Document ingest, async processing pipeline, R2 manifest API
+  - `formats/<fmt>/` — per-format namespace (today: `epub`); each contributes a manifest arm + section-key minter
+  - `processing/parsers/` — pure byte → parsed-shape parsers + `detect.ts`
+  - `processing/pipeline.ts` — writes manifest + content + assets to R2
+  - `asset-store.ts` — R2 layout (`original`, `manifest.json`, `content/`, `assets/`)
+- **`src/highlight/`** — Type-agnostic highlights (`sectionKey` + JSON `position`)
+- **`src/progress/`** — Type-agnostic reading progress
+- **`src/user/`** — User profile
+- **`src/example/`** — Reference feature for new contributors
 
-Dependency direction is one-way: `server/routes → feature → storage`.
+Dependency direction is one-way: `server/routes → feature → storage`. Storage
+is the only layer that touches `db`; format directories are
+transport-agnostic and never depend on routes or the SDK.
 
-## Adding a feature
+## Adding work
 
-See [`.agents/add-feature.md`](../../.agents/add-feature.md) at the repo root.
+- New feature: [`.agents/add-feature.md`](../../.agents/add-feature.md)
+- New route on an existing feature: [`.agents/add-route.md`](../../.agents/add-route.md)
+- New document format (PDF, article, image, …): [`.agents/add-format.md`](../../.agents/add-format.md)
+- After API contract changes: [`.agents/regenerate-sdk.md`](../../.agents/regenerate-sdk.md)
 
 ## Commands
 

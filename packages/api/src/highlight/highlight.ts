@@ -5,6 +5,12 @@ import { HighlightStorage } from "./storage";
 
 // User annotations on a document. A "highlight" with a non-null `note` is
 // what the UI surfaces as a note; structurally they're the same row.
+//
+// Position is type-agnostic: every highlight has a `sectionKey` (which
+// section in the document's manifest) and a `position` payload owned by
+// the format. For all current text-content formats the position is a
+// `{ offsetStart, offsetEnd }` pair over the section's canonical `.txt`
+// payload in R2.
 export namespace Highlight {
   // ---- Errors -----------------------------------------------------------
   export const NotFoundError = NamedError.create(
@@ -23,13 +29,24 @@ export namespace Highlight {
   const MAX_SNIPPET_CHARS = 4_000;
   const MAX_NOTE_CHARS = 10_000;
 
+  export const Position = z
+    .object({
+      offsetStart: z.number().int().nonnegative(),
+      offsetEnd: z.number().int().nonnegative(),
+    })
+    .refine((v) => v.offsetStart <= v.offsetEnd, {
+      message: "offsetStart must be <= offsetEnd",
+      path: ["offsetEnd"],
+    })
+    .meta({ ref: "HighlightPosition" });
+  export type Position = z.infer<typeof Position>;
+
   export const Entity = z
     .object({
       id: z.string(),
       documentId: z.string(),
-      epubChapterOrder: z.number().int().nonnegative(),
-      offsetStart: z.number().int().nonnegative(),
-      offsetEnd: z.number().int().nonnegative(),
+      sectionKey: z.string(),
+      position: Position,
       textSnippet: z.string(),
       color: Color,
       note: z.string().nullable(),
@@ -42,20 +59,14 @@ export namespace Highlight {
   export const ListResponse = z.object({ items: z.array(Entity) });
   export type ListResponse = z.infer<typeof ListResponse>;
 
-  export const CreateInput = z
-    .object({
-      documentId: z.string().min(1),
-      epubChapterOrder: z.number().int().nonnegative(),
-      offsetStart: z.number().int().nonnegative(),
-      offsetEnd: z.number().int().nonnegative(),
-      textSnippet: z.string().min(1).max(MAX_SNIPPET_CHARS),
-      color: Color,
-      note: z.string().max(MAX_NOTE_CHARS).optional(),
-    })
-    .refine((v) => v.offsetStart <= v.offsetEnd, {
-      message: "offsetStart must be <= offsetEnd",
-      path: ["offsetEnd"],
-    });
+  export const CreateInput = z.object({
+    documentId: z.string().min(1),
+    sectionKey: z.string().min(1).max(200),
+    position: Position,
+    textSnippet: z.string().min(1).max(MAX_SNIPPET_CHARS),
+    color: Color,
+    note: z.string().max(MAX_NOTE_CHARS).optional(),
+  });
   export type CreateInput = z.infer<typeof CreateInput>;
 
   export const UpdateInput = z
@@ -70,7 +81,7 @@ export namespace Highlight {
 
   export const ListQuery = z.object({
     documentId: z.string().min(1),
-    epubChapterOrder: z.number().int().nonnegative().optional(),
+    sectionKey: z.string().min(1).max(200).optional(),
   });
   export type ListQuery = z.infer<typeof ListQuery>;
 
@@ -85,9 +96,8 @@ export namespace Highlight {
       id: crypto.randomUUID(),
       userId,
       documentId: input.documentId,
-      epubChapterOrder: input.epubChapterOrder,
-      offsetStart: input.offsetStart,
-      offsetEnd: input.offsetEnd,
+      sectionKey: input.sectionKey,
+      position: input.position,
       textSnippet: input.textSnippet,
       color: input.color,
       note: input.note ?? null,

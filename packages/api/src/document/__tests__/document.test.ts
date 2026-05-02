@@ -67,10 +67,9 @@ const buildEpub = (): Uint8Array =>
     "OEBPS/ch2.xhtml": strToU8(ch2),
   });
 
-// Synthesizes an EPUB with `chapterCount` spine entries — used to cover the
-// chunked chapter-insert path. With 9 columns per `epub_chapter` row, we'd
-// blow past D1's 100-bind-parameter ceiling at 12+ chapters in a single
-// statement, so storage chunks the inserts.
+// Synthesizes an EPUB with `chapterCount` spine entries — used to cover
+// many-chapter ingest paths and confirm the pipeline scales beyond a
+// trivial book.
 const buildLargeEpub = (chapterCount: number): Uint8Array => {
   const ids = Array.from({ length: chapterCount }, (_, i) => `ch${i + 1}`);
   const manifestItems = ids
@@ -149,6 +148,27 @@ const uploadEpub = (userId: string, bytes = buildEpub(), filename = "test.epub")
     inlineTrigger,
   );
 
+// Drain a ReadableStream<Uint8Array> into a string for assertions on
+// section HTML/text endpoints (which now stream R2 objects directly).
+const streamToText = async (stream: ReadableStream<Uint8Array>): Promise<string> => {
+  const reader = stream.getReader();
+  const chunks: Uint8Array[] = [];
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    if (value) chunks.push(value);
+  }
+  let total = 0;
+  for (const c of chunks) total += c.byteLength;
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const c of chunks) {
+    out.set(c, offset);
+    offset += c.byteLength;
+  }
+  return new TextDecoder().decode(out);
+};
+
 describe("Document feature", () => {
   const userA = "user-a";
   const userB = "user-b";
@@ -181,33 +201,48 @@ describe("Document feature", () => {
       expect(after.status).toBe("processed");
       expect(after.title).toBe("Test Book");
       expect(after.errorReason).toBeNull();
+      expect(after.coverImage).toBeNull();
+      expect(after.sourceUrl).toBeNull();
 
-      const detail = await Document.getEpubDetail(userA, created.id);
-      expect(detail.book.documentId).toBe(created.id);
-      expect(detail.book.authors).toEqual(["Ada Lovelace", "Charles Babbage"]);
-      expect(detail.book.language).toBe("en");
-      expect(detail.book.publisher).toBe("Test House");
-      expect(detail.book.publishedDate).toBe("2026-01-01");
-      expect(detail.book.identifiers).toContain("urn:uuid:test-1");
-      expect(detail.book.subjects).toContain("fiction");
-      expect(detail.book.chapterCount).toBe(2);
-      expect(detail.chapters).toHaveLength(2);
-      expect(detail.chapters[0].title).toBe("The Beginning");
-      expect(detail.chapters[1].title).toBe("The End");
-      expect(detail.toc[0].fileHref).toBe("ch1.xhtml");
+      const manifest = await Document.getManifest(userA, created.id);
+      expect(manifest.kind).toBe("epub");
+      expect(manifest.schemaVersion).toBe(1);
+      expect(manifest.title).toBe("Test Book");
+      expect(manifest.language).toBe("en");
+      expect(manifest.chapterCount).toBe(2);
+      if (manifest.kind !== "epub") throw new Error("expected epub manifest");
+      expect(manifest.metadata.authors).toEqual(["Ada Lovelace", "Charles Babbage"]);
+      expect(manifest.metadata.publisher).toBe("Test House");
+      expect(manifest.metadata.publishedDate).toBe("2026-01-01");
+      expect(manifest.metadata.identifiers).toContain("urn:uuid:test-1");
+      expect(manifest.metadata.subjects).toContain("fiction");
+      expect(manifest.sections).toHaveLength(2);
+      expect(manifest.sections[0].title).toBe("The Beginning");
+      expect(manifest.sections[1].title).toBe("The End");
+      expect(manifest.sections[0].sectionKey).toBe("epub:section:0");
+      expect(manifest.sections[1].sectionKey).toBe("epub:section:1");
+      expect(manifest.sections[0].files.html).toMatch(/^content\/0000-the-beginning\.html$/);
+      expect(manifest.sections[0].files.text).toMatch(/^content\/0000-the-beginning\.txt$/);
+      expect(manifest.toc[0].fileHref).toBe("ch1.xhtml");
     });
   });
 
-  it("returns chapter content with cleaned HTML and AI-ready text", async () => {
+  it("returns section content with cleaned HTML and AI-ready text", async () => {
     await runtime.runAs(userA, async () => {
       const created = await uploadEpub(userA);
-      const chapter = await Document.getEpubChapter(userA, created.id, 0);
-      expect(chapter.title).toBe("The Beginning");
-      expect(chapter.html).not.toContain("<script");
-      expect(chapter.html).not.toContain("<style");
-      expect(chapter.text).toContain("Hello world & welcome.");
-      expect(chapter.text).not.toContain("<");
-      expect(chapter.wordCount).toBeGreaterThan(0);
+
+      const html = await Document.getSectionHtml(userA, created.id, 0);
+      const htmlBody = await streamToText(html.body);
+      expect(html.contentType).toMatch(/^text\/html/);
+      expect(htmlBody).not.toContain("<script");
+      expect(htmlBody).not.toContain("<style");
+      expect(htmlBody).toContain("Chapter One");
+
+      const text = await Document.getSectionText(userA, created.id, 0);
+      const textBody = await streamToText(text.body);
+      expect(text.contentType).toMatch(/^text\/plain/);
+      expect(textBody).toContain("Hello world & welcome.");
+      expect(textBody).not.toContain("<");
     });
   });
 
@@ -304,10 +339,10 @@ describe("Document feature", () => {
       await expect(Document.get(userB, created.id)).rejects.toMatchObject({
         name: "DocumentNotFoundError",
       });
-      await expect(Document.getEpubDetail(userB, created.id)).rejects.toMatchObject({
+      await expect(Document.getManifest(userB, created.id)).rejects.toMatchObject({
         name: "DocumentNotFoundError",
       });
-      await expect(Document.getEpubChapter(userB, created.id, 0)).rejects.toMatchObject({
+      await expect(Document.getSectionHtml(userB, created.id, 0)).rejects.toMatchObject({
         name: "DocumentNotFoundError",
       });
       await expect(Document.remove(userB, created.id)).rejects.toMatchObject({
@@ -338,14 +373,18 @@ describe("Document feature", () => {
     });
   });
 
-  it("extracts EPUB images to R2 and rewrites chapter <img src> to assets/{name}", async () => {
+  it("extracts EPUB images to R2, rewrites section HTML to assets/{name}, and stores cover on document", async () => {
     await runtime.runAs(userA, async () => {
       const created = await uploadEpub(userA, buildImageEpub(), "with-pics.epub");
-      const detail = await Document.getEpubDetail(userA, created.id);
-      expect(detail.book.coverImage).toBe("assets/cover.jpg");
+      const fetched = await Document.get(userA, created.id);
+      expect(fetched.coverImage).toBe("assets/cover.jpg");
 
-      const chapter = await Document.getEpubChapter(userA, created.id, 0);
-      expect(chapter.html).toContain('src="assets/cover.jpg"');
+      const manifest = await Document.getManifest(userA, created.id);
+      expect(manifest.coverImage).toBe("assets/cover.jpg");
+
+      const html = await Document.getSectionHtml(userA, created.id, 0);
+      const htmlBody = await streamToText(html.body);
+      expect(htmlBody).toContain('src="assets/cover.jpg"');
 
       const cover = await Document.getAsset(userA, created.id, "cover.jpg");
       expect(cover).not.toBeNull();
@@ -377,33 +416,32 @@ describe("Document feature", () => {
     });
   });
 
-  it("ingests an EPUB with many chapters via chunked inserts", async () => {
+  it("ingests an EPUB with many chapters", async () => {
     await runtime.runAs(userA, async () => {
-      // 60 chapters × 9 columns per row = 540 bind parameters in a single
-      // multi-row insert — well past D1's 100-parameter cap. Storage chunks
-      // the writes; we only assert the final book/chapter counts here.
       const created = await uploadEpub(userA, buildLargeEpub(60), "large.epub");
       const after = await Document.get(userA, created.id);
       expect(after.status).toBe("processed");
 
-      const detail = await Document.getEpubDetail(userA, created.id);
-      expect(detail.book.chapterCount).toBe(60);
-      expect(detail.chapters).toHaveLength(60);
-      const last = await Document.getEpubChapter(userA, created.id, 59);
-      expect(last.text).toContain("Body of chapter 60");
+      const manifest = await Document.getManifest(userA, created.id);
+      expect(manifest.chapterCount).toBe(60);
+      expect(manifest.sections).toHaveLength(60);
+
+      const last = await Document.getSectionText(userA, created.id, 59);
+      const lastText = await streamToText(last.body);
+      expect(lastText).toContain("Body of chapter 60");
     });
   });
 
   it("re-running the pipeline on the same document is idempotent", async () => {
     await runtime.runAs(userA, async () => {
       const created = await uploadEpub(userA);
-      // Re-invoking processDocument simulates a Workflow retry after a
-      // partial-success first attempt. A non-idempotent storage layer would
-      // throw a primary-key conflict on the epub_book row.
+      // Re-invoking processDocument simulates a Workflow retry. The
+      // pipeline purges + rewrites manifest + content, so a second run
+      // ends in the same state.
       await processDocument(created.id);
-      const detail = await Document.getEpubDetail(userA, created.id);
-      expect(detail.book.chapterCount).toBe(2);
-      expect(detail.chapters).toHaveLength(2);
+      const manifest = await Document.getManifest(userA, created.id);
+      expect(manifest.chapterCount).toBe(2);
+      expect(manifest.sections).toHaveLength(2);
     });
   });
 

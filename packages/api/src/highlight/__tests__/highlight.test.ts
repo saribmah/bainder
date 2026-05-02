@@ -41,22 +41,22 @@ describe("Highlight feature", () => {
     runtime.close();
   });
 
-  it("creates a highlight on an EPUB chapter and lists it back", async () => {
+  it("creates a highlight on a section and lists it back", async () => {
     await runtime.runAs(userA, async () => {
       const doc = await seedDocument(userA);
 
       const created = await Highlight.create(userA, {
         documentId: doc.id,
-        epubChapterOrder: 2,
-        offsetStart: 100,
-        offsetEnd: 145,
+        sectionKey: "epub:section:2",
+        position: { offsetStart: 100, offsetEnd: 145 },
         textSnippet: "Affordances define what actions are possible.",
         color: "yellow",
       });
 
       expect(created.id).toBeDefined();
       expect(created.documentId).toBe(doc.id);
-      expect(created.epubChapterOrder).toBe(2);
+      expect(created.sectionKey).toBe("epub:section:2");
+      expect(created.position).toEqual({ offsetStart: 100, offsetEnd: 145 });
       expect(created.color).toBe("yellow");
       expect(created.note).toBeNull();
       expect(created.createdAt).toBe(created.updatedAt);
@@ -64,14 +64,17 @@ describe("Highlight feature", () => {
       const all = await Highlight.list(userA, { documentId: doc.id });
       expect(all).toHaveLength(1);
 
-      const scoped = await Highlight.list(userA, { documentId: doc.id, epubChapterOrder: 2 });
+      const scoped = await Highlight.list(userA, {
+        documentId: doc.id,
+        sectionKey: "epub:section:2",
+      });
       expect(scoped).toHaveLength(1);
 
-      const otherChapter = await Highlight.list(userA, {
+      const otherSection = await Highlight.list(userA, {
         documentId: doc.id,
-        epubChapterOrder: 0,
+        sectionKey: "epub:section:0",
       });
-      expect(otherChapter).toEqual([]);
+      expect(otherSection).toEqual([]);
     });
   });
 
@@ -81,9 +84,8 @@ describe("Highlight feature", () => {
 
       const created = await Highlight.create(userA, {
         documentId: doc.id,
-        epubChapterOrder: 5,
-        offsetStart: 0,
-        offsetEnd: 12,
+        sectionKey: "epub:section:5",
+        position: { offsetStart: 0, offsetEnd: 12 },
         textSnippet: "First words.",
         color: "pink",
         note: "Opening thought.",
@@ -104,9 +106,8 @@ describe("Highlight feature", () => {
     const created = await runtime.runAs(userA, () =>
       Highlight.create(userA, {
         documentId: docA.id,
-        epubChapterOrder: 0,
-        offsetStart: 0,
-        offsetEnd: 4,
+        sectionKey: "epub:section:0",
+        position: { offsetStart: 0, offsetEnd: 4 },
         textSnippet: "Hi.",
         color: "yellow",
       }),
@@ -132,9 +133,8 @@ describe("Highlight feature", () => {
       const doc = await seedDocument(userA);
       const created = await Highlight.create(userA, {
         documentId: doc.id,
-        epubChapterOrder: 0,
-        offsetStart: 0,
-        offsetEnd: 4,
+        sectionKey: "epub:section:0",
+        position: { offsetStart: 0, offsetEnd: 4 },
         textSnippet: "Hi.",
         color: "green",
       });
@@ -153,9 +153,8 @@ describe("Highlight feature", () => {
       const doc = await seedDocument(userA);
       await Highlight.create(userA, {
         documentId: doc.id,
-        epubChapterOrder: 0,
-        offsetStart: 0,
-        offsetEnd: 4,
+        sectionKey: "epub:section:0",
+        position: { offsetStart: 0, offsetEnd: 4 },
         textSnippet: "Hi.",
         color: "yellow",
       });
