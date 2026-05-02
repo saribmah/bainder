@@ -170,9 +170,9 @@ When asked to do specific kinds of work, read the matching recipe first:
 - Update SDK consumers (`packages/web`, downstream apps) in the same change
   when generated types/contracts shift.
 - Never manually edit `packages/sdk/src/v1/gen/*` or `packages/sdk/lib/*`.
-- `packages/web/` and `packages/mobile/` consume the API exclusively via
-  `@bainder/sdk`. Do not import directly from `packages/api/` or hand-roll
-  `fetch` calls.
+- `packages/web/`, `packages/mobile/`, and `packages/desktop/` consume the API
+  exclusively via `@bainder/sdk`. Do not import directly from `packages/api/`
+  or hand-roll API clients.
 - See [`.agents/regenerate-sdk.md`](./.agents/regenerate-sdk.md) for the
   regeneration recipe.
 
@@ -236,6 +236,39 @@ When asked to do specific kinds of work, read the matching recipe first:
 - `auth` owns Better Auth client setup, auth screens, auth gates, and auth-only
   UI components.
 
+### Desktop feature organization (`packages/desktop`)
+
+- Organize Electrobun mainview product code under
+  `packages/desktop/src/views/mainview/features/<feature>/`.
+- Mainview app wiring may live at `src/views/mainview/App.tsx`; shared SDK
+  provider code may live under `src/views/mainview/sdk/`; global styles stay
+  in `src/views/mainview/styles.css`.
+- Do not recreate top-level mainview product folders such as `auth`, `library`,
+  `dashboard`, `landing`, or `reader`. New product UI belongs in
+  `src/views/mainview/features/*`.
+- Keep feature directories small and responsibility-specific. Prefer
+  subfolders such as `components/`, `hooks/`, `pages/`, `utils/`, `guards/`,
+  and `api/` when a feature needs them.
+- Each feature should export its public surface from
+  `src/views/mainview/features/<feature>/index.ts`. App routes and
+  cross-feature imports should go through that public surface.
+- Feature pages compose hooks/components; they should not grow into large
+  all-in-one files. Extract reusable cards, dialogs, menus, empty states,
+  and data hooks before a page becomes hard to scan.
+- `dashboard` is the current signed-in desktop home surface. The historical
+  `library/Library.tsx` naming was wrong; do not bring it back.
+- There is currently no desktop `library` feature. Create
+  `src/views/mainview/features/library/` only when implementing a real library
+  capability distinct from dashboard.
+- The canonical signed-in desktop route is `/dashboard`. Keep `/library` only
+  as a compatibility redirect unless the real library feature is introduced.
+- `profile` owns signed-in user/profile UI affordances, including profile menu
+  and display-name helpers. Dashboard should consume these from `profile`
+  instead of owning profile logic directly.
+- `auth` owns Better Auth client setup, auth pages, auth guards, auth-only UI
+  components, and desktop's in-memory bearer-token bridge used by the SDK
+  provider.
+
 ## Workspace commands
 
 From repo root:
@@ -271,6 +304,14 @@ Mobile only:
 - `bun run --filter '*/mobile' lint`
 - `bun run --filter '*/mobile' format`
 - `bun run --filter '*/mobile' ts-check`
+
+Desktop only:
+
+- `bun run --filter '*/desktop' dev`
+- `bun run --filter '*/desktop' build:view`
+- `bun run --filter '*/desktop' lint`
+- `bun run --filter '*/desktop' format`
+- `bun run --filter '*/desktop' ts-check`
 
 ## Required verification
 
