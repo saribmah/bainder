@@ -9,7 +9,8 @@ import {
   type ViewProps,
   type ViewStyle,
 } from "react-native";
-import { color } from "../tokens/color.ts";
+import { useThemeColors } from "../theme/index.native.ts";
+import { font } from "../tokens/font.ts";
 
 export type TabsProps = Omit<ViewProps, "style"> & {
   style?: StyleProp<ViewStyle>;
@@ -17,8 +18,10 @@ export type TabsProps = Omit<ViewProps, "style"> & {
 };
 
 export function Tabs({ children, style, ...rest }: TabsProps) {
+  const palette = useThemeColors();
+
   return (
-    <View style={[styles.tabs, style]} {...rest}>
+    <View style={[styles.tabs, { borderBottomColor: palette.border }, style]} {...rest}>
       {children}
     </View>
   );
@@ -31,15 +34,17 @@ export type TabProps = Omit<PressableProps, "children" | "style"> & {
 };
 
 export function Tab({ active, children, style, ...rest }: TabProps) {
+  const palette = useThemeColors();
+
   return (
     <Pressable
       accessibilityRole="tab"
       accessibilityState={{ selected: !!active }}
-      style={[styles.tab, active && styles.tabActive, style]}
+      style={[styles.tab, { borderBottomColor: active ? palette.action : "transparent" }, style]}
       {...rest}
     >
       {typeof children === "string" ? (
-        <Text style={[styles.label, active ? styles.labelActive : styles.labelInactive]}>
+        <Text style={[styles.label, { color: active ? palette.fg : palette.fgMuted }]}>
           {children}
         </Text>
       ) : (
@@ -54,7 +59,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 28,
     borderBottomWidth: 1,
-    borderBottomColor: color.paper[200],
   },
   tab: {
     paddingVertical: 12,
@@ -63,17 +67,9 @@ const styles = StyleSheet.create({
     borderBottomColor: "transparent",
     marginBottom: -1,
   },
-  tabActive: {
-    borderBottomColor: color.paper[900],
-  },
   label: {
+    fontFamily: font.nativeFamily.ui,
     fontSize: 15,
     fontWeight: "500",
-  },
-  labelInactive: {
-    color: color.paper[500],
-  },
-  labelActive: {
-    color: color.paper[900],
   },
 });

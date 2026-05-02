@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
   StyleSheet,
   TextInput,
@@ -8,8 +8,10 @@ import {
   type TextStyle,
   type ViewStyle,
 } from "react-native";
-import { color } from "../tokens/color.ts";
+import { useThemeColors } from "../theme/index.native.ts";
+import { font } from "../tokens/font.ts";
 import { radius } from "../tokens/radius.ts";
+import { tintIcon } from "../utils/tintIcon.ts";
 
 export type InputProps = Omit<TextInputProps, "style"> & {
   iconStart?: ReactNode;
@@ -18,21 +20,45 @@ export type InputProps = Omit<TextInputProps, "style"> & {
   wrapStyle?: StyleProp<ViewStyle>;
 };
 
-export function Input({ iconStart, iconEnd, style, wrapStyle, ...rest }: InputProps) {
+export function Input({
+  iconStart,
+  iconEnd,
+  style,
+  wrapStyle,
+  onFocus,
+  onBlur,
+  ...rest
+}: InputProps) {
+  const [focused, setFocused] = useState(false);
+  const palette = useThemeColors();
+
   return (
     <View style={[styles.wrap, wrapStyle]}>
-      {iconStart && <View style={styles.iconStart}>{iconStart}</View>}
+      {iconStart && <View style={styles.iconStart}>{tintIcon(iconStart, palette.fgMuted)}</View>}
       <TextInput
-        placeholderTextColor={color.paper[500]}
+        placeholderTextColor={palette.fgMuted}
+        onFocus={(event) => {
+          setFocused(true);
+          onFocus?.(event);
+        }}
+        onBlur={(event) => {
+          setFocused(false);
+          onBlur?.(event);
+        }}
         style={[
           styles.input,
+          {
+            backgroundColor: focused ? palette.surface : palette.surfaceRaised,
+            borderColor: focused ? palette.borderStrong : "transparent",
+            color: palette.fg,
+          },
           iconStart ? { paddingLeft: 48 } : null,
           iconEnd ? { paddingRight: 48 } : null,
           style,
         ]}
         {...rest}
       />
-      {iconEnd && <View style={styles.iconEnd}>{iconEnd}</View>}
+      {iconEnd && <View style={styles.iconEnd}>{tintIcon(iconEnd, palette.fgMuted)}</View>}
     </View>
   );
 }
@@ -43,14 +69,12 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   input: {
+    fontFamily: font.nativeFamily.ui,
     fontSize: 15,
     height: 48,
     paddingHorizontal: 18,
-    backgroundColor: color.paper[100],
     borderWidth: 1,
-    borderColor: "transparent",
     borderRadius: radius.pill,
-    color: color.paper[900],
     width: "100%",
   },
   iconStart: {

@@ -1,5 +1,5 @@
 import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
-import { color } from "../tokens/color.ts";
+import { useThemeColors } from "../theme/index.native.ts";
 import { radius } from "../tokens/radius.ts";
 
 export type ProgressTone = "ink" | "wine";
@@ -20,20 +20,26 @@ export function Progress({
   size = "default",
   style,
 }: ProgressProps) {
+  const palette = useThemeColors();
   const clamped = Math.min(Math.max(value, 0), max);
   const pct = (clamped / max) * 100;
   return (
     <View
       accessibilityRole="progressbar"
       accessibilityValue={{ min: 0, max, now: clamped }}
-      style={[styles.track, size === "thin" && { height: 4 }, style]}
+      style={[
+        styles.track,
+        { backgroundColor: palette.border },
+        size === "thin" && { height: 4 },
+        style,
+      ]}
     >
       <View
         style={[
           styles.bar,
           {
             width: `${pct}%`,
-            backgroundColor: tone === "wine" ? color.wine[700] : color.paper[900],
+            backgroundColor: tone === "wine" ? palette.accent : palette.action,
           },
         ]}
       />
@@ -45,7 +51,6 @@ const styles = StyleSheet.create({
   track: {
     width: "100%",
     height: 6,
-    backgroundColor: color.paper[200],
     borderRadius: radius.pill,
     overflow: "hidden",
   },

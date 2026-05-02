@@ -7,8 +7,10 @@ import {
   type StyleProp,
   type ViewStyle,
 } from "react-native";
-import { color } from "../tokens/color.ts";
+import { useThemeColors, type ThemeColors } from "../theme/index.native.ts";
+import { font } from "../tokens/font.ts";
 import { radius } from "../tokens/radius.ts";
+import { tintIcon } from "../utils/tintIcon.ts";
 
 export type ButtonVariant = "primary" | "wine" | "secondary" | "ghost";
 export type ButtonSize = "sm" | "md" | "lg";
@@ -31,20 +33,31 @@ const sizeMap = {
   lg: { height: 56, padX: 28, fontSize: 16 },
 } as const;
 
-const variantMap: Record<
-  ButtonVariant,
-  { bg: string; fg: string; pressedBg: string; border?: string }
-> = {
-  primary: { bg: color.paper[900], fg: color.paper[50], pressedBg: color.paper[800] },
-  wine: { bg: color.wine[700], fg: color.paper[50], pressedBg: color.wine[600] },
-  secondary: {
-    bg: color.paper[50],
-    fg: color.paper[900],
-    pressedBg: color.paper[100],
-    border: color.paper[300],
-  },
-  ghost: { bg: "transparent", fg: color.paper[800], pressedBg: color.paper[100] },
+type ButtonVariantStyle = {
+  bg: string;
+  fg: string;
+  pressedBg: string;
+  border?: string;
 };
+
+function buttonVariantStyle(variant: ButtonVariant, palette: ThemeColors): ButtonVariantStyle {
+  switch (variant) {
+    case "wine":
+      return { bg: palette.accent, fg: palette.accentFg, pressedBg: palette.accentHover };
+    case "secondary":
+      return {
+        bg: palette.surface,
+        fg: palette.fg,
+        pressedBg: palette.surfaceHover,
+        border: palette.borderStrong,
+      };
+    case "ghost":
+      return { bg: "transparent", fg: palette.fgSubtle, pressedBg: palette.surfaceHover };
+    case "primary":
+    default:
+      return { bg: palette.action, fg: palette.actionFg, pressedBg: palette.actionHover };
+  }
+}
 
 export function Button({
   variant = "primary",
@@ -58,8 +71,9 @@ export function Button({
   style,
   ...rest
 }: ButtonProps) {
+  const palette = useThemeColors();
   const sizeCfg = sizeMap[size];
-  const v = variantMap[variant];
+  const v = buttonVariantStyle(variant, palette);
 
   return (
     <Pressable
@@ -82,13 +96,13 @@ export function Button({
       ]}
       {...rest}
     >
-      {iconStart}
+      {tintIcon(iconStart, v.fg)}
       {typeof children === "string" ? (
         <Text style={[styles.label, { color: v.fg, fontSize: sizeCfg.fontSize }]}>{children}</Text>
       ) : (
         children
       )}
-      {iconEnd}
+      {tintIcon(iconEnd, v.fg)}
     </Pressable>
   );
 }
@@ -101,6 +115,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   label: {
+    fontFamily: font.nativeFamily.ui,
     fontWeight: "500",
   },
 });

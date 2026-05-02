@@ -5,6 +5,12 @@ export const font = {
     ui: '"Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
     mono: '"JetBrains Mono", "SF Mono", ui-monospace, monospace',
   },
+  nativeFamily: {
+    display: "Fraunces",
+    reading: "Newsreader",
+    ui: "Inter Tight",
+    mono: "JetBrains Mono",
+  },
   weight: {
     regular: 400,
     medium: 500,
