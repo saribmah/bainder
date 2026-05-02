@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { BookCover } from "@bainder/ui";
 import type { Document } from "@bainder/sdk";
 import { useSdk } from "../../../sdk/sdk.provider";
@@ -13,24 +12,14 @@ export function DocumentCover({
   width: number;
   height: number;
 }) {
-  const { client, baseUrl } = useSdk();
-  const [coverSrc, setCoverSrc] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (doc.kind !== "epub" || doc.status !== "processed") return;
-    let cancelled = false;
-    client.document
-      .getEpubDetail({ id: doc.id })
-      .then((res) => {
-        if (cancelled) return;
-        const path = res.data?.book.coverImage;
-        if (path) setCoverSrc(`${baseUrl}/documents/${doc.id}/${path}`);
-      })
-      .catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
-  }, [client, baseUrl, doc.id, doc.kind, doc.status]);
+  const { baseUrl } = useSdk();
+  // `coverImage` is set on the document row by the processing pipeline once
+  // the manifest is written, so the dashboard renders the cover without
+  // fetching the manifest per item.
+  const coverSrc =
+    doc.kind === "epub" && doc.status === "processed" && doc.coverImage
+      ? `${baseUrl}/documents/${doc.id}/${doc.coverImage}`
+      : null;
 
   return (
     <BookCover

@@ -11,7 +11,8 @@ export type Example = {
 };
 
 export type DocumentProgress = {
-  epubChapterOrder: number;
+  sectionKey: string;
+  progressPercent: number | null;
   updatedAt: string;
 };
 
@@ -26,6 +27,8 @@ export type Document = {
   sensitive: boolean;
   status: "uploading" | "processing" | "processed" | "failed";
   errorReason: string | null;
+  coverImage: string | null;
+  sourceUrl: string | null;
   progress: DocumentProgress | null;
   createdAt: string;
   updatedAt: string;
@@ -37,24 +40,39 @@ export type DocumentStatus = {
   errorReason: string | null;
 };
 
+export type ProgressPosition = {
+  offset?: number;
+};
+
 export type Progress = {
   documentId: string;
-  epubChapterOrder: number;
+  sectionKey: string;
+  position: ProgressPosition | null;
+  progressPercent: number | null;
+  createdAt: string;
   updatedAt: string;
 };
 
-export type EpubBook = {
-  documentId: string;
+export type DocumentSectionSummary = {
+  sectionKey: string;
+  order: number;
+  title: string;
+  wordCount: number;
+  linear: boolean;
+  href: string;
+  files: {
+    html: string;
+    text: string;
+  };
+};
+
+export type EpubManifestMetadata = {
   authors: Array<string>;
-  language: string;
   description: string | null;
   publisher: string | null;
   publishedDate: string | null;
   identifiers: Array<string>;
   subjects: Array<string>;
-  coverImage: string | null;
-  chapterCount: number;
-  wordCount: number;
 };
 
 export type EpubTocItem = {
@@ -67,40 +85,31 @@ export type EpubTocItem = {
   anchor: string;
 };
 
-export type EpubChapterSummary = {
-  id: string;
-  documentId: string;
-  order: number;
-  href: string;
+export type EpubManifest = {
+  schemaVersion: 1;
   title: string;
+  language: string;
+  coverImage: string | null;
+  chapterCount: number;
   wordCount: number;
-  linear: boolean;
-};
-
-export type EpubDetail = {
-  book: EpubBook;
+  sections: Array<DocumentSectionSummary>;
+  kind: "epub";
+  metadata: EpubManifestMetadata;
   toc: Array<EpubTocItem>;
-  chapters: Array<EpubChapterSummary>;
 };
 
-export type EpubChapter = {
-  id: string;
-  documentId: string;
-  order: number;
-  href: string;
-  title: string;
-  html: string;
-  text: string;
-  wordCount: number;
-  linear: boolean;
+export type DocumentManifest = EpubManifest;
+
+export type HighlightPosition = {
+  offsetStart: number;
+  offsetEnd: number;
 };
 
 export type Highlight = {
   id: string;
   documentId: string;
-  epubChapterOrder: number;
-  offsetStart: number;
-  offsetEnd: number;
+  sectionKey: string;
+  position: HighlightPosition;
   textSnippet: string;
   color: "pink" | "yellow" | "green" | "blue" | "purple";
   note: string | null;
@@ -447,7 +456,9 @@ export type DocumentGetAssetResponse = DocumentGetAssetResponses[keyof DocumentG
 
 export type ProgressUpsertData = {
   body: {
-    epubChapterOrder: number;
+    sectionKey: string;
+    position?: ProgressPosition;
+    progressPercent?: number;
   };
   path: {
     id: string;
@@ -480,22 +491,22 @@ export type ProgressUpsertResponses = {
 
 export type ProgressUpsertResponse = ProgressUpsertResponses[keyof ProgressUpsertResponses];
 
-export type DocumentGetEpubDetailData = {
+export type DocumentGetManifestData = {
   body?: never;
   path: {
     id: string;
   };
   query?: never;
-  url: "/documents/{id}/epub";
+  url: "/documents/{id}/manifest";
 };
 
-export type DocumentGetEpubDetailErrors = {
+export type DocumentGetManifestErrors = {
   /**
    * Not authenticated
    */
   401: unknown;
   /**
-   * Not found or wrong kind
+   * Not found
    */
   404: unknown;
   /**
@@ -504,29 +515,29 @@ export type DocumentGetEpubDetailErrors = {
   409: unknown;
 };
 
-export type DocumentGetEpubDetailResponses = {
+export type DocumentGetManifestResponses = {
   /**
-   * EPUB detail
+   * Document manifest
    */
-  200: EpubDetail;
+  200: DocumentManifest;
 };
 
-export type DocumentGetEpubDetailResponse =
-  DocumentGetEpubDetailResponses[keyof DocumentGetEpubDetailResponses];
+export type DocumentGetManifestResponse =
+  DocumentGetManifestResponses[keyof DocumentGetManifestResponses];
 
-export type DocumentGetEpubChapterData = {
+export type DocumentGetSectionHtmlData = {
   body?: never;
   path: {
     id: string;
     order: string;
   };
   query?: never;
-  url: "/documents/{id}/epub/chapters/{order}";
+  url: "/documents/{id}/sections/{order}/html";
 };
 
-export type DocumentGetEpubChapterErrors = {
+export type DocumentGetSectionHtmlErrors = {
   /**
-   * Invalid chapter order
+   * Invalid section order
    */
   400: unknown;
   /**
@@ -534,7 +545,7 @@ export type DocumentGetEpubChapterErrors = {
    */
   401: unknown;
   /**
-   * Document or chapter not found
+   * Document or section not found
    */
   404: unknown;
   /**
@@ -543,22 +554,61 @@ export type DocumentGetEpubChapterErrors = {
   409: unknown;
 };
 
-export type DocumentGetEpubChapterResponses = {
+export type DocumentGetSectionHtmlResponses = {
   /**
-   * Chapter content (cleaned HTML and plain text)
+   * Section HTML
    */
-  200: EpubChapter;
+  200: string;
 };
 
-export type DocumentGetEpubChapterResponse =
-  DocumentGetEpubChapterResponses[keyof DocumentGetEpubChapterResponses];
+export type DocumentGetSectionHtmlResponse =
+  DocumentGetSectionHtmlResponses[keyof DocumentGetSectionHtmlResponses];
+
+export type DocumentGetSectionTextData = {
+  body?: never;
+  path: {
+    id: string;
+    order: string;
+  };
+  query?: never;
+  url: "/documents/{id}/sections/{order}/text";
+};
+
+export type DocumentGetSectionTextErrors = {
+  /**
+   * Invalid section order
+   */
+  400: unknown;
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * Document or section not found
+   */
+  404: unknown;
+  /**
+   * Document not yet processed
+   */
+  409: unknown;
+};
+
+export type DocumentGetSectionTextResponses = {
+  /**
+   * Section plain text
+   */
+  200: string;
+};
+
+export type DocumentGetSectionTextResponse =
+  DocumentGetSectionTextResponses[keyof DocumentGetSectionTextResponses];
 
 export type HighlightListData = {
   body?: never;
   path?: never;
   query: {
     documentId: string;
-    epubChapterOrder?: number;
+    sectionKey?: string;
   };
   url: "/highlights";
 };
@@ -592,9 +642,8 @@ export type HighlightListResponse = HighlightListResponses[keyof HighlightListRe
 export type HighlightCreateData = {
   body: {
     documentId: string;
-    epubChapterOrder: number;
-    offsetStart: number;
-    offsetEnd: number;
+    sectionKey: string;
+    position: HighlightPosition;
     textSnippet: string;
     color: "pink" | "yellow" | "green" | "blue" | "purple";
     note?: string;

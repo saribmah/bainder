@@ -1,9 +1,14 @@
 import { z } from "zod";
 import { NamedError } from "../../../utils/error";
 
-// EPUB-specific schema and errors. The user-visible binder row is
-// `Document.Entity`; this namespace only describes the EPUB-specific extension
-// (book metadata, chapters, TOC) hung off `epub_book` / `epub_chapter`.
+// EPUB-specific schema and errors. Reader-side metadata for an EPUB lives
+// inside the document's `manifest.json` in R2 (see `Document.Manifest`); D1
+// keeps only the queryable bits on `document` itself (title, cover_image).
+//
+// This namespace exposes:
+//   - the EPUB arm of the manifest discriminated union
+//   - the section-key minting helper used by the pipeline + highlight code
+//   - parser-failure errors raised during ingest
 export namespace Epub {
   // ---- Errors -----------------------------------------------------------
   export const InvalidFormatError = NamedError.create(
@@ -18,15 +23,12 @@ export namespace Epub {
   );
   export type EmptyError = InstanceType<typeof EmptyError>;
 
-  export const ChapterNotFoundError = NamedError.create(
-    "EpubChapterNotFoundError",
-    z.object({
-      documentId: z.string(),
-      order: z.number().int(),
-      message: z.string().optional(),
-    }),
-  );
-  export type ChapterNotFoundError = InstanceType<typeof ChapterNotFoundError>;
+  // ---- Section key ------------------------------------------------------
+  // The pipeline mints section keys from the chapter order; readers
+  // reconstruct the same key when scoping highlight queries to the current
+  // section. Keep this helper as the only producer so the format stays the
+  // sole authority on its key shape.
+  export const sectionKey = (order: number): string => `epub:section:${order}`;
 
   // ---- Schemas ----------------------------------------------------------
   // TOC is exposed as a flat list with depth + parent pointers so the OpenAPI
@@ -46,57 +48,17 @@ export namespace Epub {
     .meta({ ref: "EpubTocItem" });
   export type TocItem = z.infer<typeof TocItem>;
 
-  export const Entity = z
+  // EPUB-specific block within `Document.Manifest`. Type-agnostic fields
+  // (title, language, sections[], etc.) live on the base manifest.
+  export const ManifestMetadata = z
     .object({
-      documentId: z.string(),
       authors: z.array(z.string()),
-      language: z.string(),
       description: z.string().nullable(),
       publisher: z.string().nullable(),
       publishedDate: z.string().nullable(),
       identifiers: z.array(z.string()),
       subjects: z.array(z.string()),
-      coverImage: z.string().nullable(),
-      chapterCount: z.number().int().nonnegative(),
-      wordCount: z.number().int().nonnegative(),
     })
-    .meta({ ref: "EpubBook" });
-  export type Entity = z.infer<typeof Entity>;
-
-  export const ChapterSummary = z
-    .object({
-      id: z.string(),
-      documentId: z.string(),
-      order: z.number().int().nonnegative(),
-      href: z.string(),
-      title: z.string(),
-      wordCount: z.number().int().nonnegative(),
-      linear: z.boolean(),
-    })
-    .meta({ ref: "EpubChapterSummary" });
-  export type ChapterSummary = z.infer<typeof ChapterSummary>;
-
-  export const Chapter = z
-    .object({
-      id: z.string(),
-      documentId: z.string(),
-      order: z.number().int().nonnegative(),
-      href: z.string(),
-      title: z.string(),
-      html: z.string(),
-      text: z.string(),
-      wordCount: z.number().int().nonnegative(),
-      linear: z.boolean(),
-    })
-    .meta({ ref: "EpubChapter" });
-  export type Chapter = z.infer<typeof Chapter>;
-
-  export const Detail = z
-    .object({
-      book: Entity,
-      toc: z.array(TocItem),
-      chapters: z.array(ChapterSummary),
-    })
-    .meta({ ref: "EpubDetail" });
-  export type Detail = z.infer<typeof Detail>;
+    .meta({ ref: "EpubManifestMetadata" });
+  export type ManifestMetadata = z.infer<typeof ManifestMetadata>;
 }

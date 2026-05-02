@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "51b3b0a2-2bbf-4f3d-8834-ddd800b0b5c5",
+  "id": "9117345f-39af-4e15-80c2-06c1a1b08e15",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "account": {
@@ -200,6 +200,20 @@
           "notNull": false,
           "autoincrement": false
         },
+        "cover_image": {
+          "name": "cover_image",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "source_url": {
+          "name": "source_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "r2_key_original": {
           "name": "r2_key_original",
           "type": "text",
@@ -259,211 +273,6 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "epub_book": {
-      "name": "epub_book",
-      "columns": {
-        "document_id": {
-          "name": "document_id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "authors": {
-          "name": "authors",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "language": {
-          "name": "language",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "publisher": {
-          "name": "publisher",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "published_date": {
-          "name": "published_date",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "identifiers": {
-          "name": "identifiers",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "subjects": {
-          "name": "subjects",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "toc": {
-          "name": "toc",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "cover_image": {
-          "name": "cover_image",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "chapter_count": {
-          "name": "chapter_count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "word_count": {
-          "name": "word_count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "epub_book_document_id_document_id_fk": {
-          "name": "epub_book_document_id_document_id_fk",
-          "tableFrom": "epub_book",
-          "tableTo": "document",
-          "columnsFrom": [
-            "document_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "epub_chapter": {
-      "name": "epub_chapter",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "document_id": {
-          "name": "document_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "order": {
-          "name": "order",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "href": {
-          "name": "href",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "title": {
-          "name": "title",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "html": {
-          "name": "html",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "text": {
-          "name": "text",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "word_count": {
-          "name": "word_count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "linear": {
-          "name": "linear",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": true
-        }
-      },
-      "indexes": {
-        "epub_chapter_document_order_uq": {
-          "name": "epub_chapter_document_order_uq",
-          "columns": [
-            "document_id",
-            "order"
-          ],
-          "isUnique": true
-        }
-      },
-      "foreignKeys": {
-        "epub_chapter_document_id_epub_book_document_id_fk": {
-          "name": "epub_chapter_document_id_epub_book_document_id_fk",
-          "tableFrom": "epub_chapter",
-          "tableTo": "epub_book",
-          "columnsFrom": [
-            "document_id"
-          ],
-          "columnsTo": [
-            "document_id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
     "highlight": {
       "name": "highlight",
       "columns": {
@@ -488,23 +297,16 @@
           "notNull": true,
           "autoincrement": false
         },
-        "epub_chapter_order": {
-          "name": "epub_chapter_order",
-          "type": "integer",
+        "section_key": {
+          "name": "section_key",
+          "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "offset_start": {
-          "name": "offset_start",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "offset_end": {
-          "name": "offset_end",
-          "type": "integer",
+        "position": {
+          "name": "position",
+          "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
@@ -562,11 +364,11 @@
           ],
           "isUnique": false
         },
-        "highlight_document_chapter_idx": {
-          "name": "highlight_document_chapter_idx",
+        "highlight_document_section_idx": {
+          "name": "highlight_document_section_idx",
           "columns": [
             "document_id",
-            "epub_chapter_order"
+            "section_key"
           ],
           "isUnique": false
         }
@@ -601,12 +403,7 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {
-        "highlight_offset_range": {
-          "name": "highlight_offset_range",
-          "value": "\"highlight\".\"offset_start\" <= \"highlight\".\"offset_end\""
-        }
-      }
+      "checkConstraints": {}
     },
     "progress": {
       "name": "progress",
@@ -625,8 +422,29 @@
           "notNull": true,
           "autoincrement": false
         },
-        "epub_chapter_order": {
-          "name": "epub_chapter_order",
+        "section_key": {
+          "name": "section_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "position": {
+          "name": "position",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "progress_percent": {
+          "name": "progress_percent",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,

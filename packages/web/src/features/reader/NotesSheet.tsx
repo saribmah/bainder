@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { IconButton, Icons, Sheet, useTheme } from "@bainder/ui";
-import type { EpubChapterSummary, Highlight } from "@bainder/sdk";
+import type { DocumentSectionSummary, Highlight } from "@bainder/sdk";
 import { useSdk } from "../../sdk";
 
 export type NotesSheetProps = {
   documentId: string;
-  chapters?: ReadonlyArray<EpubChapterSummary>;
+  sections?: ReadonlyArray<DocumentSectionSummary>;
   currentOrder?: number;
   refreshToken: number;
-  onJumpEpub?: (chapterOrder: number) => void;
+  onJumpToOrder?: (order: number) => void;
   onClose: () => void;
 };
 
@@ -35,10 +35,10 @@ const formatRelativeTime = (iso: string): string => {
 
 export function NotesSheet({
   documentId,
-  chapters,
+  sections,
   currentOrder,
   refreshToken,
-  onJumpEpub,
+  onJumpToOrder,
   onClose,
 }: NotesSheetProps) {
   const { client } = useSdk();
@@ -47,14 +47,13 @@ export function NotesSheet({
   const [error, setError] = useState<string | null>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
 
-  // Map chapter order → title for nav labels.
-  const titleByOrder = useMemo(() => {
-    const map = new Map<number, string>();
-    if (chapters) {
-      for (const ch of chapters) map.set(ch.order, ch.title);
+  const sectionInfoByKey = useMemo(() => {
+    const map = new Map<string, { order: number; title: string }>();
+    if (sections) {
+      for (const s of sections) map.set(s.sectionKey, { order: s.order, title: s.title });
     }
     return map;
-  }, [chapters]);
+  }, [sections]);
 
   useEffect(() => {
     let cancelled = false;
@@ -156,13 +155,16 @@ export function NotesSheet({
               </li>
             )}
             {items?.map((h) => {
-              const positionLabel = labelFor(h, titleByOrder);
-              const isCurrent = h.epubChapterOrder === currentOrder;
+              const info = sectionInfoByKey.get(h.sectionKey);
+              const positionLabel = labelFor(info);
+              const isCurrent = info?.order === currentOrder;
               return (
                 <li key={h.id} className="mb-2 last:mb-0">
                   <button
                     type="button"
-                    onClick={() => onJumpEpub?.(h.epubChapterOrder)}
+                    onClick={() => {
+                      if (info) onJumpToOrder?.(info.order);
+                    }}
                     className={`block w-full rounded-xl p-3 text-left transition-colors ${cardBg} ${
                       isCurrent ? activeRing : ""
                     }`}
@@ -201,7 +203,7 @@ export function NotesSheet({
   );
 }
 
-const labelFor = (h: Highlight, titleByOrder: Map<number, string>): string => {
-  const title = titleByOrder.get(h.epubChapterOrder);
-  return title ? `Ch. ${h.epubChapterOrder + 1} · ${title}` : `Chapter ${h.epubChapterOrder + 1}`;
+const labelFor = (info: { order: number; title: string } | undefined): string => {
+  if (!info) return "Section";
+  return `Ch. ${info.order + 1} · ${info.title}`;
 };

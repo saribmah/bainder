@@ -8,20 +8,28 @@ export namespace ProgressStorage {
   export type EntityRow = {
     userId: string;
     documentId: string;
-    epubChapterOrder: number;
+    sectionKey: string;
+    position: Progress.Position | null;
+    progressPercent: number | null;
+    createdAt: Date;
     updatedAt: Date;
   };
 
   export const toEntity = (row: EntityRow): Progress.Entity => ({
     documentId: row.documentId,
-    epubChapterOrder: row.epubChapterOrder,
+    sectionKey: row.sectionKey,
+    position: row.position,
+    progressPercent: row.progressPercent,
+    createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   });
 
   export type UpsertInput = {
     userId: string;
     documentId: string;
-    epubChapterOrder: number;
+    sectionKey: string;
+    position: Progress.Position | null;
+    progressPercent: number | null;
   };
 
   export const upsert = async (input: UpsertInput): Promise<Progress.Entity> => {
@@ -29,7 +37,10 @@ export namespace ProgressStorage {
     const row: EntityRow = {
       userId: input.userId,
       documentId: input.documentId,
-      epubChapterOrder: input.epubChapterOrder,
+      sectionKey: input.sectionKey,
+      position: input.position,
+      progressPercent: input.progressPercent,
+      createdAt: now,
       updatedAt: now,
     };
     await Instance.db
@@ -38,7 +49,10 @@ export namespace ProgressStorage {
       .onConflictDoUpdate({
         target: [progress.userId, progress.documentId],
         set: {
-          epubChapterOrder: row.epubChapterOrder,
+          sectionKey: row.sectionKey,
+          position: row.position,
+          progressPercent: row.progressPercent,
+          // createdAt is preserved on conflict — it tracks first-open.
           updatedAt: row.updatedAt,
         },
       });

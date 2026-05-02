@@ -2,7 +2,6 @@ import { Hono } from "hono";
 import { describeRoute, resolver, validator } from "hono-openapi";
 import type { AppEnv } from "../../app/context";
 import { Document } from "../../document/document";
-import { Epub } from "../../document/formats/epub/epub";
 import { Instance } from "../../instance";
 import { requireAuth } from "../../middleware/auth";
 import { Progress } from "../../progress/progress";
@@ -258,8 +257,8 @@ documentRouter.get(
   },
 );
 
-// Derived asset (e.g. EPUB images extracted at parse time, addressed in
-// chapter HTML as `assets/{name}` relative URLs).
+// Derived asset (e.g. extracted images, addressed in section HTML as
+// `assets/{name}` relative URLs).
 documentRouter.get(
   "/:id/assets/:name",
   describeRoute({
@@ -293,7 +292,7 @@ documentRouter.post(
   describeRoute({
     summary: "Upsert reading progress",
     description:
-      "Records the caller's last position within an EPUB document via `epubChapterOrder`. Overwrites any existing row for this (user, document).",
+      "Records the caller's reading state. `sectionKey` is the manifest section identifier; optional `position` and `progressPercent` carry within-section offset and overall completion. Overwrites any existing row for this (user, document).",
     operationId: "progress.upsert",
     responses: {
       200: {
@@ -322,35 +321,38 @@ documentRouter.post(
   },
 );
 
-// ---- Format-specific reading endpoints --------------------------------
-const formatErrorMappings = [
+// ---- Manifest + section reading endpoints (type-agnostic) -------------
+const manifestErrorMappings = [
   { error: Document.NotFoundError, status: 404 as const },
-  { error: Document.WrongKindError, status: 404 as const },
   { error: Document.NotProcessedError, status: 409 as const },
+  { error: Document.ManifestMissingError, status: 409 as const },
+  { error: Document.SectionNotFoundError, status: 404 as const },
 ];
 
 documentRouter.get(
-  "/:id/epub",
+  "/:id/manifest",
   describeRoute({
-    summary: "Get EPUB book detail (book metadata + TOC + chapter summaries)",
-    operationId: "document.getEpubDetail",
+    summary: "Get the document manifest (type-agnostic index)",
+    description:
+      "Returns the canonical manifest for the document — discriminated by `kind`, with format-specific metadata in the matching arm and a uniform `sections[]` for navigation.",
+    operationId: "document.getManifest",
     responses: {
       200: {
-        description: "EPUB detail",
-        content: { "application/json": { schema: resolver(Epub.Detail) } },
+        description: "Document manifest",
+        content: { "application/json": { schema: resolver(Document.Manifest) } },
       },
       401: { description: "Not authenticated" },
-      404: { description: "Not found or wrong kind" },
+      404: { description: "Not found" },
       409: { description: "Document not yet processed" },
     },
   }),
   requireAuth,
   async (c) => {
     const id = c.req.param("id");
-    const mapError = createErrorMapper(formatErrorMappings);
+    const mapError = createErrorMapper(manifestErrorMappings);
     try {
-      const detail = await Document.getEpubDetail(Instance.userId, id);
-      return c.json(detail);
+      const manifest = await Document.getManifest(Instance.userId, id);
+      return c.json(manifest);
     } catch (error) {
       const mapped = mapError(error);
       if (!mapped) throw error;
@@ -360,36 +362,34 @@ documentRouter.get(
 );
 
 documentRouter.get(
-  "/:id/epub/chapters/:order",
+  "/:id/sections/:order/html",
   describeRoute({
-    summary: "Get a single EPUB chapter by linear order",
-    operationId: "document.getEpubChapter",
+    summary: "Stream a section's rendered HTML",
+    operationId: "document.getSectionHtml",
     responses: {
       200: {
-        description: "Chapter content (cleaned HTML and plain text)",
-        content: { "application/json": { schema: resolver(Epub.Chapter) } },
+        description: "Section HTML",
+        content: { "text/html": { schema: { type: "string" } } },
       },
-      400: { description: "Invalid chapter order" },
+      400: { description: "Invalid section order" },
       401: { description: "Not authenticated" },
-      404: { description: "Document or chapter not found" },
+      404: { description: "Document or section not found" },
       409: { description: "Document not yet processed" },
     },
   }),
   requireAuth,
   async (c) => {
+    const order = parseOrder(c.req.param("order"));
+    if (order === null) return c.json({ message: "Invalid section order" }, 400);
     const id = c.req.param("id");
-    const orderRaw = c.req.param("order");
-    const order = Number(orderRaw);
-    if (!Number.isInteger(order) || order < 0) {
-      return c.json({ message: "Invalid chapter order" }, 400);
-    }
-    const mapError = createErrorMapper([
-      ...formatErrorMappings,
-      { error: Epub.ChapterNotFoundError, status: 404 },
-    ]);
+    const mapError = createErrorMapper(manifestErrorMappings);
     try {
-      const chapter = await Document.getEpubChapter(Instance.userId, id, order);
-      return c.json(chapter);
+      const asset = await Document.getSectionHtml(Instance.userId, id, order);
+      return c.body(asset.body, 200, {
+        "Content-Type": asset.contentType,
+        "Content-Length": String(asset.size),
+        "Cache-Control": "private, max-age=3600",
+      });
     } catch (error) {
       const mapped = mapError(error);
       if (!mapped) throw error;
@@ -397,5 +397,50 @@ documentRouter.get(
     }
   },
 );
+
+documentRouter.get(
+  "/:id/sections/:order/text",
+  describeRoute({
+    summary: "Stream a section's canonical plain text",
+    description:
+      "The `.txt` payload that highlight offsets reference and the AI sandbox consumes. Identical text content to the HTML endpoint with markup stripped.",
+    operationId: "document.getSectionText",
+    responses: {
+      200: {
+        description: "Section plain text",
+        content: { "text/plain": { schema: { type: "string" } } },
+      },
+      400: { description: "Invalid section order" },
+      401: { description: "Not authenticated" },
+      404: { description: "Document or section not found" },
+      409: { description: "Document not yet processed" },
+    },
+  }),
+  requireAuth,
+  async (c) => {
+    const order = parseOrder(c.req.param("order"));
+    if (order === null) return c.json({ message: "Invalid section order" }, 400);
+    const id = c.req.param("id");
+    const mapError = createErrorMapper(manifestErrorMappings);
+    try {
+      const asset = await Document.getSectionText(Instance.userId, id, order);
+      return c.body(asset.body, 200, {
+        "Content-Type": asset.contentType,
+        "Content-Length": String(asset.size),
+        "Cache-Control": "private, max-age=3600",
+      });
+    } catch (error) {
+      const mapped = mapError(error);
+      if (!mapped) throw error;
+      return c.json(mapped.payload, mapped.status);
+    }
+  },
+);
+
+const parseOrder = (raw: string): number | null => {
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 0) return null;
+  return n;
+};
 
 export default documentRouter;

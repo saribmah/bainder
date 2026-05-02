@@ -9,9 +9,8 @@ export namespace HighlightStorage {
   export const entitySelect = {
     id: highlight.id,
     documentId: highlight.documentId,
-    epubChapterOrder: highlight.epubChapterOrder,
-    offsetStart: highlight.offsetStart,
-    offsetEnd: highlight.offsetEnd,
+    sectionKey: highlight.sectionKey,
+    position: highlight.position,
     textSnippet: highlight.textSnippet,
     color: highlight.color,
     note: highlight.note,
@@ -22,9 +21,8 @@ export namespace HighlightStorage {
   export type EntityRow = {
     id: string;
     documentId: string;
-    epubChapterOrder: number;
-    offsetStart: number;
-    offsetEnd: number;
+    sectionKey: string;
+    position: Highlight.Position;
     textSnippet: string;
     color: string;
     note: string | null;
@@ -35,9 +33,8 @@ export namespace HighlightStorage {
   export const toEntity = (row: EntityRow): Highlight.Entity => ({
     id: row.id,
     documentId: row.documentId,
-    epubChapterOrder: row.epubChapterOrder,
-    offsetStart: row.offsetStart,
-    offsetEnd: row.offsetEnd,
+    sectionKey: row.sectionKey,
+    position: row.position,
     textSnippet: row.textSnippet,
     color: parseColor(row.color),
     note: row.note,
@@ -62,9 +59,8 @@ export namespace HighlightStorage {
     id: string;
     userId: string;
     documentId: string;
-    epubChapterOrder: number;
-    offsetStart: number;
-    offsetEnd: number;
+    sectionKey: string;
+    position: Highlight.Position;
     textSnippet: string;
     color: Highlight.Color;
     note: string | null;
@@ -76,9 +72,8 @@ export namespace HighlightStorage {
       id: input.id,
       userId: input.userId,
       documentId: input.documentId,
-      epubChapterOrder: input.epubChapterOrder,
-      offsetStart: input.offsetStart,
-      offsetEnd: input.offsetEnd,
+      sectionKey: input.sectionKey,
+      position: input.position,
       textSnippet: input.textSnippet,
       color: input.color,
       note: input.note,
@@ -91,13 +86,13 @@ export namespace HighlightStorage {
 
   export type ListQuery = {
     documentId: string;
-    epubChapterOrder?: number;
+    sectionKey?: string;
   };
 
   export const list = async (userId: string, query: ListQuery): Promise<Highlight.Entity[]> => {
     const conds = [eq(highlight.userId, userId), eq(highlight.documentId, query.documentId)];
-    if (query.epubChapterOrder !== undefined) {
-      conds.push(eq(highlight.epubChapterOrder, query.epubChapterOrder));
+    if (query.sectionKey !== undefined) {
+      conds.push(eq(highlight.sectionKey, query.sectionKey));
     }
     const rows = await Instance.db
       .select(entitySelect)

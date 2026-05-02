@@ -2,16 +2,16 @@ import { z } from "zod";
 import { NamedError } from "../utils/error";
 import { DocumentAssetStore } from "./asset-store";
 import { Epub } from "./formats/epub/epub";
-import { EpubStorage } from "./formats/epub/storage";
 import { detectFormat } from "./processing/parsers/detect";
 import { DocumentStorage } from "./storage";
 
 // User-visible binder primitive. One row per uploaded file. Format-specific
-// reading data (chapters) lives in sibling tables and is fetched via the
-// dedicated format endpoints.
+// content (chapters, page text, structured metadata) lives in R2 under the
+// document's prefix and is described by `manifest.json`. The reader API
+// surface is type-agnostic: `getManifest` / `getSectionHtml` / `getSectionText`
+// work the same way regardless of `kind`.
 //
-// EPUB is currently the only supported format. New formats are reintroduced
-// one at a time via `.agents/add-format.md`.
+// New formats are reintroduced one at a time via `.agents/add-format.md`.
 export namespace Document {
   // ---- Errors -----------------------------------------------------------
   export const NotFoundError = NamedError.create(
@@ -20,22 +20,27 @@ export namespace Document {
   );
   export type NotFoundError = InstanceType<typeof NotFoundError>;
 
-  export const WrongKindError = NamedError.create(
-    "DocumentWrongKindError",
-    z.object({
-      id: z.string(),
-      expected: z.string(),
-      actual: z.string(),
-      message: z.string().optional(),
-    }),
-  );
-  export type WrongKindError = InstanceType<typeof WrongKindError>;
-
   export const NotProcessedError = NamedError.create(
     "DocumentNotProcessedError",
     z.object({ id: z.string(), status: z.string(), message: z.string().optional() }),
   );
   export type NotProcessedError = InstanceType<typeof NotProcessedError>;
+
+  export const ManifestMissingError = NamedError.create(
+    "DocumentManifestMissingError",
+    z.object({ id: z.string(), message: z.string().optional() }),
+  );
+  export type ManifestMissingError = InstanceType<typeof ManifestMissingError>;
+
+  export const SectionNotFoundError = NamedError.create(
+    "DocumentSectionNotFoundError",
+    z.object({
+      id: z.string(),
+      order: z.number().int(),
+      message: z.string().optional(),
+    }),
+  );
+  export type SectionNotFoundError = InstanceType<typeof SectionNotFoundError>;
 
   export const UploadTooLargeError = NamedError.create(
     "DocumentUploadTooLargeError",
@@ -69,13 +74,14 @@ export namespace Document {
   // Embedded reading-progress snapshot. Lives on Document because every
   // list/get response wants it; the upsert path lives in the Progress
   // feature. Null when the caller hasn't opened this document yet.
-  export const Progress = z
+  export const ProgressSnapshot = z
     .object({
-      epubChapterOrder: z.number().int().nonnegative(),
+      sectionKey: z.string(),
+      progressPercent: z.number().min(0).max(1).nullable(),
       updatedAt: z.string(),
     })
     .meta({ ref: "DocumentProgress" });
-  export type Progress = z.infer<typeof Progress>;
+  export type ProgressSnapshot = z.infer<typeof ProgressSnapshot>;
 
   export const Entity = z
     .object({
@@ -89,7 +95,9 @@ export namespace Document {
       sensitive: z.boolean(),
       status: Status,
       errorReason: z.string().nullable(),
-      progress: Progress.nullable(),
+      coverImage: z.string().nullable(),
+      sourceUrl: z.string().nullable(),
+      progress: ProgressSnapshot.nullable(),
       createdAt: z.string(),
       updatedAt: z.string(),
     })
@@ -113,8 +121,58 @@ export namespace Document {
   });
   export type UpdateInput = z.infer<typeof UpdateInput>;
 
-  export const ChaptersResponse = z.object({ items: z.array(Epub.ChapterSummary) });
-  export type ChaptersResponse = z.infer<typeof ChaptersResponse>;
+  // ---- Manifest ---------------------------------------------------------
+  // Type-agnostic per-section descriptor surfaced from manifest.json. The
+  // reader navigates by `order`; `sectionKey` ties a section to its
+  // highlight/progress rows; `files.html` and `files.text` are R2 keys
+  // (relative to the document prefix's `content/` folder) that the
+  // section-stream endpoints read from.
+  export const SectionSummary = z
+    .object({
+      sectionKey: z.string(),
+      order: z.number().int().nonnegative(),
+      title: z.string(),
+      wordCount: z.number().int().nonnegative(),
+      // Format-specific reading-order signal. EPUB exposes spine `linear=no`
+      // items here; non-paginated formats default to true.
+      linear: z.boolean(),
+      // Original-format href (e.g. EPUB OPF-relative chapter href). The
+      // reader uses this to map TOC `fileHref` back to a section order.
+      // Empty string when the format has no native href concept.
+      href: z.string(),
+      files: z.object({
+        html: z.string(),
+        text: z.string(),
+      }),
+    })
+    .meta({ ref: "DocumentSectionSummary" });
+  export type SectionSummary = z.infer<typeof SectionSummary>;
+
+  // Discriminated union by `kind`. Today there's only one arm (EPUB);
+  // adding `article`/`pdf` is one more arm + a new pipeline. Reader code
+  // reads base fields without branching and only branches on `kind` when
+  // it cares about format-specific metadata.
+  const ManifestBase = z.object({
+    schemaVersion: z.literal(1),
+    title: z.string(),
+    language: z.string(),
+    coverImage: z.string().nullable(),
+    chapterCount: z.number().int().nonnegative(),
+    wordCount: z.number().int().nonnegative(),
+    sections: z.array(SectionSummary),
+  });
+
+  export const EpubManifest = ManifestBase.extend({
+    kind: z.literal("epub"),
+    metadata: Epub.ManifestMetadata,
+    toc: z.array(Epub.TocItem),
+  }).meta({ ref: "EpubManifest" });
+  export type EpubManifest = z.infer<typeof EpubManifest>;
+
+  export const Manifest = z
+    .discriminatedUnion("kind", [EpubManifest])
+    .meta({ ref: "DocumentManifest" });
+  export type Manifest = z.infer<typeof Manifest>;
 
   // ---- Operations -------------------------------------------------------
   export type CreateInput = {
@@ -236,42 +294,59 @@ export namespace Document {
     return DocumentAssetStore.getAsset(userId, id, name);
   };
 
-  // ---- Format-specific accessors ----------------------------------------
-  export const getEpubDetail = async (userId: string, id: string): Promise<Epub.Detail> => {
-    const entity = await getProcessed(userId, id, "epub");
-    const [book, toc, chapters] = await Promise.all([
-      EpubStorage.get(id, userId),
-      EpubStorage.getToc(id, userId),
-      EpubStorage.listChapterSummaries(id, userId),
-    ]);
-    if (!book) {
-      throw new NotProcessedError({ id, status: entity.status, message: "EPUB book row missing" });
+  // ---- Manifest accessors -----------------------------------------------
+  export const getManifest = async (userId: string, id: string): Promise<Manifest> => {
+    await getProcessed(userId, id);
+    const manifest = await DocumentAssetStore.getManifest(userId, id, Manifest);
+    if (!manifest) {
+      throw new ManifestMissingError({ id, message: "Manifest not found in R2" });
     }
-    return { book, toc: toc ?? [], chapters: chapters ?? [] };
+    return manifest;
   };
 
-  export const getEpubChapter = async (
+  export const getSectionHtml = async (
     userId: string,
     id: string,
     order: number,
-  ): Promise<Epub.Chapter> => {
-    await getProcessed(userId, id, "epub");
-    const chapter = await EpubStorage.getChapter(id, order, userId);
-    if (!chapter) throw new Epub.ChapterNotFoundError({ documentId: id, order });
-    return chapter;
+  ): Promise<DocumentAssetStore.Asset> => {
+    const manifest = await getManifest(userId, id);
+    const section = manifest.sections.find((s) => s.order === order);
+    if (!section) throw new SectionNotFoundError({ id, order });
+    const asset = await DocumentAssetStore.getContent(userId, id, basename(section.files.html));
+    if (!asset) throw new SectionNotFoundError({ id, order });
+    return asset;
+  };
+
+  export const getSectionText = async (
+    userId: string,
+    id: string,
+    order: number,
+  ): Promise<DocumentAssetStore.Asset> => {
+    const manifest = await getManifest(userId, id);
+    const section = manifest.sections.find((s) => s.order === order);
+    if (!section) throw new SectionNotFoundError({ id, order });
+    const asset = await DocumentAssetStore.getContent(userId, id, basename(section.files.text));
+    if (!asset) throw new SectionNotFoundError({ id, order });
+    return asset;
   };
 
   // ---- Helpers (feature-local) ------------------------------------------
-  const getProcessed = async (userId: string, id: string, expected: Kind): Promise<Entity> => {
+  const getProcessed = async (userId: string, id: string): Promise<Entity> => {
     const entity = await DocumentStorage.get(id, userId);
     if (!entity) throw new NotFoundError({ id });
-    if (entity.kind !== expected) {
-      throw new WrongKindError({ id, expected, actual: entity.kind });
-    }
     if (entity.status !== "processed") {
       throw new NotProcessedError({ id, status: entity.status });
     }
     return entity;
+  };
+
+  // Manifest stores `files.html` as a relative path under `content/`
+  // (e.g. "content/0001-introduction.html"). The asset-store's
+  // `getContent` already prefixes `content/` itself, so we strip the
+  // leading folder here. Defensive against a manifest writer that omits it.
+  const basename = (path: string): string => {
+    const stripped = path.startsWith("content/") ? path.slice("content/".length) : path;
+    return stripped;
   };
 
   const sha256Hex = async (bytes: Uint8Array): Promise<string> => {

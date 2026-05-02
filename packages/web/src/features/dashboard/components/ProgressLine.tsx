@@ -1,12 +1,15 @@
 import type { Document } from "@bainder/sdk";
 
 export function ProgressLine({ doc }: { doc: Document }) {
-  const progress = doc.progress ? Math.min(92, 18 + doc.progress.epubChapterOrder * 7) : 12;
+  // `progressPercent` is in [0, 1]; clamp to the visual range so a 0%
+  // bar is still visible and 100% doesn't visually overshoot the chip.
+  const pct = doc.progress?.progressPercent;
+  const width = pct !== null && pct !== undefined ? Math.min(98, Math.max(6, pct * 100)) : 12;
 
   return (
     <>
       <div className="mt-2 h-[3px] overflow-hidden rounded-full bg-paper-200">
-        <div className="h-full rounded-full bg-paper-900" style={{ width: `${progress}%` }} />
+        <div className="h-full rounded-full bg-paper-900" style={{ width: `${width}%` }} />
       </div>
       <div className="t-body-s mt-1 text-[11px] text-paper-500">
         {doc.progress ? "Continue reading" : "Ready to begin"}

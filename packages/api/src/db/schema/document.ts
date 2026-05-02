@@ -2,9 +2,13 @@ import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { user } from "./auth";
 
 // Parent "binder row" the user sees in the UI. One row per uploaded file.
-// Per-format extraction (chapters, pages, dimensions) lives in sibling tables
-// keyed by `document_id`. All R2 keys for this document hang off the
-// `users/{user_id}/documents/{id}/` prefix so a user-scoped purge is one sweep.
+// Format-specific content (chapter HTML/text, manifests) lives in R2 under
+// `users/{user_id}/documents/{id}/`; D1 holds only queryable metadata.
+//
+// `cover_image` and `source_url` are type-agnostic: every kind we plan to
+// support has zero or one of each (EPUB cover-image manifest item, article
+// fetched from a URL). Keeping them on `document` lets the dashboard render
+// list cards in a single D1 read with no R2 manifest fetches.
 export const document = sqliteTable(
   "document",
   {
@@ -21,6 +25,8 @@ export const document = sqliteTable(
     sensitive: integer("sensitive", { mode: "boolean" }).notNull().default(false),
     status: text("status").notNull(),
     errorReason: text("error_reason"),
+    coverImage: text("cover_image"),
+    sourceUrl: text("source_url"),
     r2KeyOriginal: text("r2_key_original").notNull(),
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),

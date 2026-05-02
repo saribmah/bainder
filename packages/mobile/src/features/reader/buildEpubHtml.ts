@@ -156,12 +156,13 @@ const READER_RUNTIME = `
     unwrapMarks(body);
     if (!list || list.length === 0) return;
     var ordered = list.slice().sort(function (a, b) {
-      if (a.offsetStart !== b.offsetStart) return a.offsetStart - b.offsetStart;
-      return (b.offsetEnd - b.offsetStart) - (a.offsetEnd - a.offsetStart);
+      var ap = a.position; var bp = b.position;
+      if (ap.offsetStart !== bp.offsetStart) return ap.offsetStart - bp.offsetStart;
+      return (bp.offsetEnd - bp.offsetStart) - (ap.offsetEnd - ap.offsetStart);
     });
     for (var i = 0; i < ordered.length; i++) {
       var h = ordered[i];
-      var range = charOffsetsToRange(body, h.offsetStart, h.offsetEnd);
+      var range = charOffsetsToRange(body, h.position.offsetStart, h.position.offsetEnd);
       if (!range) continue;
       var attrs = { 'data-highlight-id': h.id };
       if (h.note) attrs['data-highlight-has-note'] = 'true';

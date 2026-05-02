@@ -1,10 +1,23 @@
 import type { Document } from "@bainder/sdk";
 import { formatRelativeTime } from "./date";
 
+// Section keys mint as `${kind}:section:${order}`. Reading the order back
+// out of the stored progress lets the dashboard show "Chapter N" without
+// fetching the document manifest.
+const SECTION_ORDER_PATTERN = /:section:(\d+)$/;
+
+const sectionOrderFromKey = (sectionKey: string): number | null => {
+  const match = SECTION_ORDER_PATTERN.exec(sectionKey);
+  if (!match) return null;
+  return Number(match[1]);
+};
+
 export const getProgressLabel = (doc: Document): string | null => {
   const progress = doc.progress;
   if (!progress) return null;
-  return `Chapter ${progress.epubChapterOrder + 1} · ${formatRelativeTime(progress.updatedAt)}`;
+  const order = sectionOrderFromKey(progress.sectionKey);
+  const stamp = formatRelativeTime(progress.updatedAt);
+  return order !== null ? `Chapter ${order + 1} · ${stamp}` : `Continue reading · ${stamp}`;
 };
 
 export const filterDocuments = (documents: Document[], query: string): Document[] => {
