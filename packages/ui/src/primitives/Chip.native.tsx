@@ -8,16 +8,27 @@ import {
   type StyleProp,
   type ViewStyle,
 } from "react-native";
-import { color } from "../tokens/color.ts";
+import { useThemeColors, type ThemeColors } from "../theme/index.native.ts";
+import { font } from "../tokens/font.ts";
 import { radius } from "../tokens/radius.ts";
+import { tintIcon } from "../utils/tintIcon.ts";
 
 export type ChipVariant = "filled" | "outline" | "active";
 
-const variantStyle: Record<ChipVariant, { bg: string; fg: string; border?: string }> = {
-  filled: { bg: color.paper[100], fg: color.paper[700] },
-  outline: { bg: "transparent", fg: color.paper[700], border: color.paper[300] },
-  active: { bg: color.paper[900], fg: color.paper[50], border: color.paper[900] },
-};
+function chipVariantStyle(
+  variant: ChipVariant,
+  palette: ThemeColors,
+): { bg: string; fg: string; border?: string } {
+  switch (variant) {
+    case "outline":
+      return { bg: "transparent", fg: palette.fgSubtle, border: palette.borderStrong };
+    case "active":
+      return { bg: palette.action, fg: palette.actionFg, border: palette.action };
+    case "filled":
+    default:
+      return { bg: palette.surfaceRaised, fg: palette.fgSubtle };
+  }
+}
 
 type ChipBaseProps = {
   variant?: ChipVariant;
@@ -30,7 +41,8 @@ type ChipBaseProps = {
 export type ChipProps = ChipBaseProps;
 
 export function Chip({ variant = "filled", iconStart, iconEnd, children, style }: ChipProps) {
-  const v = variantStyle[variant];
+  const palette = useThemeColors();
+  const v = chipVariantStyle(variant, palette);
   return (
     <View
       style={[
@@ -43,13 +55,13 @@ export function Chip({ variant = "filled", iconStart, iconEnd, children, style }
         style,
       ]}
     >
-      {iconStart}
+      {tintIcon(iconStart, v.fg)}
       {typeof children === "string" ? (
         <Text style={[styles.label, { color: v.fg }]}>{children}</Text>
       ) : (
         children
       )}
-      {iconEnd}
+      {tintIcon(iconEnd, v.fg)}
     </View>
   );
 }
@@ -65,7 +77,8 @@ export function ChipButton({
   style,
   ...rest
 }: ChipButtonProps) {
-  const v = variantStyle[variant];
+  const palette = useThemeColors();
+  const v = chipVariantStyle(variant, palette);
   return (
     <Pressable
       accessibilityRole="button"
@@ -73,7 +86,7 @@ export function ChipButton({
       style={({ pressed }) => [
         styles.base,
         {
-          backgroundColor: pressed && !disabled ? color.paper[200] : v.bg,
+          backgroundColor: pressed && !disabled ? palette.surfaceHover : v.bg,
           borderColor: v.border ?? "transparent",
           borderWidth: v.border ? 1 : 0,
           opacity: disabled ? 0.5 : 1,
@@ -82,13 +95,13 @@ export function ChipButton({
       ]}
       {...rest}
     >
-      {iconStart}
+      {tintIcon(iconStart, v.fg)}
       {typeof children === "string" ? (
         <Text style={[styles.label, { color: v.fg }]}>{children}</Text>
       ) : (
         children
       )}
-      {iconEnd}
+      {tintIcon(iconEnd, v.fg)}
     </Pressable>
   );
 }
@@ -103,6 +116,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
   },
   label: {
+    fontFamily: font.nativeFamily.ui,
     fontSize: 13,
     fontWeight: "500",
   },

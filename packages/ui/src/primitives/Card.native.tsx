@@ -8,7 +8,7 @@ import {
   type ViewProps,
   type ViewStyle,
 } from "react-native";
-import { color } from "../tokens/color.ts";
+import { useThemeColors } from "../theme/index.native.ts";
 import { radius } from "../tokens/radius.ts";
 
 export type CardVariant = "default" | "elevated";
@@ -21,8 +21,12 @@ export type CardProps = Omit<ViewProps, "style"> & {
 };
 
 export function Card({ variant = "default", onPress, style, children, ...rest }: CardProps) {
-  const baseStyle: StyleProp<ViewStyle> =
-    variant === "elevated" ? [styles.elevated, style] : [styles.default, style];
+  const palette = useThemeColors();
+  const variantStyle = variant === "elevated" ? styles.elevated : styles.default;
+  const themedStyle = {
+    backgroundColor: palette.surface,
+    borderColor: variant === "elevated" ? "transparent" : palette.border,
+  };
 
   if (onPress) {
     return (
@@ -30,9 +34,12 @@ export function Card({ variant = "default", onPress, style, children, ...rest }:
         onPress={onPress}
         accessibilityRole="button"
         style={({ pressed }) => [
-          baseStyle,
-          { backgroundColor: pressed ? color.paper[100] : color.paper[50] },
+          variantStyle,
+          themedStyle,
+          { backgroundColor: pressed ? palette.surfaceHover : palette.surface },
+          style,
         ]}
+        {...rest}
       >
         {children}
       </Pressable>
@@ -40,7 +47,7 @@ export function Card({ variant = "default", onPress, style, children, ...rest }:
   }
 
   return (
-    <View style={baseStyle} {...rest}>
+    <View style={[variantStyle, themedStyle, style]} {...rest}>
       {children}
     </View>
   );
@@ -48,14 +55,12 @@ export function Card({ variant = "default", onPress, style, children, ...rest }:
 
 const styles = StyleSheet.create({
   default: {
-    backgroundColor: color.paper[50],
     borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: color.paper[200],
   },
   elevated: {
-    backgroundColor: color.paper[50],
     borderRadius: radius.xl,
+    borderWidth: 0,
     shadowColor: "rgba(20,15,10,1)",
     shadowOpacity: 0.08,
     shadowRadius: 12,

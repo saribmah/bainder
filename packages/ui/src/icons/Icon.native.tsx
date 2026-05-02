@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { StyleProp, ViewStyle } from "react-native";
 import Svg from "react-native-svg";
-import { color as tokenColor } from "../tokens/color.ts";
+import { useThemeColors } from "../theme/ThemeProvider.native.tsx";
 
 export type IconProps = {
   size?: number;
@@ -17,18 +17,20 @@ type IconRootProps = IconProps & { children: ReactNode };
 
 export function Icon({
   size = 22,
-  color = tokenColor.paper[900],
+  color,
   strokeWidth = 1.5,
   style,
   "aria-label": ariaLabel,
   children,
 }: IconRootProps) {
+  const palette = useThemeColors();
+
   return (
     <Svg
       viewBox="0 0 24 24"
       width={size}
       height={size}
-      color={color}
+      color={color ?? palette.fg}
       fill="none"
       stroke="currentColor"
       strokeWidth={strokeWidth}

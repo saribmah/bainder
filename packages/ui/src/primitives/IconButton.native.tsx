@@ -6,8 +6,9 @@ import {
   type StyleProp,
   type ViewStyle,
 } from "react-native";
-import { color } from "../tokens/color.ts";
+import { useThemeColors } from "../theme/index.native.ts";
 import { radius } from "../tokens/radius.ts";
+import { tintIcon } from "../utils/tintIcon.ts";
 
 export type IconButtonSize = "sm" | "md" | "lg";
 
@@ -28,6 +29,7 @@ export function IconButton({
   style,
   ...rest
 }: IconButtonProps) {
+  const palette = useThemeColors();
   const dim = sizeMap[size];
   return (
     <Pressable
@@ -39,7 +41,8 @@ export function IconButton({
         {
           width: dim,
           height: dim,
-          backgroundColor: pressed && !disabled ? color.paper[100] : color.paper[50],
+          backgroundColor: pressed && !disabled ? palette.surfaceHover : palette.surface,
+          borderColor: palette.border,
           opacity: disabled ? 0.5 : 1,
           transform: [{ scale: pressed && !disabled ? 0.98 : 1 }],
         },
@@ -47,7 +50,7 @@ export function IconButton({
       ]}
       {...rest}
     >
-      {children}
+      {tintIcon(children, palette.fg)}
     </Pressable>
   );
 }
@@ -58,6 +61,5 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: radius.pill,
     borderWidth: 1,
-    borderColor: color.paper[200],
   },
 });

@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
 import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
-import { color } from "../tokens/color.ts";
+import { useThemeColors } from "../theme/index.native.ts";
+import { font } from "../tokens/font.ts";
 import { radius } from "../tokens/radius.ts";
+import { tintIcon } from "../utils/tintIcon.ts";
 
 export type ToastProps = {
   iconStart?: ReactNode;
@@ -10,10 +12,19 @@ export type ToastProps = {
 };
 
 export function Toast({ iconStart, children, style }: ToastProps) {
+  const palette = useThemeColors();
+
   return (
-    <View accessibilityRole="alert" style={[styles.toast, style]}>
-      {iconStart}
-      {typeof children === "string" ? <Text style={styles.label}>{children}</Text> : children}
+    <View
+      accessibilityRole="alert"
+      style={[styles.toast, { backgroundColor: palette.action }, style]}
+    >
+      {tintIcon(iconStart, palette.actionFg)}
+      {typeof children === "string" ? (
+        <Text style={[styles.label, { color: palette.actionFg }]}>{children}</Text>
+      ) : (
+        children
+      )}
     </View>
   );
 }
@@ -26,7 +37,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 20,
     borderRadius: radius.pill,
-    backgroundColor: color.paper[900],
     shadowColor: "rgba(20,15,10,1)",
     shadowOpacity: 0.18,
     shadowRadius: 32,
@@ -35,7 +45,7 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   label: {
-    color: color.paper[50],
+    fontFamily: font.nativeFamily.ui,
     fontSize: 15,
     fontWeight: "500",
   },

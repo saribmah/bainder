@@ -47,7 +47,7 @@ export function ThemeProvider({
 
   return (
     <ThemeContext.Provider value={value}>
-      <View style={[{ flex: 1, backgroundColor: palette.surface }, style]} {...rest}>
+      <View style={[{ flex: 1, backgroundColor: palette.bg }, style]} {...rest}>
         {children}
       </View>
     </ThemeContext.Provider>
@@ -63,6 +63,6 @@ export function useTheme(): ThemeContextValue {
 }
 
 export function useThemeColors(): ThemeColors {
-  const { theme } = useTheme();
-  return themeColors(theme);
+  const ctx = useContext(ThemeContext);
+  return themeColors(ctx?.theme ?? "light");
 }
