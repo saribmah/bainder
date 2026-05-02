@@ -175,6 +175,35 @@ When asked to do specific kinds of work, read the matching recipe first:
 - See [`.agents/regenerate-sdk.md`](./.agents/regenerate-sdk.md) for the
   regeneration recipe.
 
+### Web feature organization (`packages/web`)
+
+- Organize frontend product code under `packages/web/src/features/<feature>/`.
+- App-level wiring may live at `packages/web/src/App.tsx`; shared SDK provider
+  code may live under `packages/web/src/sdk/`; global styles stay in
+  `packages/web/src/styles.css`.
+- Do not recreate top-level product folders such as `src/auth`, `src/library`,
+  `src/dashboard`, or `src/reader`. New product UI belongs in `src/features/*`.
+- Keep feature directories small and responsibility-specific. Prefer
+  subfolders such as `components/`, `hooks/`, `pages/`, `utils/`, `guards/`,
+  and `api/` when a feature needs them.
+- Each feature should export its public surface from `src/features/<feature>/index.ts`.
+  Cross-feature imports should go through that public surface unless importing
+  a tightly scoped internal file is clearly better.
+- Feature pages compose hooks/components; they should not grow into large
+  all-in-one files. Extract reusable cards, dialogs, menus, empty states,
+  and data hooks before a page becomes hard to scan.
+- `dashboard` is the current signed-in home surface. The historical
+  `library/Library.tsx` naming was wrong; do not bring it back.
+- There is currently no `library` feature. Create `src/features/library/` only
+  when implementing a real library capability distinct from dashboard.
+- The canonical signed-in route is `/dashboard`. Keep `/library` only as a
+  compatibility redirect unless the real library feature is introduced.
+- `profile` owns signed-in user/profile UI affordances, including profile menu
+  and display-name helpers. Dashboard should consume these from `profile`
+  instead of owning profile logic directly.
+- `auth` owns Better Auth client setup, auth pages, auth guards, and auth-only
+  UI components.
+
 ## Workspace commands
 
 From repo root:
