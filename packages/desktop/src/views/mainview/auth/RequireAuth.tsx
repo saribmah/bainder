@@ -13,7 +13,7 @@ export function RequireAuth() {
   }
 
   if (!session.data?.user) {
-    return <Navigate to="/signin" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return <Outlet />;
