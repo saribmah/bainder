@@ -12,6 +12,7 @@ import {
   Sheet,
   Skeleton,
   Toast,
+  Wordmark,
 } from "@bainder/ui";
 import type { Document } from "@bainder/sdk";
 import { authClient } from "../auth/auth.client";
@@ -164,8 +165,8 @@ export function Library() {
   return (
     <main className="min-h-screen bg-paper-50 text-paper-900">
       <header className="mx-auto flex max-w-3xl items-center justify-between px-6 py-6">
-        <Link to="/library" className="t-display-xs text-paper-900">
-          bainder
+        <Link to="/library" className="text-paper-900" aria-label="Bainder library">
+          <Wordmark size="md" />
         </Link>
         <Button variant="ghost" size="sm" onClick={() => authClient.signOut()}>
           Sign out

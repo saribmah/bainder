@@ -18,6 +18,14 @@
       "types": "./src/tokens/index.ts",
       "default": "./src/tokens/index.ts"
     },
+    "./brand": {
+      "react-native": {
+        "types": "./src/brand/index.native.ts",
+        "default": "./src/brand/index.native.ts"
+      },
+      "types": "./src/brand/index.ts",
+      "default": "./src/brand/index.ts"
+    },
     "./icons": {
       "react-native": {
         "types": "./src/icons/index.native.ts",

@@ -24,6 +24,7 @@ import {
   Input,
   Skeleton,
   Toast,
+  Wordmark,
   color,
   useTheme,
 } from "@bainder/ui";
@@ -218,7 +219,7 @@ export default function LibraryScreen() {
       keyboardShouldPersistTaps="handled"
     >
       <View style={styles.header}>
-        <Text style={styles.brand}>bainder</Text>
+        <Wordmark size="md" />
         <View style={styles.headerActions}>
           <Button variant="ghost" size="sm" onPress={cycleTheme}>
             {theme}
@@ -556,7 +557,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   headerActions: { flexDirection: "row", gap: 4 },
-  brand: { fontSize: 22, fontWeight: "500", color: color.paper[900] },
   h1: {
     fontSize: 36,
     fontWeight: "500",

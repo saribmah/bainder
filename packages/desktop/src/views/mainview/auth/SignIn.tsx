@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
-import { Button, Hairline, Input } from "@bainder/ui";
+import { Button, Hairline, Input, Wordmark } from "@bainder/ui";
 import { authClient } from "./auth.client";
 
 export function SignIn() {
@@ -116,7 +116,7 @@ export function SignIn() {
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-paper-50 px-6 text-paper-900">
-      <h1 className="t-display-xs">bainder</h1>
+      <Wordmark as="h1" size="md" />
       {children}
     </main>
   );

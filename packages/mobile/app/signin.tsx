@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Button, Hairline, Input, color } from "@bainder/ui";
+import { Button, Hairline, Input, Wordmark, color } from "@bainder/ui";
 import { authClient } from "../src/auth/auth.client.ts";
 
 export default function SignInScreen() {
@@ -41,7 +41,7 @@ export default function SignInScreen() {
       ]}
       keyboardShouldPersistTaps="handled"
     >
-      <Text style={styles.brand}>bainder</Text>
+      <Wordmark size="md" />
       <Text style={styles.h1}>Sign in</Text>
 
       {phase === "email" ? (
@@ -148,11 +148,6 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   content: { paddingHorizontal: 20 },
-  brand: {
-    fontSize: 22,
-    fontWeight: "500",
-    color: color.paper[900],
-  },
   h1: {
     marginTop: 32,
     fontSize: 36,

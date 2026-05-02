@@ -1,4 +1,5 @@
 export * from "./tokens/index.ts";
+export * from "./brand/index.native.ts";
 export * from "./icons/index.native.ts";
 export * from "./primitives/index.native.ts";
 export * from "./theme/index.native.ts";
