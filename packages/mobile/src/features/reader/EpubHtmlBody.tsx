@@ -13,6 +13,7 @@ import {
   type Theme,
 } from "@bainder/ui";
 import type { Highlight, Note } from "@bainder/sdk";
+import { useProfile } from "../profile";
 import { buildEpubHtml } from "./buildEpubHtml.ts";
 import { inlineEpubAssets, type AssetCache } from "./inlineAssets.ts";
 import type { ReaderHighlights } from "./useReaderHighlights.ts";
@@ -70,6 +71,8 @@ export function EpubHtmlBody({
   onAskSelection,
 }: EpubHtmlBodyProps) {
   const palette = themeColors(theme);
+  const { profile } = useProfile();
+  const defaultColor: HighlightColor = profile?.defaultHighlightColor ?? "pink";
   const webRef = useRef<WebView>(null);
   const [height, setHeight] = useState(400);
   const [resolvedHtml, setResolvedHtml] = useState<string | null>(null);
@@ -213,14 +216,14 @@ export function EpubHtmlBody({
     if (!selection) return;
     const captured = selection;
     clearWebSelection();
-    void onCreateHighlight("pink", {
+    void onCreateHighlight(defaultColor, {
       offsetStart: captured.charRange.start,
       offsetEnd: captured.charRange.end,
       text: captured.text,
     }).then((created) => {
       if (created) setNoteDraft({ kind: "edit", highlight: created });
     });
-  }, [selection, clearWebSelection, onCreateHighlight]);
+  }, [selection, clearWebSelection, onCreateHighlight, defaultColor]);
 
   const handleChangeFocusedColor = useCallback(
     async (c: HighlightColor) => {
@@ -250,7 +253,7 @@ export function EpubHtmlBody({
       const trimmed = note.trim();
       if (noteDraft.kind === "new") {
         await onCreateHighlight(
-          "pink",
+          defaultColor,
           {
             offsetStart: noteDraft.selection.charRange.start,
             offsetEnd: noteDraft.selection.charRange.end,
@@ -263,7 +266,7 @@ export function EpubHtmlBody({
       }
       setNoteDraft(null);
     },
-    [noteDraft, onCreateHighlight, onSetNote],
+    [noteDraft, onCreateHighlight, onSetNote, defaultColor],
   );
 
   if (!wrapped) {
@@ -296,7 +299,7 @@ export function EpubHtmlBody({
             style={{ backgroundColor: floatingBgFor(theme), borderColor: borderFor(theme) }}
             onCopy={handleCopySelection}
             onHighlight={() => {
-              void handleHighlightSelection("pink");
+              void handleHighlightSelection(defaultColor);
             }}
             onAsk={handleAskSelection}
             onAddNote={handleAddNote}

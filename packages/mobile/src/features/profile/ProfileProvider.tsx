@@ -1,16 +1,41 @@
-import { useCallback, useEffect, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import type { Profile, ProfileUpdateData } from "@bainder/sdk";
-import { useSdk } from "../../../sdk";
+import { authClient } from "../auth";
+import { useSdk } from "../../sdk/sdk.provider";
 
 type ProfilePatch = NonNullable<ProfileUpdateData["body"]>;
 
-export function useProfile() {
+type ProfileContextValue = {
+  profile: Profile | null;
+  error: string | null;
+  saving: boolean;
+  update: (patch: ProfilePatch) => Promise<void>;
+};
+
+const ProfileContext = createContext<ProfileContextValue | null>(null);
+
+export function ProfileProvider({ children }: { children: ReactNode }) {
   const { client } = useSdk();
+  const session = authClient.useSession();
+  const userId = session.data?.user?.id ?? null;
   const [profile, setProfile] = useState<Profile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    if (!userId) {
+      setProfile(null);
+      setError(null);
+      return;
+    }
     let cancelled = false;
     client.profile
       .me()
@@ -25,7 +50,7 @@ export function useProfile() {
     return () => {
       cancelled = true;
     };
-  }, [client]);
+  }, [client, userId]);
 
   const update = useCallback(
     async (patch: ProfilePatch) => {
@@ -51,5 +76,18 @@ export function useProfile() {
     [client, profile],
   );
 
-  return { profile, error, saving, update };
+  const value = useMemo(
+    () => ({ profile, error, saving, update }),
+    [profile, error, saving, update],
+  );
+
+  return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;
+}
+
+export function useProfile(): ProfileContextValue {
+  const ctx = useContext(ProfileContext);
+  if (!ctx) {
+    throw new Error("useProfile must be used inside <ProfileProvider>");
+  }
+  return ctx;
 }

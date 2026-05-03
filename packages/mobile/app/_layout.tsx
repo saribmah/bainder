@@ -4,11 +4,23 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { ThemeProvider } from "@bainder/ui";
+import { ThemeProvider, type Theme } from "@bainder/ui";
+import { ProfileTheme } from "@bainder/sdk";
 import { AuthGate } from "../src/features/auth";
+import { ProfileProvider, useProfile } from "../src/features/profile";
 import { SDKProvider } from "../src/sdk/sdk.provider.tsx";
 
 void SplashScreen.preventAutoHideAsync();
+
+const profileThemeToUi = (theme: ProfileTheme | undefined): Theme =>
+  theme === ProfileTheme.Night ? "dark" : theme === ProfileTheme.Sepia ? "sepia" : "light";
+
+const uiThemeToProfile = (theme: Theme): ProfileTheme =>
+  theme === "dark"
+    ? ProfileTheme.Night
+    : theme === "sepia"
+      ? ProfileTheme.Sepia
+      : ProfileTheme.Light;
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
@@ -30,19 +42,34 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <ThemeProvider defaultTheme="light">
-        <SDKProvider>
-          <AuthGate>
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                contentStyle: { backgroundColor: "transparent" },
-              }}
-            />
-          </AuthGate>
-          <StatusBar style="auto" />
-        </SDKProvider>
-      </ThemeProvider>
+      <SDKProvider>
+        <ProfileProvider>
+          <ThemedAppShell />
+        </ProfileProvider>
+      </SDKProvider>
     </SafeAreaProvider>
+  );
+}
+
+function ThemedAppShell() {
+  const { profile, update } = useProfile();
+  const theme = profileThemeToUi(profile?.readingTheme);
+  return (
+    <ThemeProvider
+      theme={theme}
+      onThemeChange={(next) => {
+        void update({ readingTheme: uiThemeToProfile(next) });
+      }}
+    >
+      <AuthGate>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: "transparent" },
+          }}
+        />
+      </AuthGate>
+      <StatusBar style="auto" />
+    </ThemeProvider>
   );
 }

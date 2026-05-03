@@ -6,7 +6,7 @@ import { ProfileHighlightColor, ProfileTheme } from "@bainder/sdk";
 import { useLibraryDocuments } from "../../library/hooks/useLibraryDocuments";
 import { libraryStyles } from "../../library/library.styles";
 import { signOutProfile } from "../actions";
-import { useProfile } from "../hooks/useProfile";
+import { useProfile } from "../ProfileProvider";
 import { useProfileName } from "../hooks/useProfileName";
 import { useUserProfile } from "../hooks/useUserProfile";
 import { profileStyles as styles } from "../profile.styles";

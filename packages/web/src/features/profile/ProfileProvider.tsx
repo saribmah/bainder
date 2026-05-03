@@ -1,10 +1,27 @@
-import { useCallback, useEffect, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import type { Profile, ProfileUpdateData } from "@bainder/sdk";
-import { useSdk } from "../../../sdk/sdk.provider";
+import { useSdk } from "../../sdk";
 
 type ProfilePatch = NonNullable<ProfileUpdateData["body"]>;
 
-export function useProfile() {
+type ProfileContextValue = {
+  profile: Profile | null;
+  error: string | null;
+  saving: boolean;
+  update: (patch: ProfilePatch) => Promise<void>;
+};
+
+const ProfileContext = createContext<ProfileContextValue | null>(null);
+
+export function ProfileProvider({ children }: { children: ReactNode }) {
   const { client } = useSdk();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -51,5 +68,18 @@ export function useProfile() {
     [client, profile],
   );
 
-  return { profile, error, saving, update };
+  const value = useMemo(
+    () => ({ profile, error, saving, update }),
+    [profile, error, saving, update],
+  );
+
+  return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;
+}
+
+export function useProfile(): ProfileContextValue {
+  const ctx = useContext(ProfileContext);
+  if (!ctx) {
+    throw new Error("useProfile must be used inside <ProfileProvider>");
+  }
+  return ctx;
 }
