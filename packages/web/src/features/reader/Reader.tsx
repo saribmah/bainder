@@ -18,36 +18,23 @@ import {
   IconButton,
   Icons,
   Skeleton,
-  ThemeProvider,
   Wordmark,
   useTheme,
   type Theme,
 } from "@bainder/ui";
-import {
-  ProfileTheme,
-  type Document,
-  type DocumentManifest,
-  type DocumentSectionSummary,
-  type EpubTocItem,
-  type Highlight,
-  type Note,
+import type {
+  Document,
+  DocumentManifest,
+  DocumentSectionSummary,
+  EpubTocItem,
+  Highlight,
+  Note,
 } from "@bainder/sdk";
 import { useSdk } from "../../sdk";
-import { useProfile } from "../profile";
 import { HighlightLayer } from "./HighlightLayer";
 import { ReaderHighlightsProvider, useReaderHighlights } from "./highlightsRefresh";
 import { NotesSheet } from "./NotesSheet";
 import { TocSheet } from "./TocSheet";
-
-const profileThemeToUi = (theme: ProfileTheme | undefined): Theme =>
-  theme === ProfileTheme.Night ? "dark" : theme === ProfileTheme.Sepia ? "sepia" : "light";
-
-const uiThemeToProfile = (theme: Theme): ProfileTheme =>
-  theme === "dark"
-    ? ProfileTheme.Night
-    : theme === "sepia"
-      ? ProfileTheme.Sepia
-      : ProfileTheme.Light;
 
 export function Reader() {
   const { id } = useParams<{ id: string }>();
@@ -89,8 +76,8 @@ export function Reader() {
 
   if (!doc) {
     return (
-      <main className="min-h-screen bg-paper-50 pb-32 text-paper-900">
-        <header className="sticky top-0 z-10 border-b border-paper-200 bg-paper-50">
+      <main className="min-h-screen bg-bd-bg pb-32 text-bd-fg">
+        <header className="sticky top-0 z-10 border-b border-bd-border bg-bd-bg">
           <div className="mx-auto flex max-w-3xl items-center gap-3 px-6 py-4">
             <Skeleton shape="circle" width={32} height={32} />
             <div className="min-w-0 flex-1">
@@ -109,7 +96,7 @@ export function Reader() {
   if (doc.status !== "processed") {
     return (
       <ReaderState>
-        <p className="t-body-m text-paper-500">
+        <p className="t-body-m text-bd-fg-muted">
           {doc.status === "failed"
             ? (doc.errorReason ?? "Processing failed.")
             : "This document is still being processed. Please wait a moment and try again."}
@@ -121,31 +108,18 @@ export function Reader() {
     );
   }
 
-  return <ReaderThemed doc={doc} onClose={handleClose} />;
-}
-
-function ReaderThemed({ doc, onClose }: { doc: Document; onClose: () => void }) {
-  const { profile, update } = useProfile();
-  const theme = profileThemeToUi(profile?.readingTheme);
   return (
-    <ThemeProvider
-      theme={theme}
-      onThemeChange={(next) => {
-        void update({ readingTheme: uiThemeToProfile(next) });
-      }}
-    >
-      <ReaderPositionProvider>
-        <ReaderMetaProvider>
-          <ReaderTocProvider>
-            <ReaderHighlightsProvider>
-              <ReaderShell doc={doc} onClose={onClose}>
-                <ReaderBody doc={doc} />
-              </ReaderShell>
-            </ReaderHighlightsProvider>
-          </ReaderTocProvider>
-        </ReaderMetaProvider>
-      </ReaderPositionProvider>
-    </ThemeProvider>
+    <ReaderPositionProvider>
+      <ReaderMetaProvider>
+        <ReaderTocProvider>
+          <ReaderHighlightsProvider>
+            <ReaderShell doc={doc} onClose={handleClose}>
+              <ReaderBody doc={doc} />
+            </ReaderShell>
+          </ReaderHighlightsProvider>
+        </ReaderTocProvider>
+      </ReaderMetaProvider>
+    </ReaderPositionProvider>
   );
 }
 
@@ -232,7 +206,7 @@ function useReaderAsk() {
 
 function ReaderState({ children }: { children: ReactNode }) {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-paper-50 px-6 text-paper-900">
+    <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-bd-bg px-6 text-bd-fg">
       {children}
     </main>
   );

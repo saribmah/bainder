@@ -4,23 +4,17 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { ThemeProvider, type Theme } from "@bainder/ui";
-import { ProfileTheme } from "@bainder/sdk";
+import { ThemeProvider } from "@bainder/ui";
 import { AuthGate } from "../src/features/auth";
-import { ProfileProvider, useProfile } from "../src/features/profile";
+import {
+  profileThemeToUi,
+  ProfileProvider,
+  uiThemeToProfile,
+  useProfile,
+} from "../src/features/profile";
 import { SDKProvider } from "../src/sdk/sdk.provider.tsx";
 
 void SplashScreen.preventAutoHideAsync();
-
-const profileThemeToUi = (theme: ProfileTheme | undefined): Theme =>
-  theme === ProfileTheme.Night ? "dark" : theme === ProfileTheme.Sepia ? "sepia" : "light";
-
-const uiThemeToProfile = (theme: Theme): ProfileTheme =>
-  theme === "dark"
-    ? ProfileTheme.Night
-    : theme === "sepia"
-      ? ProfileTheme.Sepia
-      : ProfileTheme.Light;
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({

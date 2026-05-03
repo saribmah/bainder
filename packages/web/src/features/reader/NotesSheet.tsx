@@ -97,23 +97,19 @@ export function NotesSheet({
       ? "bg-[oklch(15%_0.008_240)]"
       : theme === "sepia"
         ? "bg-sepia-100"
-        : "bg-paper-100";
+        : "bg-bd-surface-raised";
   const noteBg =
-    theme === "dark"
-      ? "bg-[oklch(20%_0.010_240)]"
-      : theme === "sepia"
-        ? "bg-sepia-50"
-        : "bg-paper-50";
+    theme === "dark" ? "bg-[oklch(20%_0.010_240)]" : theme === "sepia" ? "bg-sepia-50" : "bg-bd-bg";
   const mutedColor =
-    theme === "dark" ? "text-night-200" : theme === "sepia" ? "text-sepia-700" : "text-paper-500";
+    theme === "dark" ? "text-night-200" : theme === "sepia" ? "text-sepia-700" : "text-bd-fg-muted";
   const bodyColor =
-    theme === "dark" ? "text-night-50" : theme === "sepia" ? "text-sepia-900" : "text-paper-800";
+    theme === "dark" ? "text-night-50" : theme === "sepia" ? "text-sepia-900" : "text-bd-fg";
   const activeRing =
     theme === "dark"
       ? "ring-1 ring-[oklch(40%_0.012_240)]"
       : theme === "sepia"
         ? "ring-1 ring-sepia-300"
-        : "ring-1 ring-paper-300";
+        : "ring-1 ring-bd-border-strong";
 
   return (
     <div

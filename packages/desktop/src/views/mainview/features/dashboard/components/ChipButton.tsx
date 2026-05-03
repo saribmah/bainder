@@ -14,7 +14,7 @@ export function ChipButton({
         event.stopPropagation();
         onClick(event);
       }}
-      className="t-label-m rounded-full border border-paper-300 bg-paper-50 px-3 py-1.5 text-paper-700 hover:border-paper-500"
+      className="t-label-m rounded-full border border-bd-border-strong bg-bd-bg px-3 py-1.5 text-bd-fg-subtle hover:border-bd-fg-muted"
     >
       {children}
     </button>

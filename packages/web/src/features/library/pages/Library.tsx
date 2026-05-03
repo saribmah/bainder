@@ -69,7 +69,7 @@ export function Library() {
   };
 
   return (
-    <main className="flex h-dvh min-h-screen overflow-hidden bg-paper-50 text-paper-900">
+    <main className="flex h-dvh min-h-screen overflow-hidden bg-bd-bg text-bd-fg">
       <AppSidebar
         totalCount={counts.all}
         highlightsCount={highlights?.length ?? 0}
@@ -84,7 +84,7 @@ export function Library() {
         <div className="mx-auto flex h-full max-w-7xl flex-col">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <div className="t-label-s text-paper-500">{headingMeta}</div>
+              <div className="t-label-s text-bd-fg-muted">{headingMeta}</div>
               <h1 className="mt-1 font-display text-[clamp(34px,5vw,48px)] font-normal leading-[1.05]">
                 Everything you've collected.
               </h1>
@@ -93,7 +93,7 @@ export function Library() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Filter library..."
-              iconEnd={<Icons.Search size={18} color="var(--paper-500)" />}
+              iconEnd={<Icons.Search size={18} color="var(--bd-fg-muted)" />}
               wrapClassName="w-full lg:w-[320px]"
             />
           </div>
@@ -117,17 +117,21 @@ export function Library() {
               </ChipButton>
             ))}
             <div className="min-w-4 flex-1" />
-            <span className="t-body-s hidden text-paper-500 sm:inline">Sort</span>
+            <span className="t-body-s hidden text-bd-fg-muted sm:inline">Sort</span>
             <ChipButton variant="outline" className="shrink-0">
-              Recently added <Icons.Chevron size={12} color="var(--paper-600)" />
+              Recently added <Icons.Chevron size={12} color="var(--bd-fg-subtle)" />
             </ChipButton>
           </div>
 
           {error && (
-            <p className="t-body-s mt-4 rounded-md bg-wine-50 px-4 py-3 text-error">{error}</p>
+            <p className="t-body-s mt-4 rounded-md bg-bd-surface-hover px-4 py-3 text-error">
+              {error}
+            </p>
           )}
           {shelfError && (
-            <p className="t-body-s mt-4 rounded-md bg-wine-50 px-4 py-3 text-error">{shelfError}</p>
+            <p className="t-body-s mt-4 rounded-md bg-bd-surface-hover px-4 py-3 text-error">
+              {shelfError}
+            </p>
           )}
 
           <div className="mt-6 min-h-0 flex-1 overflow-y-auto pb-8">
@@ -227,10 +231,10 @@ function ShelfStrip({
   return (
     <section className="mt-6">
       <div className="mb-3 flex items-baseline justify-between">
-        <span className="t-label-s text-paper-500">Shelves</span>
+        <span className="t-label-s text-bd-fg-muted">Shelves</span>
         <button
           type="button"
-          className="bd-btn bd-btn-pill bd-btn-ghost bd-btn-sm text-paper-700"
+          className="bd-btn bd-btn-pill bd-btn-ghost bd-btn-sm text-bd-fg-subtle"
           onClick={onCreateShelf}
         >
           <Icons.Plus size={13} color="currentColor" />
@@ -250,7 +254,7 @@ function ShelfStrip({
           <button
             type="button"
             onClick={onCreateShelf}
-            className="flex min-w-[180px] shrink-0 flex-col items-center justify-center gap-2 rounded-[14px] border border-dashed border-paper-300 bg-paper-50 text-paper-500 hover:bg-paper-100"
+            className="flex min-w-[180px] shrink-0 flex-col items-center justify-center gap-2 rounded-[14px] border border-dashed border-bd-border-strong bg-bd-bg text-bd-fg-muted hover:bg-bd-surface-hover"
           >
             <Icons.Plus size={18} color="currentColor" />
             <span className="t-label-m">New shelf</span>
@@ -298,7 +302,7 @@ function LibraryCard({
       >
         <LibraryCover doc={doc} />
         {shelfCount > 0 && (
-          <span className="absolute right-1.5 top-1.5 flex items-center gap-1 rounded-full bg-paper-900/80 px-2 py-1 font-mono text-[9px] text-paper-50">
+          <span className="absolute right-1.5 top-1.5 flex items-center gap-1 rounded-full bg-bd-action/80 px-2 py-1 font-mono text-[9px] text-bd-action-fg">
             <Icons.Bookmark size={9} color="currentColor" />
             {shelfCount}
           </span>
@@ -306,13 +310,13 @@ function LibraryCard({
       </button>
       <div className="mt-2 flex items-start gap-1">
         <div className="min-w-0 flex-1">
-          <div className="t-label-m line-clamp-2 text-paper-900">{doc.title}</div>
-          <div className="t-body-s mt-1 truncate text-[11px] text-paper-500">
+          <div className="t-label-m line-clamp-2 text-bd-fg">{doc.title}</div>
+          <div className="t-body-s mt-1 truncate text-[11px] text-bd-fg-muted">
             {sourceLabel(doc)} · {statusLabel(doc)}
           </div>
           {active && (
-            <div className="mt-2 h-0.5 overflow-hidden rounded-full bg-paper-200">
-              <div className="h-full rounded-full bg-paper-900" style={{ width: `${pct}%` }} />
+            <div className="mt-2 h-0.5 overflow-hidden rounded-full bg-bd-border">
+              <div className="h-full rounded-full bg-bd-action" style={{ width: `${pct}%` }} />
             </div>
           )}
           {finished && (
@@ -338,10 +342,10 @@ function LibraryCard({
 
 function EmptyLibrary({ query }: { query: string }) {
   return (
-    <div className="flex min-h-[360px] items-center justify-center rounded-xl border border-dashed border-paper-300 bg-paper-100 px-6 text-center">
+    <div className="flex min-h-[360px] items-center justify-center rounded-xl border border-dashed border-bd-border-strong bg-bd-surface-raised px-6 text-center">
       <div>
-        <h2 className="t-display-s text-paper-900">{query ? "No matches" : "No documents yet"}</h2>
-        <p className="t-body-m mt-2 max-w-md text-paper-600">
+        <h2 className="t-display-s text-bd-fg">{query ? "No matches" : "No documents yet"}</h2>
+        <p className="t-body-m mt-2 max-w-md text-bd-fg-subtle">
           {query
             ? "Try a different title or filename."
             : "Use Add to library to import the first EPUB."}

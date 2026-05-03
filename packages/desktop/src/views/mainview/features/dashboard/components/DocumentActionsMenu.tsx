@@ -44,14 +44,14 @@ export function DocumentActionsMenu({
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-full z-20 mt-1 min-w-[160px] overflow-hidden rounded-xl border border-paper-200 bg-paper-50 shadow-lg"
+          className="absolute right-0 top-full z-20 mt-1 min-w-[160px] overflow-hidden rounded-xl border border-bd-border bg-bd-bg shadow-lg"
           onClick={(event) => event.stopPropagation()}
         >
           {onRename && (
             <button
               type="button"
               role="menuitem"
-              className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm hover:bg-paper-100"
+              className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm hover:bg-bd-surface-hover"
               onClick={() => {
                 setOpen(false);
                 onRename();
@@ -65,7 +65,7 @@ export function DocumentActionsMenu({
             <button
               type="button"
               role="menuitem"
-              className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-wine-700 hover:bg-wine-50"
+              className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-bd-accent hover:bg-bd-surface-hover"
               onClick={() => {
                 setOpen(false);
                 onDelete();

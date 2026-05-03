@@ -1,12 +1,19 @@
 import { useMemo, useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ChipButton, Icons, Skeleton, Wordmark, color } from "@bainder/ui";
+import {
+  ChipButton,
+  Icons,
+  Skeleton,
+  Wordmark,
+  useThemeColors,
+  useThemedStyles,
+} from "@bainder/ui";
 import type { Highlight } from "@bainder/sdk";
 import { HIGHLIGHT_COLOR, HIGHLIGHT_LABEL } from "../constants";
 import { useLibraryDocuments } from "../hooks/useLibraryDocuments";
 import { useLibraryHighlights, type LibraryHighlight } from "../hooks/useLibraryHighlights";
-import { libraryStyles as styles } from "../library.styles";
+import { buildLibraryStyles, type LibraryStyles } from "../library.styles";
 
 type ColorFilter = Highlight["color"] | "all";
 
@@ -14,6 +21,8 @@ const colorFilters: ColorFilter[] = ["all", "pink", "yellow", "blue", "green", "
 
 export function HighlightsScreen() {
   const insets = useSafeAreaInsets();
+  const styles = useThemedStyles(buildLibraryStyles);
+  const palette = useThemeColors();
   const { documents } = useLibraryDocuments();
   const { highlights, error } = useLibraryHighlights(documents);
   const [filter, setFilter] = useState<ColorFilter>("all");
@@ -53,7 +62,7 @@ export function HighlightsScreen() {
         <View style={styles.header}>
           <Wordmark size="sm" />
           <View style={styles.iconButton}>
-            <Icons.Search size={16} color={color.paper[800]} />
+            <Icons.Search size={16} color={palette.fg} />
           </View>
         </View>
 
@@ -82,21 +91,21 @@ export function HighlightsScreen() {
 
         {error && <Text style={styles.error}>{error}</Text>}
         {!visible ? (
-          <HighlightsSkeleton />
+          <HighlightsSkeleton styles={styles} />
         ) : visible.length === 0 ? (
           <View style={styles.empty}>
             <Text style={styles.emptyTitle}>No highlights yet</Text>
             <Text style={styles.emptyText}>Marked passages will collect here.</Text>
           </View>
         ) : (
-          visible.map((item) => <HighlightItem key={item.id} item={item} />)
+          visible.map((item) => <HighlightItem key={item.id} item={item} styles={styles} />)
         )}
       </ScrollView>
     </View>
   );
 }
 
-function HighlightItem({ item }: { item: LibraryHighlight }) {
+function HighlightItem({ item, styles }: { item: LibraryHighlight; styles: LibraryStyles }) {
   return (
     <View style={styles.highlightItem}>
       <View style={styles.highlightMeta}>
@@ -113,7 +122,7 @@ function HighlightItem({ item }: { item: LibraryHighlight }) {
   );
 }
 
-function HighlightsSkeleton() {
+function HighlightsSkeleton({ styles }: { styles: LibraryStyles }) {
   return (
     <View>
       {Array.from({ length: 4 }).map((_, index) => (

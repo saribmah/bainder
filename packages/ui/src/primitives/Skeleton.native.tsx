@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
-import { Animated, StyleSheet, type StyleProp, type ViewStyle } from "react-native";
-import { color } from "../tokens/color.ts";
+import { Animated, type StyleProp, type ViewStyle } from "react-native";
+import { useThemeColors } from "../theme/ThemeProvider.native.tsx";
 import { radius } from "../tokens/radius.ts";
 
 export type SkeletonShape = "rect" | "pill" | "circle" | "text";
@@ -20,6 +20,7 @@ const shapeStyle: Record<SkeletonShape, ViewStyle> = {
 };
 
 export function Skeleton({ shape = "rect", width, height, style }: SkeletonProps) {
+  const palette = useThemeColors();
   const opacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -37,7 +38,7 @@ export function Skeleton({ shape = "rect", width, height, style }: SkeletonProps
     <Animated.View
       accessible={false}
       style={[
-        styles.base,
+        { backgroundColor: palette.surfaceRaised },
         shapeStyle[shape],
         width !== undefined ? { width } : null,
         height !== undefined ? { height } : null,
@@ -47,9 +48,3 @@ export function Skeleton({ shape = "rect", width, height, style }: SkeletonProps
     />
   );
 }
-
-const styles = StyleSheet.create({
-  base: {
-    backgroundColor: color.paper[200],
-  },
-});

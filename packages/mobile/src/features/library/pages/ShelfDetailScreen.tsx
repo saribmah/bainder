@@ -2,7 +2,17 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View, useWindowDimensions } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Button, ChipButton, Icons, Skeleton, Toast, color } from "@bainder/ui";
+import {
+  Button,
+  ChipButton,
+  Icons,
+  Skeleton,
+  Toast,
+  color,
+  useThemeColors,
+  useThemedStyles,
+  type ThemeColors,
+} from "@bainder/ui";
 import type { Document, Shelf } from "@bainder/sdk";
 import { useSdk } from "../../../sdk/sdk.provider";
 import { LibraryCover } from "../components/LibraryCover";
@@ -10,7 +20,7 @@ import { AddBooksSheet, CreateShelfSheet, EditShelfSheet } from "../components/S
 import { SpineFan } from "../components/ShelfArtwork";
 import { useLibraryDocuments } from "../hooks/useLibraryDocuments";
 import { useLibraryShelves } from "../hooks/useLibraryShelves";
-import { libraryStyles as styles } from "../library.styles";
+import { buildLibraryStyles, type LibraryStyles } from "../library.styles";
 import { progressPercent, sourceLabel, statusLabel } from "../utils/document";
 import { shelfDescription, shelfItemNoun } from "../utils/shelf";
 
@@ -25,6 +35,8 @@ export function ShelfDetailScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const { client } = useSdk();
+  const styles = useThemedStyles(buildLibraryStyles);
+  const palette = useThemeColors();
   const { documents } = useLibraryDocuments();
   const { shelves, toast, createShelf, updateShelf, deleteShelf, addDocumentToShelf } =
     useLibraryShelves(documents);
@@ -103,7 +115,7 @@ export function ShelfDetailScreen() {
             style={styles.iconButton}
             onPress={() => (router.canGoBack() ? router.back() : router.replace("/library"))}
           >
-            <Icons.Back size={16} color={color.paper[800]} />
+            <Icons.Back size={16} color={palette.fg} />
           </Pressable>
           {customShelf && (
             <Pressable
@@ -111,7 +123,7 @@ export function ShelfDetailScreen() {
               style={styles.iconButton}
               onPress={() => setEditShelfOpen(true)}
             >
-              <Icons.Settings size={16} color={color.paper[800]} />
+              <Icons.Settings size={16} color={palette.fg} />
             </Pressable>
           )}
         </View>
@@ -124,6 +136,7 @@ export function ShelfDetailScreen() {
           <>
             <ShelfHero
               shelf={shelf}
+              styles={styles}
               onAdd={customShelf ? () => setAddBooksOpen(true) : undefined}
               onEdit={customShelf ? () => setEditShelfOpen(true) : undefined}
             />
@@ -145,9 +158,13 @@ export function ShelfDetailScreen() {
             </ScrollView>
 
             {visibleDocuments === null ? (
-              <ShelfSkeleton />
+              <ShelfSkeleton styles={styles} />
             ) : visibleDocuments.length === 0 ? (
-              <EmptyShelf custom={Boolean(customShelf)} onAdd={() => setAddBooksOpen(true)} />
+              <EmptyShelf
+                custom={Boolean(customShelf)}
+                styles={styles}
+                onAdd={() => setAddBooksOpen(true)}
+              />
             ) : (
               <View style={styles.shelfGrid}>
                 {visibleDocuments.map((doc) => (
@@ -155,6 +172,7 @@ export function ShelfDetailScreen() {
                     key={doc.id}
                     doc={doc}
                     width={itemWidth}
+                    styles={styles}
                     onPress={() => router.push(`/library/${doc.id}`)}
                   />
                 ))}
@@ -221,10 +239,12 @@ export function ShelfDetailScreen() {
 
 function ShelfHero({
   shelf,
+  styles,
   onAdd,
   onEdit,
 }: {
   shelf: Shelf;
+  styles: LibraryStyles;
   onAdd?: () => void;
   onEdit?: () => void;
 }) {
@@ -262,10 +282,12 @@ function ShelfHero({
 function ShelfGridItem({
   doc,
   width,
+  styles,
   onPress,
 }: {
   doc: Document;
   width: number;
+  styles: LibraryStyles;
   onPress: () => void;
 }) {
   const pct = progressPercent(doc);
@@ -292,7 +314,15 @@ function ShelfGridItem({
   );
 }
 
-function EmptyShelf({ custom, onAdd }: { custom: boolean; onAdd: () => void }) {
+function EmptyShelf({
+  custom,
+  styles,
+  onAdd,
+}: {
+  custom: boolean;
+  styles: LibraryStyles;
+  onAdd: () => void;
+}) {
   return (
     <View style={styles.empty}>
       <Text style={styles.emptyTitle}>No books here yet</Text>
@@ -310,7 +340,7 @@ function EmptyShelf({ custom, onAdd }: { custom: boolean; onAdd: () => void }) {
   );
 }
 
-function ShelfSkeleton() {
+function ShelfSkeleton({ styles }: { styles: LibraryStyles }) {
   return (
     <View style={styles.shelfGrid}>
       {Array.from({ length: 6 }).map((_, index) => (

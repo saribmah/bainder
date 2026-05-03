@@ -42,7 +42,7 @@ export function SettingsPage() {
     .toUpperCase();
 
   return (
-    <main className="flex h-dvh min-h-screen overflow-hidden bg-paper-50 text-paper-900">
+    <main className="flex h-dvh min-h-screen overflow-hidden bg-bd-bg text-bd-fg">
       <AppSidebar
         totalCount={counts.all}
         highlightsCount={highlights?.length ?? 0}
@@ -55,13 +55,13 @@ export function SettingsPage() {
       <section className="min-w-0 flex-1 overflow-y-auto px-6 py-8 lg:px-16">
         <div className="mx-auto max-w-5xl">
           <div className="mb-6 flex items-center gap-5">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-paper-200 font-display text-2xl font-medium text-paper-700">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-bd-surface-raised font-display text-2xl font-medium text-bd-fg-subtle">
               {initials || "R"}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="t-label-s text-paper-500">Settings</div>
-              <h1 className="t-display-m mt-0.5 text-paper-900">{displayName}</h1>
-              <div className="t-body-m mt-1 truncate text-paper-700">
+              <div className="t-label-s text-bd-fg-muted">Settings</div>
+              <h1 className="t-display-m mt-0.5 text-bd-fg">{displayName}</h1>
+              <div className="t-body-m mt-1 truncate text-bd-fg-subtle">
                 {email || "Reader profile"} · {counts.all} imports
               </div>
             </div>
@@ -70,7 +70,7 @@ export function SettingsPage() {
           <div>
             <Section label="Reading">
               <Row label="Default theme" sub="Light · Sepia · Night">
-                <div className="flex gap-1 rounded-full bg-paper-100 p-1">
+                <div className="flex gap-1 rounded-full bg-bd-surface-raised p-1">
                   {themes.map(({ value, label }) => (
                     <ChipButton
                       key={value}
@@ -101,7 +101,7 @@ export function SettingsPage() {
                         className="h-6 w-6 rounded-full border-0 p-0"
                         style={{
                           background: cssVar,
-                          outline: active ? "2px solid var(--paper-900)" : "2px solid transparent",
+                          outline: active ? "2px solid var(--bd-fg)" : "2px solid transparent",
                           outlineOffset: 1,
                         }}
                       />
@@ -180,8 +180,8 @@ export function SettingsPage() {
 
 function Section({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <section className="grid gap-4 border-b border-paper-200 py-6 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-8">
-      <div className="t-label-s text-paper-500">{label}</div>
+    <section className="grid gap-4 border-b border-bd-border py-6 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-8">
+      <div className="t-label-s text-bd-fg-muted">{label}</div>
       <div className="flex flex-col gap-4">{children}</div>
     </section>
   );
@@ -191,8 +191,8 @@ function Row({ label, sub, children }: { label: string; sub?: string; children?:
   return (
     <div className="flex items-center gap-4">
       <div className="min-w-0 flex-1">
-        <div className="t-label-l text-paper-900">{label}</div>
-        {sub && <div className="t-body-s mt-0.5 text-paper-500">{sub}</div>}
+        <div className="t-label-l text-bd-fg">{label}</div>
+        {sub && <div className="t-body-s mt-0.5 text-bd-fg-muted">{sub}</div>}
       </div>
       {children}
     </div>
@@ -206,10 +206,10 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
       aria-pressed={checked}
       onClick={onChange}
       className="relative h-[22px] w-10 rounded-full border-0 transition-colors"
-      style={{ background: checked ? "var(--paper-900)" : "var(--paper-300)" }}
+      style={{ background: checked ? "var(--bd-fg)" : "var(--bd-border-strong)" }}
     >
       <span
-        className="absolute top-0.5 h-[18px] w-[18px] rounded-full bg-paper-50 shadow-sm transition-[left]"
+        className="absolute top-0.5 h-[18px] w-[18px] rounded-full bg-bd-bg shadow-sm transition-[left]"
         style={{ left: checked ? 20 : 2 }}
       />
     </button>

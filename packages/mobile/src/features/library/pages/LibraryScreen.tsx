@@ -3,7 +3,16 @@ import { useWindowDimensions } from "react-native";
 import { FlatList, Pressable, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ChipButton, Icons, Input, Toast, Wordmark, color } from "@bainder/ui";
+import {
+  ChipButton,
+  Icons,
+  Input,
+  Toast,
+  Wordmark,
+  color,
+  useThemeColors,
+  useThemedStyles,
+} from "@bainder/ui";
 import type { Document } from "@bainder/sdk";
 import { FILTER_LABEL, type LibraryFilter } from "../constants";
 import { LibraryCover } from "../components/LibraryCover";
@@ -11,7 +20,7 @@ import { ShelfCard } from "../components/ShelfArtwork";
 import { AddToShelfSheet, CreateShelfSheet } from "../components/ShelfSheets";
 import { useLibraryDocuments } from "../hooks/useLibraryDocuments";
 import { useLibraryShelves } from "../hooks/useLibraryShelves";
-import { libraryStyles as styles } from "../library.styles";
+import { buildLibraryStyles, type LibraryStyles } from "../library.styles";
 import { progressPercent, sourceLabel, statusLabel } from "../utils/document";
 import { CUSTOM_SHELF_LIMIT } from "../utils/shelf";
 
@@ -21,6 +30,8 @@ export function LibraryScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { width } = useWindowDimensions();
+  const styles = useThemedStyles(buildLibraryStyles);
+  const palette = useThemeColors();
   const [searchOpen, setSearchOpen] = useState(false);
   const [createShelfOpen, setCreateShelfOpen] = useState(false);
   const [createShelfDocument, setCreateShelfDocument] = useState<Document | null>(null);
@@ -72,10 +83,10 @@ export function LibraryScreen() {
                     if (searchOpen) setQuery("");
                   }}
                 >
-                  <Icons.Search size={16} color={color.paper[800]} />
+                  <Icons.Search size={16} color={palette.fg} />
                 </Pressable>
                 <Pressable accessibilityRole="button" style={styles.iconButton}>
-                  <Icons.Filter size={16} color={color.paper[800]} />
+                  <Icons.Filter size={16} color={palette.fg} />
                 </Pressable>
               </View>
             </View>
@@ -128,7 +139,7 @@ export function LibraryScreen() {
                     style={styles.newShelfCard}
                     onPress={() => openCreateShelf()}
                   >
-                    <Icons.Plus size={16} color={color.paper[500]} />
+                    <Icons.Plus size={16} color={palette.fgMuted} />
                     <Text style={styles.newShelfText}>New shelf</Text>
                   </Pressable>
                 )}
@@ -153,7 +164,9 @@ export function LibraryScreen() {
 
             {error && <Text style={styles.error}>{error}</Text>}
             {shelfError && <Text style={styles.error}>{shelfError}</Text>}
-            {documents !== null && visible.length === 0 && <EmptyLibrary query={query} />}
+            {documents !== null && visible.length === 0 && (
+              <EmptyLibrary query={query} styles={styles} />
+            )}
           </>
         }
         renderItem={({ item }) => (
@@ -161,6 +174,8 @@ export function LibraryScreen() {
             doc={item}
             width={itemWidth}
             shelfCount={memberships[item.id]?.length ?? 0}
+            styles={styles}
+            badgeIconColor={palette.actionFg}
             onPress={() => {
               if (item.status === "processed") router.push(`/library/${item.id}`);
             }}
@@ -223,12 +238,16 @@ function LibraryGridItem({
   doc,
   width,
   shelfCount,
+  styles,
+  badgeIconColor,
   onPress,
   onLongPress,
 }: {
   doc: Document;
   width: number;
   shelfCount: number;
+  styles: LibraryStyles;
+  badgeIconColor: string;
   onPress: () => void;
   onLongPress: () => void;
 }) {
@@ -247,7 +266,7 @@ function LibraryGridItem({
         <LibraryCover doc={doc} width={width} height={Math.round(width / 0.66)} />
         {shelfCount > 0 && (
           <View style={styles.shelfBadge}>
-            <Icons.Bookmark size={8} color={color.paper[50]} />
+            <Icons.Bookmark size={8} color={badgeIconColor} />
             <Text style={styles.shelfBadgeText}>{shelfCount}</Text>
           </View>
         )}
@@ -267,7 +286,7 @@ function LibraryGridItem({
   );
 }
 
-function EmptyLibrary({ query }: { query: string }) {
+function EmptyLibrary({ query, styles }: { query: string; styles: LibraryStyles }) {
   return (
     <View style={styles.empty}>
       <Text style={styles.emptyTitle}>{query.trim() ? "No matches" : "No documents yet"}</Text>

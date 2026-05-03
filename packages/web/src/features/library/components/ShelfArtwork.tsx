@@ -54,29 +54,29 @@ export function ShelfCard({
       type="button"
       onClick={onClick}
       className={[
-        "flex shrink-0 flex-col gap-2.5 rounded-[14px] border border-paper-200 text-left transition-colors hover:bg-paper-100",
-        active ? "bg-paper-100" : "bg-paper-50",
+        "flex shrink-0 flex-col gap-2.5 rounded-[14px] border border-bd-border text-left transition-colors hover:bg-bd-surface-hover",
+        active ? "bg-bd-surface-raised" : "bg-bd-bg",
         compact ? "min-w-[180px] p-3" : "min-w-[220px] p-4",
       ].join(" ")}
     >
       <span className="flex items-end justify-between" style={{ height: compact ? 70 : 86 }}>
         <SpineFan shelf={shelf} size={compact ? 38 : 48} />
-        <span className="font-mono text-[11px] text-paper-500">{shelf.itemCount}</span>
+        <span className="font-mono text-[11px] text-bd-fg-muted">{shelf.itemCount}</span>
       </span>
       <span>
         <span
           className={[
-            "block font-display font-medium leading-[1.2] text-paper-900",
+            "block font-display font-medium leading-[1.2] text-bd-fg",
             compact ? "text-[15px]" : "text-[17px]",
           ].join(" ")}
         >
           {shelf.name}
         </span>
         {description && !compact && (
-          <span className="t-body-s mt-0.5 line-clamp-2 text-paper-500">{description}</span>
+          <span className="t-body-s mt-0.5 line-clamp-2 text-bd-fg-muted">{description}</span>
         )}
         {shelf.kind === "smart" && !compact && (
-          <span className="t-body-s mt-0.5 block text-paper-500">
+          <span className="t-body-s mt-0.5 block text-bd-fg-muted">
             Smart shelf · {shelf.itemCount} {shelfItemNoun(shelf.itemCount)}
           </span>
         )}

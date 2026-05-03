@@ -81,8 +81,8 @@ export function NoteDialog({
         <Sheet className="flex flex-col gap-5 p-6 sm:p-7" showHandle={false}>
           <div className="flex items-start justify-between gap-4">
             <div>
-              <div className="t-label-s text-paper-500">{note ? "Edit note" : "New note"}</div>
-              <h2 className="t-display-xs mt-1 text-paper-900">{title}</h2>
+              <div className="t-label-s text-bd-fg-muted">{note ? "Edit note" : "New note"}</div>
+              <h2 className="t-display-xs mt-1 text-bd-fg">{title}</h2>
             </div>
             <IconButton aria-label="Close" size="sm" onClick={onCancel}>
               <Icons.Close size={16} />
@@ -91,10 +91,10 @@ export function NoteDialog({
 
           {canChooseDocument && (
             <label className="flex flex-col gap-2">
-              <span className="t-label-s text-paper-500">Source</span>
+              <span className="t-label-s text-bd-fg-muted">Source</span>
               <select
                 value={documentId}
-                className="h-11 rounded-full border border-paper-200 bg-paper-50 px-4 font-ui text-sm text-paper-900 outline-none focus:border-paper-900"
+                className="h-11 rounded-full border border-bd-border bg-bd-bg px-4 font-ui text-sm text-bd-fg outline-none focus:border-bd-fg"
                 onChange={(event) => setDocumentId(event.currentTarget.value)}
               >
                 {documents.map((doc) => (
@@ -107,19 +107,21 @@ export function NoteDialog({
           )}
 
           <label className="flex flex-col gap-2">
-            <span className="t-label-s text-paper-500">Note</span>
+            <span className="t-label-s text-bd-fg-muted">Note</span>
             <textarea
               value={body}
               autoFocus
               rows={7}
               placeholder="What did you think?"
-              className="w-full resize-none rounded-xl border border-paper-200 bg-paper-50 px-4 py-3 font-reading text-[15px] leading-6 text-paper-900 outline-none placeholder:text-paper-500 focus:border-paper-900"
+              className="w-full resize-none rounded-xl border border-bd-border bg-bd-bg px-4 py-3 font-reading text-[15px] leading-6 text-bd-fg outline-none placeholder:text-bd-fg-muted focus:border-bd-fg"
               onChange={(event) => setBody(event.currentTarget.value)}
             />
           </label>
 
           {error && (
-            <p className="t-body-s m-0 rounded-md bg-wine-50 px-3 py-2 text-error">{error}</p>
+            <p className="t-body-s m-0 rounded-md bg-bd-surface-hover px-3 py-2 text-error">
+              {error}
+            </p>
           )}
 
           <div className="flex flex-wrap items-center gap-2">

@@ -1,5 +1,6 @@
 import { Pressable, Text } from "react-native";
-import { authStyles as styles } from "../auth.styles";
+import { useThemedStyles } from "@bainder/ui";
+import { buildAuthStyles } from "../auth.styles";
 
 export function SocialButton({
   provider,
@@ -8,6 +9,7 @@ export function SocialButton({
   provider: "google" | "apple";
   onPress: () => void;
 }) {
+  const styles = useThemedStyles(buildAuthStyles);
   const isApple = provider === "apple";
 
   return (

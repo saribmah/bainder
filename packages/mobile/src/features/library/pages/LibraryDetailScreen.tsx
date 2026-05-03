@@ -2,7 +2,19 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Button, Chip, ChipButton, Icons, Skeleton, color, font, radius } from "@bainder/ui";
+import {
+  Button,
+  Chip,
+  ChipButton,
+  Icons,
+  Skeleton,
+  color,
+  font,
+  radius,
+  useThemeColors,
+  useThemedStyles,
+  type ThemeColors,
+} from "@bainder/ui";
 import type { Document, DocumentManifest, Highlight, Note } from "@bainder/sdk";
 import { useSdk } from "../../../sdk/sdk.provider";
 import { HIGHLIGHT_COLOR, KIND_LABEL } from "../constants";
@@ -10,7 +22,7 @@ import { DocumentShelfChips } from "../components/DocumentShelfChips";
 import { LibraryCover } from "../components/LibraryCover";
 import { CreateShelfSheet } from "../components/ShelfSheets";
 import { useLibraryShelves } from "../hooks/useLibraryShelves";
-import { libraryStyles as styles } from "../library.styles";
+import { buildLibraryStyles, type LibraryStyles } from "../library.styles";
 import {
   estimateMinutes,
   formatWordCount,
@@ -27,6 +39,9 @@ export function LibraryDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { client } = useSdk();
+  const styles = useThemedStyles(buildLibraryStyles);
+  const detailNoteStyles = useThemedStyles(buildDetailNoteStyles);
+  const palette = useThemeColors();
   const [doc, setDoc] = useState<Document | null>(null);
   const [manifest, setManifest] = useState<DocumentManifest | null>(null);
   const [highlights, setHighlights] = useState<Highlight[]>([]);
@@ -139,14 +154,14 @@ export function LibraryDetailScreen() {
             style={styles.iconButton}
             onPress={() => (router.canGoBack() ? router.back() : router.replace("/library"))}
           >
-            <Icons.Back size={16} color={color.paper[800]} />
+            <Icons.Back size={16} color={palette.fg} />
           </Pressable>
           <View style={styles.actions}>
             <Pressable accessibilityRole="button" style={styles.iconButton}>
-              <Icons.Bookmark size={16} color={color.paper[800]} />
+              <Icons.Bookmark size={16} color={palette.fg} />
             </Pressable>
             <Pressable accessibilityRole="button" style={styles.iconButton}>
-              <Icons.Share size={16} color={color.paper[800]} />
+              <Icons.Share size={16} color={palette.fg} />
             </Pressable>
           </View>
         </View>
@@ -173,7 +188,7 @@ export function LibraryDetailScreen() {
                 {`Continue · ${pct}%`}
               </Button>
               <Pressable accessibilityRole="button" style={styles.iconButton} onPress={openReader}>
-                <Icons.Sparkles size={16} color={color.wine[700]} />
+                <Icons.Sparkles size={16} color={palette.accent} />
               </Pressable>
             </View>
 
@@ -213,6 +228,9 @@ export function LibraryDetailScreen() {
                 noteCounts={noteCounts}
                 draft={noteDraft}
                 saving={savingNote}
+                styles={styles}
+                detailNoteStyles={detailNoteStyles}
+                palette={palette}
                 onDraftChange={setNoteDraft}
                 onFilterChange={setNoteFilter}
                 onSave={createStandaloneNote}
@@ -246,7 +264,7 @@ export function LibraryDetailScreen() {
                       <Text style={styles.sectionMeta}>{estimateMinutes(section)}</Text>
                     </View>
                     {read && <Icons.Check size={14} color={color.status.success} />}
-                    {current && <Icons.Chevron size={14} color={color.paper[700]} />}
+                    {current && <Icons.Chevron size={14} color={palette.fgSubtle} />}
                   </View>
                 );
               })
@@ -278,6 +296,9 @@ function NotesTab({
   noteCounts,
   draft,
   saving,
+  styles,
+  detailNoteStyles,
+  palette,
   onDraftChange,
   onFilterChange,
   onSave,
@@ -288,6 +309,9 @@ function NotesTab({
   noteCounts: Record<NoteFilter, number>;
   draft: string;
   saving: boolean;
+  styles: LibraryStyles;
+  detailNoteStyles: DetailNoteStyles;
+  palette: ThemeColors;
   onDraftChange: (value: string) => void;
   onFilterChange: (filter: NoteFilter) => void;
   onSave: () => void;
@@ -297,14 +321,14 @@ function NotesTab({
     <View>
       <View style={detailNoteStyles.composer}>
         <View style={detailNoteStyles.composerIcon}>
-          <Icons.Note size={14} color={color.paper[700]} />
+          <Icons.Note size={14} color={palette.fgSubtle} />
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
           <TextInput
             value={draft}
             multiline
             placeholder="A thought about this book..."
-            placeholderTextColor={color.paper[500]}
+            placeholderTextColor={palette.fgMuted}
             style={detailNoteStyles.composerInput}
             onChangeText={onDraftChange}
           />
@@ -346,7 +370,15 @@ function NotesTab({
           </Text>
         </View>
       ) : (
-        notes.map((note) => <DetailNoteItem key={note.id} note={note} onOpen={onOpenReader} />)
+        notes.map((note) => (
+          <DetailNoteItem
+            key={note.id}
+            note={note}
+            detailNoteStyles={detailNoteStyles}
+            palette={palette}
+            onOpen={onOpenReader}
+          />
+        ))
       )}
     </View>
   );
@@ -354,20 +386,24 @@ function NotesTab({
 
 function DetailNoteItem({
   note,
+  detailNoteStyles,
+  palette,
   onOpen,
 }: {
   note: Note & { highlight?: Highlight };
+  detailNoteStyles: DetailNoteStyles;
+  palette: ThemeColors;
   onOpen: () => void;
 }) {
   const attached = Boolean(note.highlight);
-  const accent = note.highlight ? HIGHLIGHT_COLOR[note.highlight.color] : color.paper[400];
+  const accent = note.highlight ? HIGHLIGHT_COLOR[note.highlight.color] : palette.fgMuted;
   return (
     <Pressable accessibilityRole="button" style={detailNoteStyles.item} onPress={onOpen}>
       <View style={detailNoteStyles.meta}>
         {attached ? (
           <View style={[detailNoteStyles.dot, { backgroundColor: accent }]} />
         ) : (
-          <Icons.Note size={13} color={color.paper[500]} />
+          <Icons.Note size={13} color={palette.fgMuted} />
         )}
         <Text style={detailNoteStyles.metaText}>{noteLocationLabel(note, note.highlight)}</Text>
         <Text style={detailNoteStyles.date}>{formatDate(note.createdAt)}</Text>
@@ -378,7 +414,7 @@ function DetailNoteItem({
         </Text>
       )}
       <View style={[detailNoteStyles.noteBox, attached ? detailNoteStyles.noteBoxAttached : null]}>
-        <Icons.Note size={13} color={color.paper[600]} />
+        <Icons.Note size={13} color={palette.fgSubtle} />
         <Text style={detailNoteStyles.noteText}>{note.body}</Text>
       </View>
     </Pressable>
@@ -396,116 +432,119 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-const detailNoteStyles = StyleSheet.create({
-  composer: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 12,
-    borderRadius: 16,
-    backgroundColor: color.paper[100],
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginBottom: 12,
-  },
-  composerIcon: {
-    width: 32,
-    height: 32,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: radius.pill,
-    backgroundColor: color.paper[200],
-  },
-  composerInput: {
-    minHeight: 46,
-    padding: 0,
-    fontFamily: font.nativeFamily.reading,
-    fontSize: 15,
-    lineHeight: 22,
-    color: color.paper[900],
-    textAlignVertical: "top",
-  },
-  composerFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 8,
-  },
-  item: {
-    gap: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: color.paper[200],
-    paddingVertical: 14,
-  },
-  meta: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: radius.pill,
-  },
-  metaText: {
-    flex: 1,
-    fontFamily: font.nativeFamily.ui,
-    fontSize: 12,
-    fontWeight: "600",
-    color: color.paper[800],
-  },
-  date: {
-    fontFamily: font.nativeFamily.ui,
-    fontSize: 11,
-    color: color.paper[500],
-  },
-  quote: {
-    marginLeft: 18,
-    borderLeftWidth: 2,
-    paddingLeft: 12,
-    fontFamily: font.nativeFamily.reading,
-    fontSize: 13,
-    fontStyle: "italic",
-    lineHeight: 20,
-    color: color.paper[900],
-  },
-  noteBox: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 9,
-    borderRadius: 12,
-    backgroundColor: color.paper[100],
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  noteBoxAttached: {
-    marginLeft: 18,
-  },
-  noteText: {
-    flex: 1,
-    fontFamily: font.nativeFamily.reading,
-    fontSize: 13,
-    lineHeight: 20,
-    color: color.paper[800],
-  },
-  about: {
-    paddingTop: 8,
-    paddingBottom: 20,
-  },
-  aboutTitle: {
-    marginTop: 6,
-    fontFamily: font.nativeFamily.display,
-    fontSize: 24,
-    fontWeight: "400",
-    color: color.paper[900],
-  },
-  aboutText: {
-    marginTop: 8,
-    fontFamily: font.nativeFamily.ui,
-    fontSize: 14,
-    lineHeight: 21,
-    color: color.paper[700],
-  },
-});
+const buildDetailNoteStyles = (palette: ThemeColors) =>
+  StyleSheet.create({
+    composer: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: 12,
+      borderRadius: 16,
+      backgroundColor: palette.surfaceRaised,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      marginBottom: 12,
+    },
+    composerIcon: {
+      width: 32,
+      height: 32,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: radius.pill,
+      backgroundColor: palette.border,
+    },
+    composerInput: {
+      minHeight: 46,
+      padding: 0,
+      fontFamily: font.nativeFamily.reading,
+      fontSize: 15,
+      lineHeight: 22,
+      color: palette.fg,
+      textAlignVertical: "top",
+    },
+    composerFooter: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      marginTop: 8,
+    },
+    item: {
+      gap: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: palette.border,
+      paddingVertical: 14,
+    },
+    meta: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    dot: {
+      width: 8,
+      height: 8,
+      borderRadius: radius.pill,
+    },
+    metaText: {
+      flex: 1,
+      fontFamily: font.nativeFamily.ui,
+      fontSize: 12,
+      fontWeight: "600",
+      color: palette.fg,
+    },
+    date: {
+      fontFamily: font.nativeFamily.ui,
+      fontSize: 11,
+      color: palette.fgMuted,
+    },
+    quote: {
+      marginLeft: 18,
+      borderLeftWidth: 2,
+      paddingLeft: 12,
+      fontFamily: font.nativeFamily.reading,
+      fontSize: 13,
+      fontStyle: "italic",
+      lineHeight: 20,
+      color: palette.fg,
+    },
+    noteBox: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: 9,
+      borderRadius: 12,
+      backgroundColor: palette.surfaceRaised,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+    },
+    noteBoxAttached: {
+      marginLeft: 18,
+    },
+    noteText: {
+      flex: 1,
+      fontFamily: font.nativeFamily.reading,
+      fontSize: 13,
+      lineHeight: 20,
+      color: palette.fg,
+    },
+    about: {
+      paddingTop: 8,
+      paddingBottom: 20,
+    },
+    aboutTitle: {
+      marginTop: 6,
+      fontFamily: font.nativeFamily.display,
+      fontSize: 24,
+      fontWeight: "400",
+      color: palette.fg,
+    },
+    aboutText: {
+      marginTop: 8,
+      fontFamily: font.nativeFamily.ui,
+      fontSize: 14,
+      lineHeight: 21,
+      color: palette.fgSubtle,
+    },
+  });
+
+type DetailNoteStyles = ReturnType<typeof buildDetailNoteStyles>;
 
 function DetailSkeleton() {
   return (

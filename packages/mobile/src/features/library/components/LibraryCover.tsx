@@ -1,9 +1,9 @@
 import { Text, View } from "react-native";
-import { BookCover } from "@bainder/ui";
+import { BookCover, useThemedStyles } from "@bainder/ui";
 import type { Document } from "@bainder/sdk";
 import { useSdk } from "../../../sdk/sdk.provider";
 import { COVER_PALETTES } from "../constants";
-import { libraryStyles as styles } from "../library.styles";
+import { buildLibraryStyles } from "../library.styles";
 import { sourceLabel } from "../utils/document";
 
 const hashString = (value: string): number =>
@@ -19,6 +19,7 @@ export function LibraryCover({
   height: number;
 }) {
   const { baseUrl, authHeaders } = useSdk();
+  const styles = useThemedStyles(buildLibraryStyles);
   const coverSrc =
     doc.kind === "epub" && doc.status === "processed" && doc.coverImage
       ? `${baseUrl}/documents/${doc.id}/${doc.coverImage}`

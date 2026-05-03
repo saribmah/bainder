@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { Pressable, Text, TextInput, View, type TextInput as TextInputType } from "react-native";
-import { authStyles as styles } from "../auth.styles";
+import { useThemedStyles } from "@bainder/ui";
+import { buildAuthStyles } from "../auth.styles";
 
 export function OtpBoxes({
   value,
@@ -9,6 +10,7 @@ export function OtpBoxes({
   value: string;
   onChange: (value: string) => void;
 }) {
+  const styles = useThemedStyles(buildAuthStyles);
   const inputRef = useRef<TextInputType | null>(null);
   const digits = value.padEnd(6, " ").slice(0, 6).split("");
 

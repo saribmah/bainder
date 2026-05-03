@@ -22,7 +22,7 @@
 
 [data-theme="dark"] .bd-floating-toolbar {
   background: var(--night-800);
-  border-color: oklch(30% 0.012 240);
+  border-color: var(--bd-border);
   color: var(--night-50);
 }
 
@@ -51,7 +51,7 @@
   background: var(--sepia-100);
 }
 [data-theme="dark"] .bd-floating-toolbar-btn:hover:not(:disabled) {
-  background: oklch(28% 0.012 240);
+  background: var(--bd-surface-hover);
 }
 
 /* ─── Sheet (generic bottom sheet) ──────────────────────────────────── */
@@ -84,7 +84,7 @@
   margin-bottom: 4px;
 }
 [data-theme="dark"] .bd-sheet-handle {
-  background: oklch(30% 0.012 240);
+  background: var(--bd-border);
 }
 
 /* ─── Selection toolbar (annotation popover) ────────────────────────── */
@@ -122,12 +122,12 @@
 }
 [data-theme="dark"] .bd-selection-toolbar {
   background: var(--night-800);
-  border-color: oklch(30% 0.012 240);
+  border-color: var(--bd-border);
   color: var(--night-50);
 }
 [data-theme="dark"] .bd-selection-toolbar-actions {
   background: var(--night-800);
-  border-color: oklch(30% 0.012 240);
+  border-color: var(--bd-border);
   color: var(--night-50);
 }
 
@@ -150,7 +150,7 @@
   outline-offset: 2px;
 }
 [data-theme="dark"] .bd-color-swatch {
-  border-color: oklch(36% 0.012 240);
+  border-color: var(--bd-border-strong);
 }
 .bd-color-swatch-pink {
   background: var(--hl-pink);
@@ -174,7 +174,7 @@
   background: var(--paper-200);
 }
 [data-theme="dark"] .bd-selection-toolbar-divider {
-  background: oklch(30% 0.012 240);
+  background: var(--bd-border);
 }
 
 .bd-selection-toolbar-btn {
@@ -202,7 +202,7 @@
   background: var(--sepia-100);
 }
 [data-theme="dark"] .bd-selection-toolbar-btn:hover:not(:disabled) {
-  background: oklch(28% 0.012 240);
+  background: var(--bd-surface-hover);
 }
 
 /* ─── AI sheet bits ─────────────────────────────────────────────────── */
@@ -236,7 +236,7 @@
   color: var(--sepia-800);
 }
 [data-theme="dark"] .bd-ai-quote {
-  background: oklch(15% 0.008 240);
+  background: var(--bd-surface-raised);
   color: var(--night-200);
 }
 
@@ -266,7 +266,7 @@
   margin-left: 4px;
 }
 [data-theme="dark"] .bd-thinking-dot {
-  background: oklch(30% 0.012 240);
+  background: var(--bd-border);
 }
 [data-theme="dark"] .bd-thinking-status {
   color: var(--night-200);
@@ -357,7 +357,7 @@
   background: var(--sepia-100);
 }
 [data-theme="dark"] .bd-ai-input {
-  background: oklch(15% 0.008 240);
+  background: var(--bd-surface-raised);
 }
 
 .bd-ai-input input {

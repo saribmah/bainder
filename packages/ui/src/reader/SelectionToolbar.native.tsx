@@ -7,6 +7,7 @@ import {
   Sparkles as SparklesIcon,
 } from "../icons/icons.native.tsx";
 import type { HighlightColor } from "../primitives/Highlight.native.tsx";
+import { useThemeColors } from "../theme/ThemeProvider.native.tsx";
 import { color } from "../tokens/color.ts";
 import { radius } from "../tokens/radius.ts";
 
@@ -36,6 +37,8 @@ export type SelectionToolbarProps =
 const DEFAULT_COLORS: HighlightColor[] = ["pink", "yellow", "green", "blue", "purple"];
 
 export function SelectionToolbar(props: SelectionToolbarProps) {
+  const palette = useThemeColors();
+
   if (props.variant === "actions") {
     const {
       onCopy,
@@ -46,22 +49,29 @@ export function SelectionToolbar(props: SelectionToolbarProps) {
       highlightLabel = "Highlight",
       askLabel = "Ask Bainder",
       noteLabel = "Add note",
-      foregroundColor = color.paper[800],
+      foregroundColor = palette.fg,
       style,
     } = props;
 
     return (
-      <View accessibilityRole="toolbar" style={[styles.actionToolbar, style]}>
-        <ActionButton label={copyLabel} onPress={onCopy}>
+      <View
+        accessibilityRole="toolbar"
+        style={[
+          styles.actionToolbar,
+          { backgroundColor: palette.surface, borderColor: palette.border },
+          style,
+        ]}
+      >
+        <ActionButton label={copyLabel} onPress={onCopy} pressedBg={palette.surfaceHover}>
           <CopyIcon size={20} color={foregroundColor} />
         </ActionButton>
-        <ActionButton label={highlightLabel} onPress={onHighlight}>
+        <ActionButton label={highlightLabel} onPress={onHighlight} pressedBg={palette.surfaceHover}>
           <HighlightIcon size={20} color={foregroundColor} />
         </ActionButton>
-        <ActionButton label={askLabel} onPress={onAsk}>
+        <ActionButton label={askLabel} onPress={onAsk} pressedBg={palette.surfaceHover}>
           <SparklesIcon size={20} color={foregroundColor} />
         </ActionButton>
-        <ActionButton label={noteLabel} onPress={onAddNote}>
+        <ActionButton label={noteLabel} onPress={onAddNote} pressedBg={palette.surfaceHover}>
           <NoteIcon size={20} color={foregroundColor} />
         </ActionButton>
       </View>
@@ -71,7 +81,14 @@ export function SelectionToolbar(props: SelectionToolbarProps) {
   const { colors = DEFAULT_COLORS, onPickColor, onAddNote, noteLabel = "Add note", style } = props;
 
   return (
-    <View accessibilityRole="toolbar" style={[styles.toolbar, style]}>
+    <View
+      accessibilityRole="toolbar"
+      style={[
+        styles.toolbar,
+        { backgroundColor: palette.surface, borderColor: palette.border },
+        style,
+      ]}
+    >
       {colors.map((c) => (
         <Pressable
           key={c}
@@ -87,17 +104,17 @@ export function SelectionToolbar(props: SelectionToolbarProps) {
       ))}
       {onAddNote && (
         <>
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: palette.border }]} />
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={noteLabel}
             onPress={onAddNote}
             style={({ pressed }) => [
               styles.action,
-              { backgroundColor: pressed ? color.paper[100] : "transparent" },
+              { backgroundColor: pressed ? palette.surfaceHover : "transparent" },
             ]}
           >
-            <NoteIcon size={18} color={color.paper[800]} />
+            <NoteIcon size={18} color={palette.fg} />
           </Pressable>
         </>
       )}
@@ -109,10 +126,12 @@ function ActionButton({
   children,
   label,
   onPress,
+  pressedBg,
 }: {
   children: ReactNode;
   label: string;
   onPress: () => void;
+  pressedBg: string;
 }) {
   return (
     <Pressable
@@ -121,7 +140,7 @@ function ActionButton({
       onPress={onPress}
       style={({ pressed }) => [
         styles.actionButton,
-        { backgroundColor: pressed ? color.paper[100] : "transparent" },
+        { backgroundColor: pressed ? pressedBg : "transparent" },
       ]}
     >
       {children}
@@ -135,9 +154,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
     padding: 6,
-    backgroundColor: color.paper[50],
     borderWidth: 1,
-    borderColor: color.paper[200],
     borderRadius: radius.pill,
     shadowColor: "rgba(20,15,10,1)",
     shadowOpacity: 0.18,
@@ -158,9 +175,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 8,
     paddingVertical: 6,
-    backgroundColor: color.paper[50],
     borderWidth: 1,
-    borderColor: color.paper[200],
     borderRadius: radius.pill,
     shadowColor: "rgba(20,15,10,1)",
     shadowOpacity: 0.18,
@@ -178,7 +193,6 @@ const styles = StyleSheet.create({
   divider: {
     width: 1,
     height: 18,
-    backgroundColor: color.paper[200],
     marginHorizontal: 2,
   },
   action: {

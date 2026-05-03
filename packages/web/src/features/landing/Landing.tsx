@@ -29,8 +29,8 @@ export function Landing() {
 
   if (session.isPending) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-paper-50 text-paper-900">
-        <span className="t-body-m text-paper-500">Loading...</span>
+      <main className="flex min-h-screen items-center justify-center bg-bd-bg text-bd-fg">
+        <span className="t-body-m text-bd-fg-muted">Loading...</span>
       </main>
     );
   }
@@ -44,12 +44,12 @@ export function Landing() {
   const scrollToWhy = () => document.getElementById("why-bainder")?.scrollIntoView();
 
   return (
-    <main className="min-h-screen bg-paper-50 text-paper-900">
+    <main className="min-h-screen bg-bd-bg text-bd-fg">
       <header className="mx-auto flex w-full max-w-[1440px] items-center justify-between gap-6 px-5 py-5 sm:px-8 lg:px-14">
         <button
           type="button"
           onClick={() => navigate("/")}
-          className="border-0 bg-transparent p-0 text-paper-900"
+          className="border-0 bg-transparent p-0 text-bd-fg"
         >
           <Wordmark size="md" />
         </button>
@@ -60,7 +60,7 @@ export function Landing() {
               key={item}
               type="button"
               onClick={scrollToWhy}
-              className="t-label-m border-0 bg-transparent p-0 text-paper-700"
+              className="t-label-m border-0 bg-transparent p-0 text-bd-fg-subtle"
             >
               {item}
             </button>
@@ -79,13 +79,13 @@ export function Landing() {
 
       <section className="mx-auto grid w-full max-w-[1440px] gap-12 px-5 pb-12 pt-8 sm:px-8 md:pt-14 lg:grid-cols-[1.1fr_1fr] lg:items-center lg:gap-14 lg:px-14">
         <div>
-          <div className="t-label-s text-paper-500">READING · COMPANION · QUIETLY</div>
-          <h1 className="mt-5 max-w-[760px] font-display text-[48px] font-normal leading-[1] tracking-normal text-paper-900 sm:text-[64px] lg:text-[72px] xl:text-[84px]">
+          <div className="t-label-s text-bd-fg-muted">READING · COMPANION · QUIETLY</div>
+          <h1 className="mt-5 max-w-[760px] font-display text-[48px] font-normal leading-[1] tracking-normal text-bd-fg sm:text-[64px] lg:text-[72px] xl:text-[84px]">
             A quieter way
             <br />
             to read anything.
           </h1>
-          <p className="t-body-l mt-6 max-w-[500px] text-paper-700">
+          <p className="t-body-l mt-6 max-w-[500px] text-bd-fg-subtle">
             Books, PDFs, articles, papers - drop them into Bainder and read with an attentive AI
             that's actually read the whole thing. Highlight, ask, remember.
           </p>
@@ -100,9 +100,9 @@ export function Landing() {
           </div>
 
           <div className="mt-7 flex flex-wrap items-center gap-x-7 gap-y-3">
-            <span className="t-body-s text-paper-500">Works with</span>
+            <span className="t-body-s text-bd-fg-muted">Works with</span>
             {formats.map((format) => (
-              <span key={format} className="t-label-m text-paper-800">
+              <span key={format} className="t-label-m text-bd-fg">
                 {format}
               </span>
             ))}
@@ -110,14 +110,14 @@ export function Landing() {
         </div>
 
         <div className="relative min-h-[420px] lg:min-h-[460px]" aria-label="Reader preview">
-          <article className="absolute right-0 top-0 w-full max-w-[540px] rounded-2xl bg-paper-100 px-6 py-8 shadow-[var(--sh-lg)] sm:px-10">
-            <div className="text-center font-display text-[18px] font-medium leading-tight text-paper-900 opacity-70">
+          <article className="absolute right-0 top-0 w-full max-w-[540px] rounded-2xl bg-bd-surface-raised px-6 py-8 shadow-[var(--sh-lg)] sm:px-10">
+            <div className="text-center font-display text-[18px] font-medium leading-tight text-bd-fg opacity-70">
               Chapter 01
             </div>
-            <div className="mt-2 text-center font-display text-[22px] font-normal leading-tight text-paper-900">
+            <div className="mt-2 text-center font-display text-[22px] font-normal leading-tight text-bd-fg">
               The Psychopathology of Everyday Things
             </div>
-            <p className="mt-6 font-reading text-[16px] leading-[1.7] text-paper-800">
+            <p className="mt-6 font-reading text-[16px] leading-[1.7] text-bd-fg">
               Affordances make sense for interaction with physical objects.{" "}
               <mark className="bd-highlight">
                 Affordances define what actions are possible. Signifiers specify how people discover
@@ -127,12 +127,12 @@ export function Landing() {
             </p>
           </article>
 
-          <aside className="absolute bottom-6 right-0 flex w-[min(320px,88%)] flex-col gap-2 rounded-xl border border-paper-200 bg-paper-50 p-5 shadow-[var(--sh-xl)] lg:-right-5">
+          <aside className="absolute bottom-6 right-0 flex w-[min(320px,88%)] flex-col gap-2 rounded-xl border border-bd-border bg-bd-bg p-5 shadow-[var(--sh-xl)] lg:-right-5">
             <div className="flex items-center gap-2">
-              <Icons.Sparkles size={16} color="var(--wine-700)" />
-              <span className="t-label-m text-wine-700">Bainder</span>
+              <Icons.Sparkles size={16} color="var(--bd-accent)" />
+              <span className="t-label-m text-bd-accent">Bainder</span>
             </div>
-            <p className="m-0 font-reading text-[13px] leading-[1.5] text-paper-800">
+            <p className="m-0 font-reading text-[13px] leading-[1.5] text-bd-fg">
               An <em>affordance</em> is what's possible. A <em>signifier</em> is the visible cue
               that tells you so. A door handle <em>affords</em> pulling - a flat plate{" "}
               <em>signifies</em> "push."
@@ -143,13 +143,13 @@ export function Landing() {
 
       <section
         id="why-bainder"
-        className="mx-auto grid w-full max-w-[1440px] gap-8 border-t border-paper-200 px-5 py-12 sm:px-8 md:grid-cols-3 lg:px-14"
+        className="mx-auto grid w-full max-w-[1440px] gap-8 border-t border-bd-border px-5 py-12 sm:px-8 md:grid-cols-3 lg:px-14"
       >
         {valueCards.map(({ Icon, title, body }) => (
           <article key={title} className="flex max-w-[340px] flex-col gap-3">
-            <Icon size={26} color="var(--paper-800)" />
+            <Icon size={26} color="var(--bd-fg)" />
             <h2 className="t-display-s m-0">{title}</h2>
-            <p className="t-body-m m-0 text-paper-700">{body}</p>
+            <p className="t-body-m m-0 text-bd-fg-subtle">{body}</p>
           </article>
         ))}
       </section>

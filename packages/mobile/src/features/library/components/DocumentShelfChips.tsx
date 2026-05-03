@@ -1,5 +1,5 @@
 import { ScrollView } from "react-native";
-import { ChipButton, Icons, color } from "@bainder/ui";
+import { ChipButton, Icons, useThemeColors } from "@bainder/ui";
 import type { ShelfCustom } from "@bainder/sdk";
 
 export function DocumentShelfChips({
@@ -15,6 +15,7 @@ export function DocumentShelfChips({
   onToggle: (shelf: ShelfCustom, selected: boolean) => void;
   onCreate: () => void;
 }) {
+  const palette = useThemeColors();
   const selectedIds = new Set(selectedShelves.map((shelf) => shelf.id));
 
   return (
@@ -41,7 +42,7 @@ export function DocumentShelfChips({
       })}
       <ChipButton
         variant="filled"
-        iconStart={<Icons.Plus size={12} color={color.wine[700]} />}
+        iconStart={<Icons.Plus size={12} color={palette.accent} />}
         onPress={onCreate}
       >
         New shelf

@@ -1,7 +1,14 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
-import { Icons, color, font, radius } from "@bainder/ui";
+import {
+  Icons,
+  font,
+  radius,
+  useThemeColors,
+  useThemedStyles,
+  type ThemeColors,
+} from "@bainder/ui";
 
 export type BottomTabKey = "home" | "library" | "notes" | "settings";
 
@@ -26,6 +33,8 @@ type Props = BottomTabBarProps & {
 
 export function BottomTabs({ state, navigation, onUpload }: Props) {
   const insets = useSafeAreaInsets();
+  const styles = useThemedStyles(buildStyles);
+  const palette = useThemeColors();
   const activeRouteName = state.routes[state.index]?.name;
 
   const handlePress = (tabKey: BottomTabKey) => {
@@ -56,7 +65,7 @@ export function BottomTabs({ state, navigation, onUpload }: Props) {
               style={styles.tabItem}
             >
               <View style={styles.primaryTab}>
-                <tab.icon size={20} color={color.paper[50]} />
+                <tab.icon size={20} color={palette.actionFg} />
               </View>
               <Text style={styles.tabLabel}>{tab.name}</Text>
             </Pressable>
@@ -75,7 +84,7 @@ export function BottomTabs({ state, navigation, onUpload }: Props) {
           >
             <tab.icon
               size={22}
-              color={selected ? color.paper[900] : color.paper[500]}
+              color={selected ? palette.fg : palette.fgMuted}
               strokeWidth={selected ? 2 : 1.5}
             />
             <Text style={[styles.tabLabel, selected ? styles.tabLabelActive : null]}>
@@ -88,39 +97,40 @@ export function BottomTabs({ state, navigation, onUpload }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  tabs: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    flexDirection: "row",
-    justifyContent: "space-around",
-    borderTopWidth: 1,
-    borderTopColor: color.paper[200],
-    backgroundColor: color.paper[50],
-    paddingTop: 12,
-  },
-  tabItem: {
-    minWidth: 54,
-    alignItems: "center",
-    gap: 4,
-  },
-  primaryTab: {
-    width: 36,
-    height: 36,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: radius.pill,
-    backgroundColor: color.paper[900],
-  },
-  tabLabel: {
-    fontFamily: font.nativeFamily.ui,
-    fontSize: 10,
-    color: color.paper[500],
-  },
-  tabLabelActive: {
-    color: color.paper[900],
-    fontWeight: "600",
-  },
-});
+const buildStyles = (palette: ThemeColors) =>
+  StyleSheet.create({
+    tabs: {
+      position: "absolute",
+      left: 0,
+      right: 0,
+      bottom: 0,
+      flexDirection: "row",
+      justifyContent: "space-around",
+      borderTopWidth: 1,
+      borderTopColor: palette.border,
+      backgroundColor: palette.bg,
+      paddingTop: 12,
+    },
+    tabItem: {
+      minWidth: 54,
+      alignItems: "center",
+      gap: 4,
+    },
+    primaryTab: {
+      width: 36,
+      height: 36,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: radius.pill,
+      backgroundColor: palette.action,
+    },
+    tabLabel: {
+      fontFamily: font.nativeFamily.ui,
+      fontSize: 10,
+      color: palette.fgMuted,
+    },
+    tabLabelActive: {
+      color: palette.fg,
+      fontWeight: "600",
+    },
+  });

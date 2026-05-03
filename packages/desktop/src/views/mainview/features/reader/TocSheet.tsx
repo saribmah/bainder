@@ -42,15 +42,15 @@ export function TocSheet({ toc, sections, currentOrder, onJump, onClose }: TocSh
   const backdropBg = theme === "dark" ? "rgba(0, 0, 0, 0.6)" : "rgba(20, 15, 10, 0.35)";
 
   const itemColor =
-    theme === "dark" ? "text-night-50" : theme === "sepia" ? "text-sepia-900" : "text-paper-900";
+    theme === "dark" ? "text-night-50" : theme === "sepia" ? "text-sepia-900" : "text-bd-fg";
   const itemMutedColor =
-    theme === "dark" ? "text-night-200" : theme === "sepia" ? "text-sepia-700" : "text-paper-500";
+    theme === "dark" ? "text-night-200" : theme === "sepia" ? "text-sepia-700" : "text-bd-fg-muted";
   const itemActiveBg =
     theme === "dark"
       ? "bg-[oklch(28%_0.012_240)]"
       : theme === "sepia"
         ? "bg-sepia-100"
-        : "bg-paper-100";
+        : "bg-bd-surface-raised";
 
   return (
     <div

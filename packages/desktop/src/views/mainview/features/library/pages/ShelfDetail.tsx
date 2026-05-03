@@ -102,7 +102,7 @@ export function ShelfDetail() {
   const customShelf = shelf?.kind === "custom" ? shelf : null;
 
   return (
-    <main className="flex h-dvh min-h-screen overflow-hidden bg-paper-50 text-paper-900">
+    <main className="flex h-dvh min-h-screen overflow-hidden bg-bd-bg text-bd-fg">
       <AppSidebar
         totalCount={counts.all}
         highlightsCount={highlights?.length ?? 0}
@@ -125,12 +125,12 @@ export function ShelfDetail() {
             >
               Library
             </Button>
-            <span className="t-body-s text-paper-400">/</span>
-            <span className="t-body-m text-paper-700">Shelves</span>
+            <span className="t-body-s text-bd-fg-muted">/</span>
+            <span className="t-body-m text-bd-fg-subtle">Shelves</span>
           </div>
 
           {error || shelfListError ? (
-            <div className="rounded-md bg-wine-50 px-4 py-3 text-error">
+            <div className="rounded-md bg-bd-surface-hover px-4 py-3 text-error">
               {error ?? shelfListError}
             </div>
           ) : !shelf ? (
@@ -155,10 +155,10 @@ export function ShelfDetail() {
                   </ChipButton>
                 ))}
                 <div className="min-w-4 flex-1" />
-                <span className="t-body-s hidden text-paper-500 sm:inline">Sort</span>
+                <span className="t-body-s hidden text-bd-fg-muted sm:inline">Sort</span>
                 <ChipButton variant="outline" className="shrink-0">
                   {customShelf ? "Manually" : "Recently touched"}
-                  <Icons.Chevron size={12} color="var(--paper-600)" />
+                  <Icons.Chevron size={12} color="var(--bd-fg-subtle)" />
                 </ChipButton>
               </div>
 
@@ -258,10 +258,10 @@ function ShelfHero({
   const description = shelfDescription(shelf);
 
   return (
-    <section className="flex flex-col gap-5 rounded-[20px] bg-paper-100 p-6 sm:flex-row sm:items-center sm:gap-8 sm:p-8">
+    <section className="flex flex-col gap-5 rounded-[20px] bg-bd-surface-raised p-6 sm:flex-row sm:items-center sm:gap-8 sm:p-8">
       <SpineFan shelf={shelf} size={70} />
       <div className="min-w-0 flex-1">
-        <div className="t-label-s text-paper-500">
+        <div className="t-label-s text-bd-fg-muted">
           {shelf.kind === "smart" ? "Smart shelf" : "Shelf"} · {shelf.itemCount}{" "}
           {shelfItemNoun(shelf.itemCount)}
         </div>
@@ -269,13 +269,13 @@ function ShelfHero({
           {shelf.name}.
         </h1>
         {description && (
-          <p className="t-body-l mt-2 max-w-2xl italic text-paper-700">{description}</p>
+          <p className="t-body-l mt-2 max-w-2xl italic text-bd-fg-subtle">{description}</p>
         )}
       </div>
       {(onAddBooks || onEdit) && (
         <div className="flex shrink-0 flex-row gap-2 sm:flex-col">
           {onAddBooks && (
-            <Button variant="secondary" className="text-wine-700" onClick={onAddBooks}>
+            <Button variant="secondary" className="text-bd-accent" onClick={onAddBooks}>
               Add books
             </Button>
           )}
@@ -318,13 +318,13 @@ function ShelfDocumentCard({
       </button>
       <div className="mt-2 flex items-start gap-1">
         <div className="min-w-0 flex-1">
-          <div className="t-label-m line-clamp-2 text-paper-900">{doc.title}</div>
-          <div className="t-body-s mt-1 truncate text-[11px] text-paper-500">
+          <div className="t-label-m line-clamp-2 text-bd-fg">{doc.title}</div>
+          <div className="t-body-s mt-1 truncate text-[11px] text-bd-fg-muted">
             {sourceLabel(doc)} · {statusLabel(doc)}
           </div>
           {active && (
-            <div className="mt-2 h-0.5 overflow-hidden rounded-full bg-paper-200">
-              <div className="h-full rounded-full bg-paper-900" style={{ width: `${pct}%` }} />
+            <div className="mt-2 h-0.5 overflow-hidden rounded-full bg-bd-border">
+              <div className="h-full rounded-full bg-bd-action" style={{ width: `${pct}%` }} />
             </div>
           )}
           {finished && (
@@ -348,16 +348,16 @@ function ShelfDocumentCard({
 
 function EmptyShelf({ custom, onAdd }: { custom: boolean; onAdd: () => void }) {
   return (
-    <div className="flex min-h-[320px] items-center justify-center rounded-xl border border-dashed border-paper-300 bg-paper-100 px-6 text-center">
+    <div className="flex min-h-[320px] items-center justify-center rounded-xl border border-dashed border-bd-border-strong bg-bd-surface-raised px-6 text-center">
       <div>
-        <h2 className="t-display-s text-paper-900">No books here yet</h2>
-        <p className="t-body-m mt-2 max-w-md text-paper-600">
+        <h2 className="t-display-s text-bd-fg">No books here yet</h2>
+        <p className="t-body-m mt-2 max-w-md text-bd-fg-subtle">
           {custom
             ? "Add processed books from your library to build this shelf."
             : "This smart shelf fills itself as you read."}
         </p>
         {custom && (
-          <Button variant="secondary" className="mt-4 text-wine-700" onClick={onAdd}>
+          <Button variant="secondary" className="mt-4 text-bd-accent" onClick={onAdd}>
             Add books
           </Button>
         )}

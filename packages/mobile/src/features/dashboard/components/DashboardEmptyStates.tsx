@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from "react-native";
-import { Card, Icons, color } from "@bainder/ui";
-import { dashboardStyles as styles } from "../dashboard.styles";
+import { Card, Icons, color, useThemeColors, useThemedStyles } from "@bainder/ui";
+import { buildDashboardStyles } from "../dashboard.styles";
 
 export function DropDashboard({
   uploading,
@@ -9,6 +9,8 @@ export function DropDashboard({
   uploading: boolean;
   onUpload: () => void;
 }) {
+  const styles = useThemedStyles(buildDashboardStyles);
+  const palette = useThemeColors();
   return (
     <View style={styles.dropWrap}>
       <View style={styles.dropZone}>
@@ -31,7 +33,7 @@ export function DropDashboard({
           disabled={uploading}
           style={styles.dropIcon}
         >
-          <Icons.Plus size={20} color={color.paper[800]} />
+          <Icons.Plus size={20} color={palette.fg} />
         </Pressable>
         <Text style={styles.dropTitle}>Add anything to read</Text>
         <Text style={styles.dropLead}>EPUB files today. PDF, articles, and links are next.</Text>
@@ -54,9 +56,11 @@ export function DropDashboard({
 }
 
 export function FilteredEmpty({ query }: { query: string }) {
+  const styles = useThemedStyles(buildDashboardStyles);
+  const palette = useThemeColors();
   return (
     <Card style={styles.filteredEmpty}>
-      <Icons.Search size={24} color={color.paper[500]} />
+      <Icons.Search size={24} color={palette.fgMuted} />
       <Text style={styles.filteredTitle}>No matches</Text>
       <Text style={styles.filteredBody}>{`Nothing matches "${query}".`}</Text>
     </Card>
@@ -64,9 +68,11 @@ export function FilteredEmpty({ query }: { query: string }) {
 }
 
 function ImportHint({ icon: Icon, label }: { icon: typeof Icons.BookOpen; label: string }) {
+  const styles = useThemedStyles(buildDashboardStyles);
+  const palette = useThemeColors();
   return (
     <View style={styles.importHint}>
-      <Icon size={14} color={color.paper[600]} />
+      <Icon size={14} color={palette.fgSubtle} />
       <Text style={styles.importHintText}>{label}</Text>
     </View>
   );

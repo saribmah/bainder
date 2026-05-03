@@ -296,7 +296,7 @@ export function EpubHtmlBody({
           <SelectionToolbar
             variant="actions"
             foregroundColor={palette.text}
-            style={{ backgroundColor: floatingBgFor(theme), borderColor: borderFor(theme) }}
+            style={{ backgroundColor: floatingBgFor(theme), borderColor: palette.border }}
             onCopy={handleCopySelection}
             onHighlight={() => {
               void handleHighlightSelection(defaultColor);
@@ -387,7 +387,7 @@ function FocusedHighlightCard({
   onClose: () => void;
 }) {
   const palette = themeColors(theme);
-  const muted = mutedFor(theme);
+  const muted = palette.fgMuted;
   return (
     <>
       <View style={styles.cardHeader}>
@@ -439,7 +439,7 @@ function NoteEditor({
   onSave: (note: string) => Promise<void>;
 }) {
   const palette = themeColors(theme);
-  const muted = mutedFor(theme);
+  const muted = palette.fgMuted;
   const [value, setValue] = useState(initialNote);
   const [saving, setSaving] = useState(false);
 
@@ -474,7 +474,7 @@ function NoteEditor({
         onChangeText={setValue}
         style={[
           styles.noteInput,
-          { backgroundColor: noteBgFor(theme), color: palette.text, borderColor: borderFor(theme) },
+          { backgroundColor: noteBgFor(theme), color: palette.text, borderColor: palette.border },
         ]}
       />
       <Pressable
@@ -514,18 +514,6 @@ function NoteEditor({
       </View>
     </>
   );
-}
-
-function mutedFor(theme: Theme): string {
-  if (theme === "dark") return color.night[200];
-  if (theme === "sepia") return color.sepia[700];
-  return color.paper[500];
-}
-
-function borderFor(theme: Theme): string {
-  if (theme === "dark") return color.night[700];
-  if (theme === "sepia") return color.sepia[200];
-  return color.paper[200];
 }
 
 function noteBgFor(theme: Theme): string {

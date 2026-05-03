@@ -51,6 +51,25 @@
   --color-highlight-blue: var(--hl-blue);
   --color-highlight-purple: var(--hl-purple);
 
+  /* Semantic surfaces & text — these track [data-theme] and should be
+     preferred over raw paper/wine/sepia/night ramps for app chrome. */
+  --color-bd-bg: var(--bd-bg);
+  --color-bd-surface: var(--bd-surface);
+  --color-bd-surface-raised: var(--bd-surface-raised);
+  --color-bd-surface-hover: var(--bd-surface-hover);
+  --color-bd-border: var(--bd-border);
+  --color-bd-border-strong: var(--bd-border-strong);
+  --color-bd-fg: var(--bd-fg);
+  --color-bd-fg-subtle: var(--bd-fg-subtle);
+  --color-bd-fg-muted: var(--bd-fg-muted);
+  --color-bd-action: var(--bd-action);
+  --color-bd-action-hover: var(--bd-action-hover);
+  --color-bd-action-fg: var(--bd-action-fg);
+  --color-bd-accent: var(--bd-accent);
+  --color-bd-accent-hover: var(--bd-accent-hover);
+  --color-bd-accent-fg: var(--bd-accent-fg);
+  --color-bd-focus: var(--bd-focus);
+
   /* Status */
   --color-success: var(--success);
   --color-warning: var(--warning);
