@@ -1,59 +1,83 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Icons, color, font, radius } from "@bainder/ui";
 
 export type BottomTabKey = "home" | "library" | "highlights" | "settings";
 
-export function BottomTabs({
-  active,
-  bottom,
-  onUpload,
-}: {
-  active: BottomTabKey;
-  bottom: number;
+const ROUTE_BY_TAB: Record<BottomTabKey, string> = {
+  home: "dashboard",
+  library: "library",
+  highlights: "highlights",
+  settings: "settings",
+};
+
+const TABS = [
+  { key: "home", icon: Icons.Home, name: "Home" },
+  { key: "library", icon: Icons.Library, name: "Library" },
+  { key: "add", icon: Icons.Plus, name: "Add", primary: true },
+  { key: "highlights", icon: Icons.Highlight, name: "Highlights" },
+  { key: "settings", icon: Icons.User, name: "You" },
+] as const;
+
+type Props = BottomTabBarProps & {
   onUpload: () => void;
-}) {
-  const router = useRouter();
-  const tabs = [
-    { key: "home", icon: Icons.Home, name: "Home", onPress: () => router.push("/dashboard") },
-    {
-      key: "library",
-      icon: Icons.Library,
-      name: "Library",
-      onPress: () => router.push("/library"),
-    },
-    { key: "add", icon: Icons.Plus, name: "Add", primary: true, onPress: onUpload },
-    {
-      key: "highlights",
-      icon: Icons.Highlight,
-      name: "Highlights",
-      onPress: () => router.push("/highlights"),
-    },
-    { key: "settings", icon: Icons.User, name: "You", onPress: () => router.push("/settings") },
-  ] as const;
+};
+
+export function BottomTabs({ state, navigation, onUpload }: Props) {
+  const insets = useSafeAreaInsets();
+  const activeRouteName = state.routes[state.index]?.name;
+
+  const handlePress = (tabKey: BottomTabKey) => {
+    const targetName = ROUTE_BY_TAB[tabKey];
+    const target = state.routes.find((r) => r.name === targetName);
+    if (!target) return;
+    const isFocused = activeRouteName === targetName;
+    const event = navigation.emit({
+      type: "tabPress",
+      target: target.key,
+      canPreventDefault: true,
+    });
+    if (!isFocused && !event.defaultPrevented) {
+      navigation.navigate(target.name);
+    }
+  };
 
   return (
-    <View style={[styles.tabs, { paddingBottom: bottom + 10 }]}>
-      {tabs.map((tab) => {
-        const selected = tab.key === active;
+    <View style={[styles.tabs, { paddingBottom: insets.bottom + 10 }]}>
+      {TABS.map((tab) => {
+        if ("primary" in tab && tab.primary) {
+          return (
+            <Pressable
+              key={tab.key}
+              accessibilityRole="button"
+              accessibilityLabel={tab.name}
+              onPress={onUpload}
+              style={styles.tabItem}
+            >
+              <View style={styles.primaryTab}>
+                <tab.icon size={20} color={color.paper[50]} />
+              </View>
+              <Text style={styles.tabLabel}>{tab.name}</Text>
+            </Pressable>
+          );
+        }
+
+        const tabKey = tab.key as BottomTabKey;
+        const selected = activeRouteName === ROUTE_BY_TAB[tabKey];
         return (
           <Pressable
             key={tab.key}
             accessibilityRole="button"
-            onPress={tab.onPress}
+            accessibilityLabel={tab.name}
+            onPress={() => handlePress(tabKey)}
             style={styles.tabItem}
           >
-            {"primary" in tab && tab.primary ? (
-              <View style={styles.primaryTab}>
-                <tab.icon size={20} color={color.paper[50]} />
-              </View>
-            ) : (
-              <tab.icon
-                size={22}
-                color={selected ? color.paper[900] : color.paper[500]}
-                strokeWidth={selected ? 2 : 1.5}
-              />
-            )}
+            <tab.icon
+              size={22}
+              color={selected ? color.paper[900] : color.paper[500]}
+              strokeWidth={selected ? 2 : 1.5}
+            />
             <Text style={[styles.tabLabel, selected ? styles.tabLabelActive : null]}>
               {tab.name}
             </Text>

@@ -1,4 +1,4 @@
-import { DashboardScreen } from "../src/features/dashboard";
+import { DashboardScreen } from "../../src/features/dashboard";
 
 export default function DashboardRoute() {
   return <DashboardScreen />;

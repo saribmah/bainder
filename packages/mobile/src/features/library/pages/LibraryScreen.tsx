@@ -6,7 +6,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChipButton, Icons, Input, Toast, Wordmark, color } from "@bainder/ui";
 import type { Document } from "@bainder/sdk";
 import { FILTER_LABEL, type LibraryFilter } from "../constants";
-import { BottomTabs } from "../../shell";
 import { LibraryCover } from "../components/LibraryCover";
 import { ShelfCard } from "../components/ShelfArtwork";
 import { AddToShelfSheet, CreateShelfSheet } from "../components/ShelfSheets";
@@ -27,19 +26,8 @@ export function LibraryScreen() {
   const [createShelfDocument, setCreateShelfDocument] = useState<Document | null>(null);
   const [sheetDocument, setSheetDocument] = useState<Document | null>(null);
   const itemWidth = Math.floor((width - 48 - 28) / 3);
-  const {
-    documents,
-    filteredDocuments,
-    counts,
-    error,
-    uploading,
-    toast,
-    query,
-    setQuery,
-    filter,
-    setFilter,
-    uploadDocument,
-  } = useLibraryDocuments();
+  const { documents, filteredDocuments, counts, error, toast, query, setQuery, filter, setFilter } =
+    useLibraryDocuments();
   const {
     shelves,
     customShelves,
@@ -180,8 +168,6 @@ export function LibraryScreen() {
           />
         )}
       />
-
-      <BottomTabs active="library" bottom={insets.bottom} onUpload={uploadDocument} />
 
       {toast && (
         <View style={{ position: "absolute", left: 24, right: 24, bottom: insets.bottom + 78 }}>
