@@ -1,12 +1,13 @@
+import { NavLink } from "react-router-dom";
 import { Icons, Wordmark } from "@bainder/ui";
 import { ProfileMenuButton } from "../../profile";
 import { UploadButton } from "./UploadControls";
 
 const navItems = [
-  { icon: Icons.Home, name: "Home", active: true },
-  { icon: Icons.Library, name: "Library", count: 0 },
+  { icon: Icons.Home, name: "Home", to: "/dashboard" },
+  { icon: Icons.Library, name: "Library", to: "/library", count: 0 },
   { icon: Icons.Sparkles, name: "Conversations", count: 0 },
-  { icon: Icons.Highlight, name: "Highlights", count: 0 },
+  { icon: Icons.Highlight, name: "Highlights", to: "/highlights", count: 0 },
   { icon: Icons.Note, name: "Notes" },
   { icon: Icons.Search, name: "Search" },
 ];
@@ -43,20 +44,7 @@ export function DashboardRail({
 
       <nav className="flex flex-col gap-0.5" aria-label="Dashboard">
         {nav.map((item) => (
-          <button
-            key={item.name}
-            type="button"
-            className={[
-              "flex items-center gap-2.5 rounded-md border-0 px-3 py-2 text-left transition-colors",
-              item.active ? "bg-paper-100 text-paper-900" : "bg-transparent text-paper-700",
-            ].join(" ")}
-          >
-            <item.icon size={18} color={item.active ? "var(--paper-900)" : "var(--paper-600)"} />
-            <span className="t-label-m flex-1">{item.name}</span>
-            {item.count !== undefined && (
-              <span className="font-mono text-[11px] text-paper-500">{item.count}</span>
-            )}
-          </button>
+          <RailNavItem key={item.name} item={item} />
         ))}
       </nav>
 
@@ -79,5 +67,42 @@ export function DashboardRail({
 
       <ProfileMenuButton reader={reader} />
     </aside>
+  );
+}
+
+function RailNavItem({ item }: { item: (typeof navItems)[number] }) {
+  const content = (active: boolean) => (
+    <>
+      <item.icon size={18} color={active ? "var(--paper-900)" : "var(--paper-600)"} />
+      <span className="t-label-m flex-1">{item.name}</span>
+      {item.count !== undefined && (
+        <span className="font-mono text-[11px] text-paper-500">{item.count}</span>
+      )}
+    </>
+  );
+
+  if ("to" in item && item.to) {
+    return (
+      <NavLink
+        to={item.to}
+        className={({ isActive }) =>
+          [
+            "flex items-center gap-2.5 rounded-md px-3 py-2 text-left no-underline transition-colors",
+            isActive ? "bg-paper-100 text-paper-900" : "text-paper-700 hover:bg-paper-100",
+          ].join(" ")
+        }
+      >
+        {({ isActive }) => content(isActive)}
+      </NavLink>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className="flex items-center gap-2.5 rounded-md border-0 bg-transparent px-3 py-2 text-left text-paper-700 transition-colors hover:bg-paper-100"
+    >
+      {content(false)}
+    </button>
   );
 }
