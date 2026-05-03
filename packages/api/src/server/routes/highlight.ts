@@ -17,9 +17,9 @@ const errorMappings = [
 highlightRouter.post(
   "/",
   describeRoute({
-    summary: "Create a highlight or note on a document",
+    summary: "Create a highlight on a document",
     description:
-      "Creates a colour highlight (and optional note) anchored to a document section via `sectionKey` (from the manifest). `position.offsetStart` / `offsetEnd` are character positions into the section's canonical `.txt` payload.",
+      "Creates a colour highlight anchored to a document section via `sectionKey` (from the manifest). `position.offsetStart` / `offsetEnd` are character positions into the section's canonical `.txt` payload. To attach a free-form note to the highlight, follow up with `note.create` using the returned `id` as `highlightId`.",
     operationId: "highlight.create",
     responses: {
       201: {
@@ -102,7 +102,7 @@ highlightRouter.get(
 highlightRouter.patch(
   "/:id",
   describeRoute({
-    summary: "Update a highlight's color or note",
+    summary: "Update a highlight's color",
     operationId: "highlight.update",
     responses: {
       200: {

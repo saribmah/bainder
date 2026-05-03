@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { RefObject } from "react";
-import type { Highlight } from "@bainder/sdk";
+import type { Highlight, Note } from "@bainder/sdk";
 import { useSdk } from "../../sdk";
 import { useReaderHighlights } from "./highlightsRefresh";
 import {
@@ -26,7 +26,13 @@ const colorClass = (color: HighlightColor): string =>
   color === "pink" ? "bd-highlight" : `bd-highlight bd-highlight-${color}`;
 
 // Wraps stored highlights, listens for user selection inside `containerRef`,
-// and exposes CRUD that persists via `client.highlight.*`.
+// and exposes CRUD that persists via `client.highlight.*` and `client.note.*`.
+//
+// Highlights and notes live in separate stores: a highlight is the colour
+// overlay, a note is free-form text optionally pinned to a highlight via
+// `highlightId`. The layer keeps them aligned in a single map keyed by
+// highlight id so the popover and the "has-note" indicator can render in
+// one shot.
 //
 // `contentKey` should change whenever the body's inner HTML/text is replaced
 // (chapter switch). The wrap effect re-runs and re-applies marks for the
@@ -47,6 +53,7 @@ export function useHighlightLayer({
   const { client } = useSdk();
   const refresh = useReaderHighlights();
   const [highlights, setHighlights] = useState<Highlight[]>([]);
+  const [notesByHighlightId, setNotesByHighlightId] = useState<Map<string, Note>>(new Map());
   const [selection, setSelection] = useState<ActiveSelection | null>(null);
   const [focusedId, setFocusedId] = useState<string | null>(null);
 
@@ -54,18 +61,30 @@ export function useHighlightLayer({
   useEffect(() => {
     if (!enabled || sectionKey === null) {
       setHighlights([]);
+      setNotesByHighlightId(new Map());
       return;
     }
     let cancelled = false;
-    client.highlight
-      .list({ documentId, sectionKey })
-      .then((res) => {
+    Promise.all([
+      client.highlight.list({ documentId, sectionKey }),
+      // Notes attached to a highlight mirror the highlight's sectionKey, so
+      // a section-scoped read picks them up alongside section-pinned notes.
+      // We only care about the highlight-attached ones for the layer map.
+      client.note.list({ documentId, sectionKey }),
+    ])
+      .then(([hl, notes]) => {
         if (cancelled) return;
-        setHighlights(res.data?.items ?? []);
+        setHighlights(hl.data?.items ?? []);
+        const map = new Map<string, Note>();
+        for (const n of notes.data?.items ?? []) {
+          if (n.highlightId !== null) map.set(n.highlightId, n);
+        }
+        setNotesByHighlightId(map);
       })
       .catch(() => {
         if (cancelled) return;
         setHighlights([]);
+        setNotesByHighlightId(new Map());
       });
     return () => {
       cancelled = true;
@@ -148,11 +167,11 @@ export function useHighlightLayer({
         className: colorClass(h.color),
         attributes: {
           "data-highlight-id": h.id,
-          ...(h.note ? { "data-highlight-has-note": "true" } : null),
+          ...(notesByHighlightId.has(h.id) ? { "data-highlight-has-note": "true" } : null),
         },
       });
     }
-  }, [highlights, contentKey, containerRef, enabled]);
+  }, [highlights, notesByHighlightId, contentKey, containerRef, enabled]);
 
   // ---- Click delegation for opening an existing highlight ------------------
   useEffect(() => {
@@ -173,9 +192,9 @@ export function useHighlightLayer({
 
   // ---- CRUD ----------------------------------------------------------------
   const create = useCallback(
-    async (color: HighlightColor, note?: string) => {
+    async (color: HighlightColor, noteBody?: string) => {
       if (sectionKey === null || !selection) return;
-      const params: Parameters<typeof client.highlight.create>[0] = {
+      const res = await client.highlight.create({
         documentId,
         sectionKey,
         position: {
@@ -184,14 +203,26 @@ export function useHighlightLayer({
         },
         textSnippet: selection.text,
         color,
-      };
-      if (note !== undefined) params.note = note;
-
-      const res = await client.highlight.create(params);
+      });
       if (res.data) {
         const created = res.data;
         setHighlights((prev) => [...prev, created]);
-        if (note !== undefined) setFocusedId(created.id);
+        if (noteBody !== undefined && noteBody.length > 0) {
+          const noteRes = await client.note.create({
+            documentId,
+            highlightId: created.id,
+            body: noteBody,
+          });
+          if (noteRes.data) {
+            const note = noteRes.data;
+            setNotesByHighlightId((prev) => {
+              const next = new Map(prev);
+              next.set(created.id, note);
+              return next;
+            });
+          }
+          setFocusedId(created.id);
+        }
         refresh?.bumpRefresh();
       }
       clearSelection();
@@ -199,9 +230,9 @@ export function useHighlightLayer({
     [client, documentId, sectionKey, selection, clearSelection, refresh],
   );
 
-  const update = useCallback(
-    async (id: string, patch: { color?: HighlightColor; note?: string | null }) => {
-      const res = await client.highlight.update({ id, ...patch });
+  const updateColor = useCallback(
+    async (id: string, color: HighlightColor) => {
+      const res = await client.highlight.update({ id, color });
       if (res.data) {
         const updated = res.data;
         setHighlights((prev) => prev.map((h) => (h.id === id ? updated : h)));
@@ -211,10 +242,71 @@ export function useHighlightLayer({
     [client, refresh],
   );
 
+  // Single entry point for all three note paths against a highlight: create
+  // when there's no existing note, update when the body is non-empty, delete
+  // when the body is empty/null.
+  const setNoteForHighlight = useCallback(
+    async (highlightId: string, body: string | null) => {
+      const existing = notesByHighlightId.get(highlightId);
+      const trimmed = body?.trim() ?? "";
+
+      if (!existing && trimmed.length > 0) {
+        const res = await client.note.create({
+          documentId,
+          highlightId,
+          body: trimmed,
+        });
+        if (res.data) {
+          const note = res.data;
+          setNotesByHighlightId((prev) => {
+            const next = new Map(prev);
+            next.set(highlightId, note);
+            return next;
+          });
+          refresh?.bumpRefresh();
+        }
+        return;
+      }
+
+      if (existing && trimmed.length > 0) {
+        const res = await client.note.update({ id: existing.id, body: trimmed });
+        if (res.data) {
+          const note = res.data;
+          setNotesByHighlightId((prev) => {
+            const next = new Map(prev);
+            next.set(highlightId, note);
+            return next;
+          });
+          refresh?.bumpRefresh();
+        }
+        return;
+      }
+
+      if (existing && trimmed.length === 0) {
+        await client.note.delete({ id: existing.id });
+        setNotesByHighlightId((prev) => {
+          const next = new Map(prev);
+          next.delete(highlightId);
+          return next;
+        });
+        refresh?.bumpRefresh();
+      }
+    },
+    [client, documentId, notesByHighlightId, refresh],
+  );
+
   const remove = useCallback(
     async (id: string) => {
+      // The note FK cascades on the server; mirror that in local state so the
+      // UI doesn't briefly show an orphaned note.
       await client.highlight.delete({ id });
       setHighlights((prev) => prev.filter((h) => h.id !== id));
+      setNotesByHighlightId((prev) => {
+        if (!prev.has(id)) return prev;
+        const next = new Map(prev);
+        next.delete(id);
+        return next;
+      });
       setFocusedId((curr) => (curr === id ? null : curr));
       refresh?.bumpRefresh();
     },
@@ -226,14 +318,21 @@ export function useHighlightLayer({
     [highlights, focusedId],
   );
 
+  const getNoteForHighlight = useCallback(
+    (highlightId: string): Note | undefined => notesByHighlightId.get(highlightId),
+    [notesByHighlightId],
+  );
+
   return {
     highlights,
     selection,
     clearSelection,
     create,
-    update,
+    updateColor,
+    setNoteForHighlight,
     remove,
     focused,
     setFocusedId,
+    getNoteForHighlight,
   };
 }

@@ -112,7 +112,6 @@ function HighlightItem({ item }: { item: LibraryHighlight }) {
       <Text style={[styles.quote, { borderLeftColor: HIGHLIGHT_COLOR[item.color] }]}>
         "{item.textSnippet}"
       </Text>
-      {item.note && <Text style={styles.note}>{item.note}</Text>}
     </View>
   );
 }

@@ -165,7 +165,7 @@ const READER_RUNTIME = `
       var range = charOffsetsToRange(body, h.position.offsetStart, h.position.offsetEnd);
       if (!range) continue;
       var attrs = { 'data-highlight-id': h.id };
-      if (h.note) attrs['data-highlight-has-note'] = 'true';
+      if (h.hasNote) attrs['data-highlight-has-note'] = 'true';
       wrapRangeWithMarks(range, COLORS[h.color] || 'bd-highlight', attrs);
     }
     setTimeout(postHeight, 0);

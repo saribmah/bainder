@@ -12,7 +12,7 @@ import {
   type HighlightColor,
   type Theme,
 } from "@bainder/ui";
-import type { Highlight } from "@bainder/sdk";
+import type { Highlight, Note } from "@bainder/sdk";
 import { buildEpubHtml } from "./buildEpubHtml.ts";
 import { inlineEpubAssets, type AssetCache } from "./inlineAssets.ts";
 import type { ReaderHighlights } from "./useReaderHighlights.ts";
@@ -41,12 +41,14 @@ export type EpubHtmlBodyProps = {
   assetBase: string;
   theme: Theme;
   highlights: Highlight[];
+  notesByHighlightId: ReadonlyMap<string, Note>;
   fontSize?: number;
   contentKey: string;
   authedFetch: typeof fetch;
   assetCache: AssetCache;
   onCreateHighlight: ReaderHighlights["create"];
-  onUpdateHighlight: ReaderHighlights["update"];
+  onUpdateColor: ReaderHighlights["updateColor"];
+  onSetNote: ReaderHighlights["setNoteForHighlight"];
   onRemoveHighlight: ReaderHighlights["remove"];
 };
 
@@ -55,12 +57,14 @@ export function EpubHtmlBody({
   assetBase,
   theme,
   highlights,
+  notesByHighlightId,
   fontSize = 17,
   contentKey,
   authedFetch,
   assetCache,
   onCreateHighlight,
-  onUpdateHighlight,
+  onUpdateColor,
+  onSetNote,
   onRemoveHighlight,
 }: EpubHtmlBodyProps) {
   const palette = themeColors(theme);
@@ -100,12 +104,15 @@ export function EpubHtmlBody({
   }, [resolvedHtml, palette.bg, palette.text, fontSize]);
 
   // Push highlights into the WebView once it signals ready, and again whenever
-  // the highlights array changes.
+  // the highlights array changes. The injected payload carries a derived
+  // `hasNote` flag so the in-page wrapper can paint the note indicator
+  // without a second round trip.
   useEffect(() => {
     if (!ready) return;
-    const json = JSON.stringify(highlights);
+    const enriched = highlights.map((h) => ({ ...h, hasNote: notesByHighlightId.has(h.id) }));
+    const json = JSON.stringify(enriched);
     webRef.current?.injectJavaScript(`window.bd_setHighlights(${json}); true;`);
-  }, [ready, highlights, contentKey]);
+  }, [ready, highlights, notesByHighlightId, contentKey]);
 
   const clearWebSelection = useCallback(() => {
     webRef.current?.injectJavaScript(
@@ -173,10 +180,10 @@ export function EpubHtmlBody({
   const handleChangeFocusedColor = useCallback(
     async (c: HighlightColor) => {
       if (!focused) return;
-      await onUpdateHighlight(focused.id, { color: c });
+      await onUpdateColor(focused.id, c);
       setFocused((curr) => (curr ? { ...curr, color: c } : curr));
     },
-    [focused, onUpdateHighlight],
+    [focused, onUpdateColor],
   );
 
   const handleEditFocusedNote = useCallback(() => {
@@ -207,13 +214,11 @@ export function EpubHtmlBody({
           trimmed.length > 0 ? trimmed : undefined,
         );
       } else {
-        await onUpdateHighlight(noteDraft.highlight.id, {
-          note: trimmed.length > 0 ? trimmed : null,
-        });
+        await onSetNote(noteDraft.highlight.id, trimmed.length > 0 ? trimmed : null);
       }
       setNoteDraft(null);
     },
-    [noteDraft, onCreateHighlight, onUpdateHighlight],
+    [noteDraft, onCreateHighlight, onSetNote],
   );
 
   if (!wrapped) {
@@ -252,6 +257,7 @@ export function EpubHtmlBody({
         {focused && (
           <FocusedHighlightCard
             highlight={focused}
+            noteBody={notesByHighlightId.get(focused.id)?.body ?? null}
             theme={theme}
             onChangeColor={handleChangeFocusedColor}
             onEditNote={handleEditFocusedNote}
@@ -269,7 +275,11 @@ export function EpubHtmlBody({
         {noteDraft && (
           <NoteEditor
             theme={theme}
-            initialNote={noteDraft.kind === "edit" ? (noteDraft.highlight.note ?? "") : ""}
+            initialNote={
+              noteDraft.kind === "edit"
+                ? (notesByHighlightId.get(noteDraft.highlight.id)?.body ?? "")
+                : ""
+            }
             quote={
               noteDraft.kind === "edit" ? noteDraft.highlight.textSnippet : noteDraft.selection.text
             }
@@ -295,6 +305,7 @@ function toolbarPosition(rect: Rect, webHeight: number): { top: number; left: nu
 
 function FocusedHighlightCard({
   highlight,
+  noteBody,
   theme,
   onChangeColor,
   onEditNote,
@@ -302,6 +313,7 @@ function FocusedHighlightCard({
   onClose,
 }: {
   highlight: Highlight;
+  noteBody: string | null;
   theme: Theme;
   onChangeColor: (color: HighlightColor) => void;
   onEditNote: () => void;
@@ -321,16 +333,16 @@ function FocusedHighlightCard({
       <Text style={[styles.cardQuote, { color: palette.text }]} numberOfLines={4}>
         {`“${highlight.textSnippet}”`}
       </Text>
-      {highlight.note && (
+      {noteBody && (
         <View style={[styles.notePreview, { backgroundColor: noteBgFor(theme) }]}>
-          <Text style={{ color: palette.text }}>{highlight.note}</Text>
+          <Text style={{ color: palette.text }}>{noteBody}</Text>
         </View>
       )}
       <View style={styles.cardActionsRow}>
         <SelectionToolbar onPickColor={onChangeColor} />
         <View style={{ flexDirection: "row", gap: 4 }}>
           <IconButton
-            aria-label={highlight.note ? "Edit note" : "Add note"}
+            aria-label={noteBody ? "Edit note" : "Add note"}
             size="sm"
             onPress={onEditNote}
           >

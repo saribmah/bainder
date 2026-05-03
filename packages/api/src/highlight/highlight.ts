@@ -3,8 +3,10 @@ import { Document } from "../document/document";
 import { NamedError } from "../utils/error";
 import { HighlightStorage } from "./storage";
 
-// User annotations on a document. A "highlight" with a non-null `note` is
-// what the UI surfaces as a note; structurally they're the same row.
+// Text-anchored colour overlays a user paints onto a document. A highlight
+// only carries selection + colour. Free-form thoughts about the highlight
+// (or the document overall) live in the sibling `Note` feature, which
+// optionally points back at a highlight.
 //
 // Position is type-agnostic: every highlight has a `sectionKey` (which
 // section in the document's manifest) and a `position` payload owned by
@@ -23,11 +25,10 @@ export namespace Highlight {
   export const Color = z.enum(["pink", "yellow", "green", "blue", "purple"]);
   export type Color = z.infer<typeof Color>;
 
-  // Hard-cap snippet/note length so a malicious caller can't pin huge blobs
-  // of text into the row. Values picked to comfortably cover one chapter
-  // page worth of selection and a long-form note.
+  // Hard-cap snippet length so a malicious caller can't pin a huge blob of
+  // text into the row. Picked to comfortably cover one chapter page worth
+  // of selection.
   const MAX_SNIPPET_CHARS = 4_000;
-  const MAX_NOTE_CHARS = 10_000;
 
   export const Position = z
     .object({
@@ -49,7 +50,6 @@ export namespace Highlight {
       position: Position,
       textSnippet: z.string(),
       color: Color,
-      note: z.string().nullable(),
       createdAt: z.string(),
       updatedAt: z.string(),
     })
@@ -65,18 +65,12 @@ export namespace Highlight {
     position: Position,
     textSnippet: z.string().min(1).max(MAX_SNIPPET_CHARS),
     color: Color,
-    note: z.string().max(MAX_NOTE_CHARS).optional(),
   });
   export type CreateInput = z.infer<typeof CreateInput>;
 
-  export const UpdateInput = z
-    .object({
-      color: Color.optional(),
-      note: z.string().max(MAX_NOTE_CHARS).nullable().optional(),
-    })
-    .refine((v) => v.color !== undefined || v.note !== undefined, {
-      message: "At least one of color or note must be provided",
-    });
+  export const UpdateInput = z.object({
+    color: Color,
+  });
   export type UpdateInput = z.infer<typeof UpdateInput>;
 
   export const ListQuery = z.object({
@@ -100,7 +94,6 @@ export namespace Highlight {
       position: input.position,
       textSnippet: input.textSnippet,
       color: input.color,
-      note: input.note ?? null,
     });
   };
 
@@ -111,13 +104,14 @@ export namespace Highlight {
     return HighlightStorage.list(userId, query);
   };
 
+  export const get = async (userId: string, id: string): Promise<Entity> => {
+    const entity = await HighlightStorage.get(id, userId);
+    if (!entity) throw new NotFoundError({ id });
+    return entity;
+  };
+
   export const update = async (userId: string, id: string, patch: UpdateInput): Promise<Entity> => {
-    const updated = await HighlightStorage.update(id, userId, {
-      color: patch.color,
-      // null vs undefined is meaningful: undefined leaves note alone, null
-      // clears it. Passed straight through to the storage layer.
-      note: patch.note,
-    });
+    const updated = await HighlightStorage.update(id, userId, { color: patch.color });
     if (!updated) throw new NotFoundError({ id });
     return updated;
   };

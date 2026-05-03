@@ -1,6 +1,7 @@
 export * from "./auth";
 export * from "./document";
 export * from "./highlight";
+export * from "./note";
 export * from "./profile";
 export * from "./progress";
 export * from "./shelf";

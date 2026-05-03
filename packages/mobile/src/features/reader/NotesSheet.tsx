@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { IconButton, Icons, Sheet, color, themeColors, type Theme } from "@bainder/ui";
-import type { DocumentSectionSummary, Highlight } from "@bainder/sdk";
+import type { DocumentSectionSummary, Highlight, Note } from "@bainder/sdk";
 import { useSdk } from "../../sdk/sdk.provider.tsx";
 
 export type NotesSheetProps = {
@@ -54,7 +54,8 @@ export function NotesSheet({
   onJumpToOrder,
 }: NotesSheetProps) {
   const { client } = useSdk();
-  const [items, setItems] = useState<Highlight[] | null>(null);
+  const [items, setItems] = useState<Note[] | null>(null);
+  const [highlightsById, setHighlightsById] = useState<Map<string, Highlight>>(new Map());
   const [error, setError] = useState<string | null>(null);
 
   const sectionInfoByKey = useMemo(() => {
@@ -69,11 +70,13 @@ export function NotesSheet({
     if (!visible) return;
     let cancelled = false;
     setError(null);
-    client.highlight
-      .list({ documentId })
-      .then((res) => {
+    Promise.all([client.note.list({ documentId }), client.highlight.list({ documentId })])
+      .then(([notes, highlights]) => {
         if (cancelled) return;
-        setItems(res.data?.items ?? []);
+        setItems(notes.data?.items ?? []);
+        const map = new Map<string, Highlight>();
+        for (const h of highlights.data?.items ?? []) map.set(h.id, h);
+        setHighlightsById(map);
       })
       .catch((err: unknown) => {
         if (!cancelled) {
@@ -115,16 +118,18 @@ export function NotesSheet({
         {items === null && <Text style={[styles.empty, { color: muted }]}>Loading…</Text>}
         {items && items.length === 0 && !error && (
           <Text style={[styles.empty, { color: muted }]}>
-            Highlight a passage to start your notebook.
+            Highlight a passage or jot a thought to start your notebook.
           </Text>
         )}
-        {items?.map((h) => {
-          const info = sectionInfoByKey.get(h.sectionKey);
-          const positionLabel = labelFor(info);
+        {items?.map((n) => {
+          const highlight = n.highlightId ? highlightsById.get(n.highlightId) : undefined;
+          const sectionKey = n.sectionKey ?? highlight?.sectionKey ?? null;
+          const info = sectionKey ? sectionInfoByKey.get(sectionKey) : undefined;
+          const positionLabel = labelFor(info, n);
           const isCurrent = info?.order === currentOrder;
           return (
             <Pressable
-              key={h.id}
+              key={n.id}
               onPress={() => {
                 if (info) onJumpToOrder?.(info.order);
               }}
@@ -138,22 +143,29 @@ export function NotesSheet({
               <View style={styles.cardMeta}>
                 <View
                   accessibilityRole="image"
-                  style={[styles.colorDot, { backgroundColor: color.highlight[h.color] }]}
+                  style={[
+                    styles.colorDot,
+                    {
+                      backgroundColor: highlight
+                        ? color.highlight[highlight.color]
+                        : color.paper[300],
+                    },
+                  ]}
                 />
                 <Text style={[styles.metaText, { color: muted }]} numberOfLines={1}>
-                  {`${positionLabel} · ${formatRelativeTime(h.createdAt)}`}
+                  {`${positionLabel} · ${formatRelativeTime(n.createdAt)}`}
                 </Text>
               </View>
-              <Text style={[styles.snippet, { color: palette.text }]} numberOfLines={3}>
-                {`“${h.textSnippet}”`}
-              </Text>
-              {h.note && (
-                <View style={[styles.noteBox, { backgroundColor: noteBg }]}>
-                  <Text style={[styles.noteText, { color: palette.text }]} numberOfLines={4}>
-                    {h.note}
-                  </Text>
-                </View>
+              {highlight && (
+                <Text style={[styles.snippet, { color: palette.text }]} numberOfLines={3}>
+                  {`“${highlight.textSnippet}”`}
+                </Text>
               )}
+              <View style={[styles.noteBox, { backgroundColor: noteBg }]}>
+                <Text style={[styles.noteText, { color: palette.text }]} numberOfLines={4}>
+                  {n.body}
+                </Text>
+              </View>
             </Pressable>
           );
         })}
@@ -162,9 +174,11 @@ export function NotesSheet({
   );
 }
 
-const labelFor = (info: { order: number; title: string } | undefined): string => {
-  if (!info) return "Section";
-  return `Ch. ${info.order + 1} · ${info.title}`;
+const labelFor = (info: { order: number; title: string } | undefined, note: Note): string => {
+  if (info) return `Ch. ${info.order + 1} · ${info.title}`;
+  if (note.highlightId) return "Highlight";
+  if (note.sectionKey) return "Section";
+  return "Document";
 };
 
 function mutedFor(theme: Theme): string {

@@ -50,6 +50,16 @@ import {
   type HighlightPosition,
   type HighlightUpdateErrors,
   type HighlightUpdateResponses,
+  type NoteCreateErrors,
+  type NoteCreateResponses,
+  type NoteDeleteErrors,
+  type NoteDeleteResponses,
+  type NoteGetErrors,
+  type NoteGetResponses,
+  type NoteListErrors,
+  type NoteListResponses,
+  type NoteUpdateErrors,
+  type NoteUpdateResponses,
   type PostTestResetErrors,
   type PostTestResetResponses,
   type PostTestSignInErrors,
@@ -593,9 +603,9 @@ export class Highlight extends HeyApiClient {
   }
 
   /**
-   * Create a highlight or note on a document
+   * Create a highlight on a document
    *
-   * Creates a colour highlight (and optional note) anchored to a document section via `sectionKey` (from the manifest). `position.offsetStart` / `offsetEnd` are character positions into the section's canonical `.txt` payload.
+   * Creates a colour highlight anchored to a document section via `sectionKey` (from the manifest). `position.offsetStart` / `offsetEnd` are character positions into the section's canonical `.txt` payload. To attach a free-form note to the highlight, follow up with `note.create` using the returned `id` as `highlightId`.
    */
   public create<ThrowOnError extends boolean = false>(
     parameters: {
@@ -604,7 +614,6 @@ export class Highlight extends HeyApiClient {
       position: HighlightPosition;
       textSnippet: string;
       color: "pink" | "yellow" | "green" | "blue" | "purple";
-      note?: string;
     },
     options?: Options<never, ThrowOnError>,
   ) {
@@ -618,7 +627,6 @@ export class Highlight extends HeyApiClient {
             { in: "body", key: "position" },
             { in: "body", key: "textSnippet" },
             { in: "body", key: "color" },
-            { in: "body", key: "note" },
           ],
         },
       ],
@@ -661,13 +669,12 @@ export class Highlight extends HeyApiClient {
   }
 
   /**
-   * Update a highlight's color or note
+   * Update a highlight's color
    */
   public update<ThrowOnError extends boolean = false>(
     parameters: {
       id: string;
-      color?: "pink" | "yellow" | "green" | "blue" | "purple";
-      note?: string | null;
+      color: "pink" | "yellow" | "green" | "blue" | "purple";
     },
     options?: Options<never, ThrowOnError>,
   ) {
@@ -678,7 +685,6 @@ export class Highlight extends HeyApiClient {
           args: [
             { in: "path", key: "id" },
             { in: "body", key: "color" },
-            { in: "body", key: "note" },
           ],
         },
       ],
@@ -689,6 +695,160 @@ export class Highlight extends HeyApiClient {
       ThrowOnError
     >({
       url: "/highlights/{id}",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    });
+  }
+}
+
+export class Note extends HeyApiClient {
+  /**
+   * List notes for a document
+   *
+   * Returns notes owned by the caller for the given `documentId`, ordered by creation time. Optional filters: `sectionKey` scopes to a section; `highlightId` scopes to comments on a single highlight; `unanchored=true` returns only document-level notes (no section, no highlight).
+   */
+  public list<ThrowOnError extends boolean = false>(
+    parameters: {
+      documentId: string;
+      sectionKey?: string;
+      highlightId?: string;
+      unanchored?: boolean;
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "query", key: "documentId" },
+            { in: "query", key: "sectionKey" },
+            { in: "query", key: "highlightId" },
+            { in: "query", key: "unanchored" },
+          ],
+        },
+      ],
+    );
+    return (options?.client ?? this.client).get<NoteListResponses, NoteListErrors, ThrowOnError>({
+      url: "/notes",
+      ...options,
+      ...params,
+    });
+  }
+
+  /**
+   * Create a note on a document
+   *
+   * Creates a free-form note. With neither `sectionKey` nor `highlightId` set, the note is document-level. With `sectionKey` set, it pins to a section. With `highlightId` set, it comments on a highlight (and the highlight's section is mirrored onto the note automatically).
+   */
+  public create<ThrowOnError extends boolean = false>(
+    parameters: {
+      documentId: string;
+      sectionKey?: string;
+      highlightId?: string;
+      body: string;
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "body", key: "documentId" },
+            { in: "body", key: "sectionKey" },
+            { in: "body", key: "highlightId" },
+            { in: "body", key: "body" },
+          ],
+        },
+      ],
+    );
+    return (options?.client ?? this.client).post<
+      NoteCreateResponses,
+      NoteCreateErrors,
+      ThrowOnError
+    >({
+      url: "/notes",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    });
+  }
+
+  /**
+   * Delete a note
+   */
+  public delete<ThrowOnError extends boolean = false>(
+    parameters: {
+      id: string;
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams([parameters], [{ args: [{ in: "path", key: "id" }] }]);
+    return (options?.client ?? this.client).delete<
+      NoteDeleteResponses,
+      NoteDeleteErrors,
+      ThrowOnError
+    >({
+      url: "/notes/{id}",
+      ...options,
+      ...params,
+    });
+  }
+
+  /**
+   * Get a single note
+   */
+  public get<ThrowOnError extends boolean = false>(
+    parameters: {
+      id: string;
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams([parameters], [{ args: [{ in: "path", key: "id" }] }]);
+    return (options?.client ?? this.client).get<NoteGetResponses, NoteGetErrors, ThrowOnError>({
+      url: "/notes/{id}",
+      ...options,
+      ...params,
+    });
+  }
+
+  /**
+   * Update a note's body
+   */
+  public update<ThrowOnError extends boolean = false>(
+    parameters: {
+      id: string;
+      body: string;
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "id" },
+            { in: "body", key: "body" },
+          ],
+        },
+      ],
+    );
+    return (options?.client ?? this.client).patch<
+      NoteUpdateResponses,
+      NoteUpdateErrors,
+      ThrowOnError
+    >({
+      url: "/notes/{id}",
       ...options,
       ...params,
       headers: {
@@ -1179,6 +1339,11 @@ export class ApiClient extends HeyApiClient {
   private _highlight?: Highlight;
   get highlight(): Highlight {
     return (this._highlight ??= new Highlight({ client: this.client }));
+  }
+
+  private _note?: Note;
+  get note(): Note {
+    return (this._note ??= new Note({ client: this.client }));
   }
 
   private _shelf?: Shelf;

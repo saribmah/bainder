@@ -29,6 +29,7 @@ import type {
   DocumentSectionSummary,
   EpubTocItem,
   Highlight,
+  Note,
 } from "@bainder/sdk";
 import { useSdk } from "../../sdk";
 import { HighlightLayer } from "./HighlightLayer";
@@ -861,7 +862,8 @@ function NotesRail({
   onJumpToOrder: (order: number) => void;
 }) {
   const { client } = useSdk();
-  const [items, setItems] = useState<ReadonlyArray<Highlight> | null>(null);
+  const [items, setItems] = useState<ReadonlyArray<Note> | null>(null);
+  const [highlightsById, setHighlightsById] = useState<Map<string, Highlight>>(new Map());
   const [error, setError] = useState<string | null>(null);
 
   const sectionInfoByKey = useMemo(() => {
@@ -875,10 +877,13 @@ function NotesRail({
   useEffect(() => {
     let cancelled = false;
     setError(null);
-    client.highlight
-      .list({ documentId })
-      .then((res) => {
-        if (!cancelled) setItems(res.data?.items ?? []);
+    Promise.all([client.note.list({ documentId }), client.highlight.list({ documentId })])
+      .then(([notes, highlights]) => {
+        if (cancelled) return;
+        setItems(notes.data?.items ?? []);
+        const map = new Map<string, Highlight>();
+        for (const h of highlights.data?.items ?? []) map.set(h.id, h);
+        setHighlightsById(map);
       })
       .catch((err: unknown) => {
         if (!cancelled) {
@@ -905,16 +910,18 @@ function NotesRail({
         {items === null && <RailSkeleton label="Notes" />}
         {items?.length === 0 && !error && (
           <p className="t-body-s" style={{ color: "var(--bd-fg-muted)" }}>
-            Highlight a passage to start your notebook.
+            Highlight a passage or jot a thought to start your notebook.
           </p>
         )}
-        {items?.map((h) => {
-          const info = sectionInfoByKey.get(h.sectionKey);
+        {items?.map((n) => {
+          const highlight = n.highlightId ? highlightsById.get(n.highlightId) : undefined;
+          const sectionKey = n.sectionKey ?? highlight?.sectionKey ?? null;
+          const info = sectionKey ? sectionInfoByKey.get(sectionKey) : undefined;
           const isCurrent = info?.order === currentOrder;
           const label = labelFor(info);
           return (
             <button
-              key={h.id}
+              key={n.id}
               type="button"
               className="mb-3 block w-full rounded-xl p-3 text-left"
               style={{
@@ -929,23 +936,26 @@ function NotesRail({
                 <span
                   aria-hidden
                   className="h-2 w-2 shrink-0 rounded-full"
-                  style={{ background: `var(--hl-${h.color})` }}
+                  style={{
+                    background: highlight ? `var(--hl-${highlight.color})` : "currentColor",
+                    opacity: highlight ? 1 : 0.4,
+                  }}
                 />
                 <span className="t-body-s truncate" style={{ color: "var(--bd-fg-muted)" }}>
-                  {label} · {formatRelativeTime(h.createdAt)}
+                  {label} · {formatRelativeTime(n.createdAt)}
                 </span>
               </div>
-              <p
-                className="mt-2 line-clamp-3 font-reading text-[13px] leading-snug italic"
-                style={{ color: "var(--bd-fg-subtle)" }}
-              >
-                "{h.textSnippet}"
-              </p>
-              {h.note && (
-                <p className="t-body-s mt-2 line-clamp-3" style={{ color: "var(--bd-fg-subtle)" }}>
-                  {h.note}
+              {highlight && (
+                <p
+                  className="mt-2 line-clamp-3 font-reading text-[13px] leading-snug italic"
+                  style={{ color: "var(--bd-fg-subtle)" }}
+                >
+                  "{highlight.textSnippet}"
                 </p>
               )}
+              <p className="t-body-s mt-2 line-clamp-3" style={{ color: "var(--bd-fg-subtle)" }}>
+                {n.body}
+              </p>
             </button>
           );
         })}

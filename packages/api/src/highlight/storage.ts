@@ -13,7 +13,6 @@ export namespace HighlightStorage {
     position: highlight.position,
     textSnippet: highlight.textSnippet,
     color: highlight.color,
-    note: highlight.note,
     createdAt: highlight.createdAt,
     updatedAt: highlight.updatedAt,
   } as const;
@@ -25,7 +24,6 @@ export namespace HighlightStorage {
     position: Highlight.Position;
     textSnippet: string;
     color: string;
-    note: string | null;
     createdAt: Date;
     updatedAt: Date;
   };
@@ -37,7 +35,6 @@ export namespace HighlightStorage {
     position: row.position,
     textSnippet: row.textSnippet,
     color: parseColor(row.color),
-    note: row.note,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   });
@@ -63,7 +60,6 @@ export namespace HighlightStorage {
     position: Highlight.Position;
     textSnippet: string;
     color: Highlight.Color;
-    note: string | null;
   };
 
   export const create = async (input: CreateInput): Promise<Highlight.Entity> => {
@@ -76,7 +72,6 @@ export namespace HighlightStorage {
       position: input.position,
       textSnippet: input.textSnippet,
       color: input.color,
-      note: input.note,
       createdAt: now,
       updatedAt: now,
     };
@@ -102,10 +97,18 @@ export namespace HighlightStorage {
     return rows.map(toEntity);
   };
 
+  export const get = async (id: string, userId: string): Promise<Highlight.Entity | null> => {
+    const rows = await Instance.db
+      .select(entitySelect)
+      .from(highlight)
+      .where(and(eq(highlight.id, id), eq(highlight.userId, userId)))
+      .limit(1);
+    const row = rows[0];
+    return row ? toEntity(row) : null;
+  };
+
   export type UpdatePatch = {
     color?: Highlight.Color;
-    // undefined: leave alone. null: clear. string: set.
-    note?: string | null;
   };
 
   export const update = async (
@@ -115,7 +118,6 @@ export namespace HighlightStorage {
   ): Promise<Highlight.Entity | null> => {
     const set: Record<string, unknown> = { updatedAt: new Date() };
     if (patch.color !== undefined) set["color"] = patch.color;
-    if (patch.note !== undefined) set["note"] = patch.note;
     const rows = await Instance.db
       .update(highlight)
       .set(set)
