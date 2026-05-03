@@ -1,15 +1,16 @@
 import { Pressable, Text, View } from "react-native";
+import { useRouter } from "expo-router";
 import { Icons, color } from "@bainder/ui";
-import { signOutProfile } from "../../profile";
 import { dashboardStyles as styles } from "../dashboard.styles";
 
 export function BottomTabs({ bottom, onUpload }: { bottom: number; onUpload: () => void }) {
+  const router = useRouter();
   const tabs = [
     { icon: Icons.Home, name: "Home", active: true },
-    { icon: Icons.Library, name: "Library" },
+    { icon: Icons.Library, name: "Library", onPress: () => router.push("/library") },
     { icon: Icons.Plus, name: "Add", primary: true, onPress: onUpload },
-    { icon: Icons.Sparkles, name: "Ask" },
-    { icon: Icons.User, name: "You", onPress: signOutProfile },
+    { icon: Icons.Highlight, name: "Highlights", onPress: () => router.push("/highlights") },
+    { icon: Icons.User, name: "You", onPress: () => router.push("/settings") },
   ];
 
   return (

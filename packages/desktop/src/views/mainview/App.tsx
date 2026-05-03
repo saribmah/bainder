@@ -2,6 +2,7 @@ import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
 import { RequireAuth, SignIn, SignUp } from "./features/auth";
 import { Dashboard } from "./features/dashboard";
 import { Landing } from "./features/landing";
+import { Highlights, Library, LibraryDetail, Settings } from "./features/library";
 import { Reader } from "./features/reader";
 
 // HashRouter, not BrowserRouter — the prod bundle is loaded from
@@ -15,7 +16,10 @@ export function App() {
         <Route path="/signup" element={<SignUp />} />
         <Route element={<RequireAuth />}>
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/library" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/library" element={<Library />} />
+          <Route path="/library/:id" element={<LibraryDetail />} />
+          <Route path="/highlights" element={<Highlights />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="/read/:id" element={<Reader />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
