@@ -714,6 +714,75 @@
           "updatedAt"
         ]
       },
+      "ProfileTheme": {
+        "type": "string",
+        "enum": [
+          "light",
+          "sepia",
+          "night"
+        ]
+      },
+      "ProfileHighlightColor": {
+        "type": "string",
+        "enum": [
+          "pink",
+          "yellow",
+          "green",
+          "blue",
+          "purple"
+        ]
+      },
+      "Profile": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "readingTheme": {
+            "$ref": "#/components/schemas/ProfileTheme"
+          },
+          "readingFont": {
+            "type": "string"
+          },
+          "defaultHighlightColor": {
+            "$ref": "#/components/schemas/ProfileHighlightColor"
+          },
+          "aiCitePages": {
+            "type": "boolean"
+          },
+          "aiSuggestFollowups": {
+            "type": "boolean"
+          },
+          "aiPersonalizeFromHighlights": {
+            "type": "boolean"
+          },
+          "notifyDailyNudge": {
+            "type": "boolean"
+          },
+          "notifyWeeklyDigest": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId",
+          "readingTheme",
+          "readingFont",
+          "defaultHighlightColor",
+          "aiCitePages",
+          "aiSuggestFollowups",
+          "aiPersonalizeFromHighlights",
+          "notifyDailyNudge",
+          "notifyWeeklyDigest",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
       "TestModeStatusResponse": {
         "type": "object",
         "properties": {
@@ -2125,6 +2194,87 @@
                         "type": "null"
                       }
                     ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/profile/me": {
+      "get": {
+        "operationId": "profile.me",
+        "summary": "Get the authenticated user's profile preferences",
+        "responses": {
+          "200": {
+            "description": "Current profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profile"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "profile.update",
+        "summary": "Update the authenticated user's profile preferences",
+        "responses": {
+          "200": {
+            "description": "Updated profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profile"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "404": {
+            "description": "Profile row missing"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "readingTheme": {
+                    "$ref": "#/components/schemas/ProfileTheme"
+                  },
+                  "readingFont": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "defaultHighlightColor": {
+                    "$ref": "#/components/schemas/ProfileHighlightColor"
+                  },
+                  "aiCitePages": {
+                    "type": "boolean"
+                  },
+                  "aiSuggestFollowups": {
+                    "type": "boolean"
+                  },
+                  "aiPersonalizeFromHighlights": {
+                    "type": "boolean"
+                  },
+                  "notifyDailyNudge": {
+                    "type": "boolean"
+                  },
+                  "notifyWeeklyDigest": {
+                    "type": "boolean"
                   }
                 }
               }
