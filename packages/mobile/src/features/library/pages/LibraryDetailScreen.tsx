@@ -6,9 +6,12 @@ import { Button, Chip, Icons, Skeleton, color } from "@bainder/ui";
 import type { Document, DocumentManifest, Highlight } from "@bainder/sdk";
 import { useSdk } from "../../../sdk/sdk.provider";
 import { KIND_LABEL } from "../constants";
+import { DocumentShelfChips } from "../components/DocumentShelfChips";
 import { LibraryBottomTabs } from "../components/LibraryBottomTabs";
 import { LibraryCover } from "../components/LibraryCover";
+import { CreateShelfSheet } from "../components/ShelfSheets";
 import { useLibraryDocuments } from "../hooks/useLibraryDocuments";
+import { useLibraryShelves } from "../hooks/useLibraryShelves";
 import { libraryStyles as styles } from "../library.styles";
 import {
   estimateMinutes,
@@ -28,6 +31,15 @@ export function LibraryDetailScreen() {
   const [manifest, setManifest] = useState<DocumentManifest | null>(null);
   const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [createShelfOpen, setCreateShelfOpen] = useState(false);
+  const {
+    customShelves,
+    memberships,
+    workingShelfId,
+    createShelf,
+    addDocumentToShelf,
+    toggleDocumentShelf,
+  } = useLibraryShelves(doc ? [doc] : null);
 
   useEffect(() => {
     if (!id) return;
@@ -118,6 +130,19 @@ export function LibraryDetailScreen() {
               </Pressable>
             </View>
 
+            <View style={styles.detailShelves}>
+              <Text style={styles.eyebrow}>On shelves · {memberships[doc.id]?.length ?? 0}</Text>
+              <DocumentShelfChips
+                shelves={customShelves}
+                selectedShelves={memberships[doc.id] ?? []}
+                workingShelfId={workingShelfId}
+                onToggle={(shelf, selected) => {
+                  void toggleDocumentShelf(shelf, doc.id, selected);
+                }}
+                onCreate={() => setCreateShelfOpen(true)}
+              />
+            </View>
+
             <View style={styles.tabStrip}>
               {[
                 ["Contents", manifest?.sections.length ?? 0],
@@ -160,6 +185,18 @@ export function LibraryDetailScreen() {
         )}
       </ScrollView>
       <LibraryBottomTabs active="library" bottom={insets.bottom} onUpload={uploadDocument} />
+      <CreateShelfSheet
+        visible={createShelfOpen}
+        onClose={() => setCreateShelfOpen(false)}
+        onCreate={async (draft) => {
+          if (!doc) return;
+          const shelf = await createShelf(draft);
+          if (shelf) {
+            await addDocumentToShelf(shelf, doc.id);
+            setCreateShelfOpen(false);
+          }
+        }}
+      />
     </View>
   );
 }

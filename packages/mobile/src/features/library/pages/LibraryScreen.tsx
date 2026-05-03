@@ -8,9 +8,13 @@ import type { Document } from "@bainder/sdk";
 import { FILTER_LABEL, type LibraryFilter } from "../constants";
 import { LibraryBottomTabs } from "../components/LibraryBottomTabs";
 import { LibraryCover } from "../components/LibraryCover";
+import { ShelfCard } from "../components/ShelfArtwork";
+import { AddToShelfSheet, CreateShelfSheet } from "../components/ShelfSheets";
 import { useLibraryDocuments } from "../hooks/useLibraryDocuments";
+import { useLibraryShelves } from "../hooks/useLibraryShelves";
 import { libraryStyles as styles } from "../library.styles";
 import { progressPercent, sourceLabel, statusLabel } from "../utils/document";
+import { CUSTOM_SHELF_LIMIT } from "../utils/shelf";
 
 const filters: LibraryFilter[] = ["all", "books", "pdfs", "articles"];
 
@@ -19,6 +23,9 @@ export function LibraryScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const [searchOpen, setSearchOpen] = useState(false);
+  const [createShelfOpen, setCreateShelfOpen] = useState(false);
+  const [createShelfDocument, setCreateShelfDocument] = useState<Document | null>(null);
+  const [sheetDocument, setSheetDocument] = useState<Document | null>(null);
   const itemWidth = Math.floor((width - 48 - 28) / 3);
   const {
     documents,
@@ -33,8 +40,24 @@ export function LibraryScreen() {
     setFilter,
     uploadDocument,
   } = useLibraryDocuments();
+  const {
+    shelves,
+    customShelves,
+    memberships,
+    error: shelfError,
+    toast: shelfToast,
+    workingShelfId,
+    createShelf,
+    addDocumentToShelf,
+    toggleDocumentShelf,
+  } = useLibraryShelves(documents);
 
   const visible = filteredDocuments ?? [];
+  const openCreateShelf = (doc: Document | null = null) => {
+    setCreateShelfDocument(doc);
+    setCreateShelfOpen(true);
+  };
+
   return (
     <View style={styles.root}>
       <FlatList
@@ -70,7 +93,9 @@ export function LibraryScreen() {
             </View>
 
             <View style={styles.titleBlock}>
-              <Text style={styles.eyebrow}>{counts.all} items</Text>
+              <Text style={styles.eyebrow}>
+                {counts.all} items · {shelves?.length ?? customShelves.length} shelves
+              </Text>
               <Text style={styles.title}>Library</Text>
             </View>
 
@@ -85,6 +110,42 @@ export function LibraryScreen() {
                 />
               </View>
             )}
+
+            <View style={styles.shelvesBlock}>
+              <View style={styles.shelvesHeader}>
+                <Text style={styles.eyebrow}>Your shelves</Text>
+                <Pressable accessibilityRole="button" onPress={() => openCreateShelf()}>
+                  <Text style={styles.shelfNewText}>+ New</Text>
+                </Pressable>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.shelvesRow}
+              >
+                {(shelves ?? []).slice(0, CUSTOM_SHELF_LIMIT + 2).map((shelf, index) => (
+                  <ShelfCard
+                    key={shelf.id}
+                    shelf={shelf}
+                    compact
+                    active={index === 0}
+                    onPress={() =>
+                      router.push({ pathname: "/library/shelves/[id]", params: { id: shelf.id } })
+                    }
+                  />
+                ))}
+                {shelves !== null && (
+                  <Pressable
+                    accessibilityRole="button"
+                    style={styles.newShelfCard}
+                    onPress={() => openCreateShelf()}
+                  >
+                    <Icons.Plus size={16} color={color.paper[500]} />
+                    <Text style={styles.newShelfText}>New shelf</Text>
+                  </Pressable>
+                )}
+              </ScrollView>
+            </View>
 
             <ScrollView
               horizontal
@@ -103,6 +164,7 @@ export function LibraryScreen() {
             </ScrollView>
 
             {error && <Text style={styles.error}>{error}</Text>}
+            {shelfError && <Text style={styles.error}>{shelfError}</Text>}
             {documents !== null && visible.length === 0 && <EmptyLibrary query={query} />}
           </>
         }
@@ -110,9 +172,11 @@ export function LibraryScreen() {
           <LibraryGridItem
             doc={item}
             width={itemWidth}
+            shelfCount={memberships[item.id]?.length ?? 0}
             onPress={() => {
               if (item.status === "processed") router.push(`/library/${item.id}`);
             }}
+            onLongPress={() => setSheetDocument(item)}
           />
         )}
       />
@@ -124,6 +188,47 @@ export function LibraryScreen() {
           <Toast iconStart={<Icons.Check size={18} color={color.status.success} />}>{toast}</Toast>
         </View>
       )}
+      {shelfToast && (
+        <View style={{ position: "absolute", left: 24, right: 24, bottom: insets.bottom + 78 }}>
+          <Toast iconStart={<Icons.Check size={18} color={color.status.success} />}>
+            {shelfToast}
+          </Toast>
+        </View>
+      )}
+      <AddToShelfSheet
+        visible={Boolean(sheetDocument)}
+        doc={sheetDocument}
+        shelves={customShelves}
+        selectedShelves={sheetDocument ? (memberships[sheetDocument.id] ?? []) : []}
+        workingShelfId={workingShelfId}
+        onClose={() => setSheetDocument(null)}
+        onToggle={(shelf, selected) => {
+          if (!sheetDocument) return;
+          void toggleDocumentShelf(shelf, sheetDocument.id, selected);
+        }}
+        onCreate={() => {
+          setCreateShelfDocument(sheetDocument);
+          setSheetDocument(null);
+          setCreateShelfOpen(true);
+        }}
+      />
+      <CreateShelfSheet
+        visible={createShelfOpen}
+        onClose={() => {
+          setCreateShelfOpen(false);
+          setCreateShelfDocument(null);
+        }}
+        onCreate={async (draft) => {
+          const shelf = await createShelf(draft);
+          if (shelf && createShelfDocument) {
+            await addDocumentToShelf(shelf, createShelfDocument.id);
+          }
+          if (shelf) {
+            setCreateShelfOpen(false);
+            setCreateShelfDocument(null);
+          }
+        }}
+      />
     </View>
   );
 }
@@ -131,19 +236,35 @@ export function LibraryScreen() {
 function LibraryGridItem({
   doc,
   width,
+  shelfCount,
   onPress,
+  onLongPress,
 }: {
   doc: Document;
   width: number;
+  shelfCount: number;
   onPress: () => void;
+  onLongPress: () => void;
 }) {
   const pct = progressPercent(doc);
   const active = doc.status === "processed" && pct > 0 && pct < 100;
 
   return (
     <View style={[styles.gridItem, { width }]}>
-      <Pressable accessibilityRole="button" onPress={onPress} disabled={doc.status !== "processed"}>
+      <Pressable
+        accessibilityRole="button"
+        onPress={onPress}
+        onLongPress={onLongPress}
+        disabled={doc.status !== "processed"}
+        style={styles.coverPress}
+      >
         <LibraryCover doc={doc} width={width} height={Math.round(width / 0.66)} />
+        {shelfCount > 0 && (
+          <View style={styles.shelfBadge}>
+            <Icons.Bookmark size={8} color={color.paper[50]} />
+            <Text style={styles.shelfBadgeText}>{shelfCount}</Text>
+          </View>
+        )}
       </Pressable>
       <Text style={styles.itemTitle} numberOfLines={2}>
         {doc.title}

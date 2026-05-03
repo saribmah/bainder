@@ -4,9 +4,12 @@ import { Button, Chip, Icons, Skeleton } from "@bainder/ui";
 import type { Document, DocumentManifest, Highlight } from "@bainder/sdk";
 import { useProfileName } from "../../profile";
 import { KIND_LABEL, HIGHLIGHT_COLOR } from "../constants";
+import { DocumentShelfChips } from "../components/DocumentShelfChips";
 import { LibraryCover } from "../components/LibraryCover";
 import { LibraryRail } from "../components/LibraryRail";
+import { CreateShelfDialog } from "../components/ShelfDialogs";
 import { useLibraryDocuments } from "../hooks/useLibraryDocuments";
+import { useLibraryShelves } from "../hooks/useLibraryShelves";
 import { useSdk } from "../../../sdk";
 import {
   estimateMinutes,
@@ -22,10 +25,21 @@ export function LibraryDetail() {
   const reader = useProfileName();
   const { client } = useSdk();
   const { documents, counts, uploading, uploadDocument } = useLibraryDocuments();
+  const {
+    shelves,
+    customShelves,
+    memberships,
+    workingShelfId,
+    createShelf,
+    addDocumentToShelf,
+    toggleDocumentShelf,
+    refreshDocumentShelves,
+  } = useLibraryShelves(documents);
   const [doc, setDoc] = useState<Document | null>(null);
   const [manifest, setManifest] = useState<DocumentManifest | null>(null);
   const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [createShelfOpen, setCreateShelfOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -82,6 +96,8 @@ export function LibraryDetail() {
         reader={reader}
         uploading={uploading}
         onUpload={uploadDocument}
+        shelves={shelves}
+        onCreateShelf={() => setCreateShelfOpen(true)}
       />
 
       {!doc ? (
@@ -172,10 +188,34 @@ export function LibraryDetail() {
 
             <div className="grid gap-8 pt-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(300px,0.75fr)]">
               <Contents manifest={manifest} currentOrder={currentOrder} />
-              <RecentNotes notes={notes} />
+              <div className="flex flex-col gap-6">
+                <DocumentShelfChips
+                  shelves={customShelves}
+                  selectedShelves={memberships[doc.id] ?? []}
+                  workingShelfId={workingShelfId}
+                  onToggle={(shelf, selected) => {
+                    void toggleDocumentShelf(shelf, doc.id, selected);
+                  }}
+                  onCreate={() => setCreateShelfOpen(true)}
+                />
+                <RecentNotes notes={notes} />
+              </div>
             </div>
           </section>
         </section>
+      )}
+      {createShelfOpen && doc && (
+        <CreateShelfDialog
+          onCancel={() => setCreateShelfOpen(false)}
+          onCreate={async (draft) => {
+            const shelf = await createShelf(draft);
+            if (shelf) {
+              await addDocumentToShelf(shelf, doc.id);
+              await refreshDocumentShelves(doc.id);
+              setCreateShelfOpen(false);
+            }
+          }}
+        />
       )}
     </main>
   );
