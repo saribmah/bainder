@@ -1,12 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Button, Chip, Icons, Skeleton } from "@bainder/ui";
+import { Button, Chip, ChipButton, Icons, Skeleton } from "@bainder/ui";
 import type { Document, DocumentManifest, Highlight, Note } from "@bainder/sdk";
 import { useProfileName } from "../../profile";
 import { KIND_LABEL, HIGHLIGHT_COLOR } from "../constants";
 import { DocumentShelfChips } from "../components/DocumentShelfChips";
 import { LibraryCover } from "../components/LibraryCover";
 import { AppSidebar } from "../components/AppSidebar";
+import {
+  NoteCard,
+  NoteComposer,
+  noteDateLabel,
+  noteLocationLabel,
+  noteMatchesFilter,
+  type NoteFilter,
+} from "../components/NoteCards";
+import { NoteDialog, type NoteDialogDraft } from "../components/NoteDialog";
 import { CreateShelfDialog } from "../components/ShelfDialogs";
 import { useLibraryDocuments } from "../hooks/useLibraryDocuments";
 import { useLibraryShelves } from "../hooks/useLibraryShelves";
@@ -18,6 +27,8 @@ import {
   sectionOrderFromKey,
   sourceLabel,
 } from "../utils/document";
+
+type DetailTab = "contents" | "about" | "notes" | "highlights";
 
 export function LibraryDetail() {
   const { id } = useParams<{ id: string }>();
@@ -41,6 +52,11 @@ export function LibraryDetail() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [createShelfOpen, setCreateShelfOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<DetailTab>("contents");
+  const [noteDraft, setNoteDraft] = useState("");
+  const [noteFilter, setNoteFilter] = useState<NoteFilter>("all");
+  const [editingNote, setEditingNote] = useState<Note | null>(null);
+  const [savingNote, setSavingNote] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -77,7 +93,60 @@ export function LibraryDetail() {
     for (const h of highlights) map.set(h.id, h);
     return map;
   }, [highlights]);
+  const notesWithHighlights = useMemo(
+    () =>
+      notes.map((note) => ({
+        ...note,
+        highlight: note.highlightId ? highlightsById.get(note.highlightId) : undefined,
+      })),
+    [highlightsById, notes],
+  );
+  const filteredNotes = useMemo(
+    () => notesWithHighlights.filter((note) => noteMatchesFilter(note, noteFilter)),
+    [noteFilter, notesWithHighlights],
+  );
+  const noteCounts = useMemo(
+    () => ({
+      all: notes.length,
+      attached: notes.filter((note) => note.highlightId).length,
+      standalone: notes.filter((note) => !note.highlightId).length,
+    }),
+    [notes],
+  );
   const pct = doc ? progressPercent(doc) : 0;
+
+  const createStandaloneNote = async () => {
+    if (!doc) return;
+    const trimmed = noteDraft.trim();
+    if (!trimmed) return;
+    setSavingNote(true);
+    try {
+      const res = await client.note.create({ documentId: doc.id, body: trimmed });
+      if (res.data) {
+        setNotes((prev) => [res.data, ...prev]);
+        setNoteDraft("");
+      }
+    } finally {
+      setSavingNote(false);
+    }
+  };
+
+  const updateNote = async (draft: NoteDialogDraft) => {
+    if (!editingNote) return;
+    const res = await client.note.update({ id: editingNote.id, body: draft.body });
+    if (!res.data) throw new Error("Could not update note");
+    setNotes((prev) => prev.map((note) => (note.id === res.data.id ? res.data : note)));
+    setEditingNote(null);
+  };
+
+  const deleteNote = async () => {
+    if (!editingNote) return;
+    const idToDelete = editingNote.id;
+    const res = await client.note.delete({ id: idToDelete });
+    if (res.error) throw new Error("Could not delete note");
+    setNotes((prev) => prev.filter((note) => note.id !== idToDelete));
+    setEditingNote(null);
+  };
 
   if (error) {
     return (
@@ -97,6 +166,7 @@ export function LibraryDetail() {
       <AppSidebar
         totalCount={counts.all}
         highlightsCount={highlights.length}
+        notesCount={notes.length}
         reader={reader}
         uploading={uploading}
         onUpload={uploadDocument}
@@ -163,48 +233,68 @@ export function LibraryDetail() {
               </div>
             </div>
 
-            <div className="mt-8 flex gap-1 border-b border-paper-200 lg:mt-0">
+            <div className="mt-8 flex gap-1 overflow-x-auto border-b border-paper-200 lg:mt-0">
               {[
-                ["Contents", manifest?.sections.length ?? 0],
-                ["About", null],
-                ["Notes", notes.length],
-                ["Highlights", highlights.length],
-              ].map(([name, count], index) => (
+                { id: "contents", name: "Contents", count: manifest?.sections.length ?? 0 },
+                { id: "about", name: "About", count: null },
+                { id: "notes", name: "Notes", count: notes.length },
+                { id: "highlights", name: "Highlights", count: highlights.length },
+              ].map((tab) => (
                 <button
-                  key={name}
+                  key={tab.id}
                   type="button"
+                  onClick={() => setActiveTab(tab.id as DetailTab)}
                   className={[
-                    "flex items-center gap-1.5 border-0 border-b-2 bg-transparent px-4 py-3 font-ui text-sm font-semibold",
-                    index === 0
+                    "flex shrink-0 items-center gap-1.5 border-0 border-b-2 bg-transparent px-4 py-3 font-ui text-sm font-semibold",
+                    activeTab === tab.id
                       ? "border-paper-900 text-paper-900"
                       : "border-transparent text-paper-500",
                   ].join(" ")}
                 >
-                  {name}
-                  {typeof count === "number" && (
+                  {tab.name}
+                  {typeof tab.count === "number" && (
                     <span className="font-mono text-[11px] font-normal text-paper-500">
-                      · {count}
+                      · {tab.count}
                     </span>
                   )}
                 </button>
               ))}
             </div>
 
-            <div className="grid gap-8 pt-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(300px,0.75fr)]">
-              <Contents manifest={manifest} currentOrder={currentOrder} />
-              <div className="flex flex-col gap-6">
-                <DocumentShelfChips
-                  shelves={customShelves}
-                  selectedShelves={memberships[doc.id] ?? []}
-                  workingShelfId={workingShelfId}
-                  onToggle={(shelf, selected) => {
-                    void toggleDocumentShelf(shelf, doc.id, selected);
-                  }}
-                  onCreate={() => setCreateShelfOpen(true)}
-                />
-                <RecentNotes notes={notes} highlightsById={highlightsById} />
+            {activeTab === "notes" ? (
+              <NotesTab
+                notes={filteredNotes}
+                noteFilter={noteFilter}
+                noteCounts={noteCounts}
+                draft={noteDraft}
+                saving={savingNote}
+                onDraftChange={setNoteDraft}
+                onSaveDraft={createStandaloneNote}
+                onFilterChange={setNoteFilter}
+                onEdit={setEditingNote}
+                onOpenReader={() => navigate(`/read/${doc.id}`)}
+              />
+            ) : activeTab === "highlights" ? (
+              <HighlightsTab highlights={highlights} />
+            ) : activeTab === "about" ? (
+              <AboutTab doc={doc} manifest={manifest} />
+            ) : (
+              <div className="grid gap-8 pt-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(300px,0.75fr)]">
+                <Contents manifest={manifest} currentOrder={currentOrder} />
+                <div className="flex flex-col gap-6">
+                  <DocumentShelfChips
+                    shelves={customShelves}
+                    selectedShelves={memberships[doc.id] ?? []}
+                    workingShelfId={workingShelfId}
+                    onToggle={(shelf, selected) => {
+                      void toggleDocumentShelf(shelf, doc.id, selected);
+                    }}
+                    onCreate={() => setCreateShelfOpen(true)}
+                  />
+                  <RecentNotes notes={notes} highlightsById={highlightsById} />
+                </div>
               </div>
-            </div>
+            )}
           </section>
         </section>
       )}
@@ -219,6 +309,17 @@ export function LibraryDetail() {
               setCreateShelfOpen(false);
             }
           }}
+        />
+      )}
+      {editingNote && doc && (
+        <NoteDialog
+          title="Keep the thought clear."
+          documents={[doc]}
+          note={editingNote}
+          initialDocumentId={doc.id}
+          onCancel={() => setEditingNote(null)}
+          onSave={updateNote}
+          onDelete={deleteNote}
         />
       )}
     </main>
@@ -352,6 +453,120 @@ function RecentNotes({
         })
       )}
     </aside>
+  );
+}
+
+function NotesTab({
+  notes,
+  noteFilter,
+  noteCounts,
+  draft,
+  saving,
+  onDraftChange,
+  onSaveDraft,
+  onFilterChange,
+  onEdit,
+  onOpenReader,
+}: {
+  notes: Array<Note & { highlight?: Highlight }>;
+  noteFilter: NoteFilter;
+  noteCounts: Record<NoteFilter, number>;
+  draft: string;
+  saving: boolean;
+  onDraftChange: (value: string) => void;
+  onSaveDraft: () => void;
+  onFilterChange: (filter: NoteFilter) => void;
+  onEdit: (note: Note) => void;
+  onOpenReader: () => void;
+}) {
+  return (
+    <section className="pt-5">
+      <NoteComposer
+        value={draft}
+        disabled={saving}
+        onChange={onDraftChange}
+        onSubmit={onSaveDraft}
+      />
+
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        {[
+          ["all", "All"],
+          ["attached", "On highlight"],
+          ["standalone", "Standalone"],
+        ].map(([value, label]) => (
+          <ChipButton
+            key={value}
+            variant={noteFilter === value ? "active" : "outline"}
+            onClick={() => onFilterChange(value as NoteFilter)}
+          >
+            {label} · {noteCounts[value as NoteFilter]}
+          </ChipButton>
+        ))}
+        <div className="min-w-3 flex-1" />
+        <span className="t-body-s text-[11px] text-paper-500">By chapter</span>
+      </div>
+
+      {notes.length === 0 ? (
+        <p className="t-body-m border-t border-paper-200 py-6 text-paper-600">
+          Notes you write while reading will collect here.
+        </p>
+      ) : (
+        notes.map((note) => (
+          <NoteCard
+            key={note.id}
+            note={note}
+            source={noteLocationLabel(note, note.highlight)}
+            location={noteDateLabel(note.createdAt)}
+            onEdit={() => onEdit(note)}
+            onOpen={onOpenReader}
+            onAsk={onOpenReader}
+          />
+        ))
+      )}
+    </section>
+  );
+}
+
+function HighlightsTab({ highlights }: { highlights: Highlight[] }) {
+  return (
+    <section className="pt-5">
+      {highlights.length === 0 ? (
+        <p className="t-body-m border-t border-paper-200 py-6 text-paper-600">
+          Highlights you mark while reading will collect here.
+        </p>
+      ) : (
+        highlights.map((highlight) => (
+          <article key={highlight.id} className="border-b border-paper-200 py-4">
+            <div className="mb-2 flex items-center gap-2">
+              <span
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ background: HIGHLIGHT_COLOR[highlight.color] }}
+              />
+              <span className="t-body-s text-paper-500">{noteDateLabel(highlight.createdAt)}</span>
+            </div>
+            <blockquote
+              className="m-0 border-l-[3px] pl-3 font-reading text-base leading-7 text-paper-900"
+              style={{ borderColor: HIGHLIGHT_COLOR[highlight.color] }}
+            >
+              "{highlight.textSnippet}"
+            </blockquote>
+          </article>
+        ))
+      )}
+    </section>
+  );
+}
+
+function AboutTab({ doc, manifest }: { doc: Document; manifest: DocumentManifest | null }) {
+  return (
+    <section className="max-w-2xl pt-6">
+      <div className="t-label-s text-paper-500">About</div>
+      <h2 className="t-display-xs mt-1 text-paper-900">{doc.title}</h2>
+      <p className="t-body-m mt-3 leading-7 text-paper-700">
+        {sourceLabel(doc, manifest)} ·{" "}
+        {manifest ? formatWordCount(manifest.wordCount) : "Processing metadata"}
+      </p>
+    </section>
   );
 }
 

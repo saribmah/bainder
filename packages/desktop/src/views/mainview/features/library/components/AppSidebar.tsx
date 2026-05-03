@@ -18,6 +18,7 @@ type NavItem = {
 export function AppSidebar({
   totalCount,
   highlightsCount,
+  notesCount,
   conversationsCount = 0,
   reader,
   uploading,
@@ -28,6 +29,7 @@ export function AppSidebar({
 }: {
   totalCount: number;
   highlightsCount: number;
+  notesCount?: number;
   conversationsCount?: number;
   reader: string;
   uploading: boolean;
@@ -45,6 +47,7 @@ export function AppSidebar({
     { icon: Icons.Library, name: "Library", to: "/library", count: totalCount },
     { icon: Icons.Sparkles, name: "Conversations", count: conversationsCount },
     { icon: Icons.Highlight, name: "Highlights", to: "/highlights", count: highlightsCount },
+    { icon: Icons.Note, name: "Notes", to: "/notes", count: notesCount },
   ];
 
   return (

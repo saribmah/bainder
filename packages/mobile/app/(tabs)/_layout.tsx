@@ -18,6 +18,7 @@ export default function TabsLayout() {
         <Tabs.Screen name="dashboard" />
         <Tabs.Screen name="library" />
         <Tabs.Screen name="highlights" />
+        <Tabs.Screen name="notes" />
         <Tabs.Screen name="settings" />
       </Tabs>
 
