@@ -194,6 +194,19 @@ function useReaderToc() {
   return ctx;
 }
 
+type ReaderAskPayload = {
+  quote?: string;
+  prompt?: string;
+};
+
+const ReaderAskContext = createContext<((payload?: ReaderAskPayload) => void) | null>(null);
+
+function useReaderAsk() {
+  const ctx = useContext(ReaderAskContext);
+  if (!ctx) throw new Error("useReaderAsk must be used inside <Reader>");
+  return ctx;
+}
+
 function ReaderState({ children }: { children: ReactNode }) {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-paper-50 px-6 text-paper-900">
@@ -222,6 +235,7 @@ function ReaderShell({
   const [aiOpen, setAiOpen] = useState(false);
   const [askDraft, setAskDraft] = useState("");
   const [lastPrompt, setLastPrompt] = useState("");
+  const [aiQuote, setAiQuote] = useState<string | null>(null);
   const [fontScale, setFontScale] = useState<ReaderFontScale>("standard");
 
   const currentOrder = meta?.chapterOrder ?? Math.max(0, Number(searchParams.get("chapter") ?? 0));
@@ -235,6 +249,7 @@ function ReaderShell({
     (event?: FormEvent<HTMLFormElement>) => {
       event?.preventDefault();
       const trimmed = askDraft.trim();
+      setAiQuote(null);
       setLastPrompt(trimmed || "What's the most important idea in this chapter?");
       setAskDraft("");
       setAiOpen(true);
@@ -242,173 +257,187 @@ function ReaderShell({
     [askDraft],
   );
 
+  const openAsk = useCallback((payload?: ReaderAskPayload) => {
+    setAiQuote(payload?.quote ?? null);
+    setLastPrompt(payload?.prompt ?? "");
+    setAiOpen(true);
+  }, []);
+
   const toggleFontScale = useCallback(() => {
     setFontScale((curr) => (curr === "standard" ? "large" : "standard"));
   }, []);
 
   return (
-    <main
-      className="flex h-dvh min-h-screen flex-col overflow-hidden"
-      style={{ background: "var(--bd-bg)", color: "var(--bd-fg)" }}
-    >
-      <header
-        className="z-10 flex h-16 shrink-0 items-center gap-5 border-b px-4 md:px-7"
-        style={{ background: "var(--bd-bg)", borderColor: "var(--bd-border)" }}
+    <ReaderAskContext.Provider value={openAsk}>
+      <main
+        className="flex h-dvh min-h-screen flex-col overflow-hidden"
+        style={{ background: "var(--bd-bg)", color: "var(--bd-fg)" }}
       >
-        <IconButton aria-label="Close reader" size="sm" onClick={onClose}>
-          <Icons.Close size={16} />
-        </IconButton>
+        <header
+          className="z-10 flex h-16 shrink-0 items-center gap-5 border-b px-4 md:px-7"
+          style={{ background: "var(--bd-bg)", borderColor: "var(--bd-border)" }}
+        >
+          <IconButton aria-label="Close reader" size="sm" onClick={onClose}>
+            <Icons.Close size={16} />
+          </IconButton>
 
-        <div className="hidden sm:block">
-          <Wordmark size="sm" color="var(--bd-fg)" />
-        </div>
-        <span
-          aria-hidden
-          className="hidden h-6 w-px sm:block"
-          style={{ background: "var(--bd-border)" }}
-        />
-
-        <div className="min-w-0 flex-1">
-          <div className="t-label-l truncate">{doc.title}</div>
-          <div className="t-body-s truncate" style={{ color: "var(--bd-fg-muted)" }}>
-            {authorLabel}
+          <div className="hidden sm:block">
+            <Wordmark size="sm" color="var(--bd-fg)" />
           </div>
-        </div>
+          <span
+            aria-hidden
+            className="hidden h-6 w-px sm:block"
+            style={{ background: "var(--bd-border)" }}
+          />
 
-        {progressLabel && (
-          <div
-            className="hidden shrink-0 font-mono text-xs tabular-nums md:block"
-            style={{ color: "var(--bd-fg-muted)" }}
+          <div className="min-w-0 flex-1">
+            <div className="t-label-l truncate">{doc.title}</div>
+            <div className="t-body-s truncate" style={{ color: "var(--bd-fg-muted)" }}>
+              {authorLabel}
+            </div>
+          </div>
+
+          {progressLabel && (
+            <div
+              className="hidden shrink-0 font-mono text-xs tabular-nums md:block"
+              style={{ color: "var(--bd-fg-muted)" }}
+            >
+              {progressLabel}
+            </div>
+          )}
+
+          <div className="hidden items-center gap-1 md:flex">
+            <IconButton
+              aria-label={
+                fontScale === "standard" ? "Use larger reader type" : "Use standard reader type"
+              }
+              size="sm"
+              onClick={toggleFontScale}
+            >
+              <Icons.Type size={16} />
+            </IconButton>
+            <IconButton aria-label={`Theme: ${theme}`} size="sm" onClick={cycleTheme}>
+              {theme === "dark" ? <Icons.Sun size={16} /> : <Icons.Moon size={16} />}
+            </IconButton>
+            <IconButton aria-label="Open notes" size="sm" onClick={() => setNotesOpen(true)}>
+              <Icons.Settings size={16} />
+            </IconButton>
+          </div>
+        </header>
+
+        <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)_240px]">
+          <aside
+            className="hidden min-h-0 overflow-hidden border-r px-6 py-8 lg:block"
+            style={{ borderColor: "var(--bd-border)" }}
           >
-            {progressLabel}
-          </div>
+            {toc ? (
+              <ContentsRail
+                toc={toc.toc}
+                sections={toc.sections}
+                currentOrder={toc.currentOrder}
+                onJump={toc.onJump}
+              />
+            ) : (
+              <RailSkeleton label="Contents" />
+            )}
+          </aside>
+
+          <section
+            data-reader-scroll
+            className="min-h-0 overflow-y-auto px-6 py-8 md:px-10 md:py-14"
+          >
+            <article className="mx-auto max-w-[620px] pb-32 md:pb-12">
+              {withReaderFont(children, fontScale)}
+            </article>
+          </section>
+
+          <aside
+            className="hidden min-h-0 overflow-hidden border-l px-6 py-8 xl:block"
+            style={{ borderColor: "var(--bd-border)" }}
+          >
+            <NotesRail
+              documentId={doc.id}
+              sections={toc?.sections}
+              currentOrder={currentOrder}
+              refreshToken={refresh?.refreshToken ?? 0}
+              onJumpToOrder={(order) => setSearchParams({ chapter: String(order) })}
+            />
+          </aside>
+        </div>
+
+        <AskBainderBar draft={askDraft} onDraftChange={setAskDraft} onSubmit={handleAskSubmit} />
+
+        <div className="fixed bottom-5 left-1/2 z-10 -translate-x-1/2 md:hidden">
+          <FloatingToolbar>
+            {toc && (
+              <FloatingToolbarButton
+                aria-label="Table of contents"
+                onClick={() => setTocOpen(true)}
+              >
+                <Icons.BookOpen size={20} />
+              </FloatingToolbarButton>
+            )}
+            <FloatingToolbarButton aria-label="Ask Bainder" onClick={() => openAsk()}>
+              <Icons.Sparkles size={20} />
+            </FloatingToolbarButton>
+            <FloatingToolbarButton
+              aria-label={
+                fontScale === "standard" ? "Use larger reader type" : "Use standard reader type"
+              }
+              onClick={toggleFontScale}
+            >
+              <Icons.Type size={20} />
+            </FloatingToolbarButton>
+            <FloatingToolbarButton aria-label={`Theme: ${theme}`} onClick={cycleTheme}>
+              {theme === "dark" ? <Icons.Sun size={20} /> : <Icons.Moon size={20} />}
+            </FloatingToolbarButton>
+            <FloatingToolbarButton aria-label="Notes" onClick={() => setNotesOpen(true)}>
+              <Icons.Note size={20} />
+            </FloatingToolbarButton>
+          </FloatingToolbar>
+        </div>
+
+        {toc && tocOpen && (
+          <TocSheet
+            toc={toc.toc}
+            sections={toc.sections}
+            currentOrder={toc.currentOrder}
+            onJump={(order) => {
+              toc.onJump(order);
+              setTocOpen(false);
+            }}
+            onClose={() => setTocOpen(false)}
+          />
         )}
 
-        <div className="hidden items-center gap-1 md:flex">
-          <IconButton
-            aria-label={
-              fontScale === "standard" ? "Use larger reader type" : "Use standard reader type"
-            }
-            size="sm"
-            onClick={toggleFontScale}
-          >
-            <Icons.Type size={16} />
-          </IconButton>
-          <IconButton aria-label={`Theme: ${theme}`} size="sm" onClick={cycleTheme}>
-            {theme === "dark" ? <Icons.Sun size={16} /> : <Icons.Moon size={16} />}
-          </IconButton>
-          <IconButton aria-label="Open notes" size="sm" onClick={() => setNotesOpen(true)}>
-            <Icons.Settings size={16} />
-          </IconButton>
-        </div>
-      </header>
-
-      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)_240px]">
-        <aside
-          className="hidden min-h-0 overflow-hidden border-r px-6 py-8 lg:block"
-          style={{ borderColor: "var(--bd-border)" }}
-        >
-          {toc ? (
-            <ContentsRail
-              toc={toc.toc}
-              sections={toc.sections}
-              currentOrder={toc.currentOrder}
-              onJump={toc.onJump}
-            />
-          ) : (
-            <RailSkeleton label="Contents" />
-          )}
-        </aside>
-
-        <section data-reader-scroll className="min-h-0 overflow-y-auto px-6 py-8 md:px-10 md:py-14">
-          <article className="mx-auto max-w-[620px] pb-32 md:pb-12">
-            {withReaderFont(children, fontScale)}
-          </article>
-        </section>
-
-        <aside
-          className="hidden min-h-0 overflow-hidden border-l px-6 py-8 xl:block"
-          style={{ borderColor: "var(--bd-border)" }}
-        >
-          <NotesRail
+        {notesOpen && (
+          <NotesSheet
             documentId={doc.id}
             sections={toc?.sections}
             currentOrder={currentOrder}
             refreshToken={refresh?.refreshToken ?? 0}
-            onJumpToOrder={(order) => setSearchParams({ chapter: String(order) })}
+            onJumpToOrder={(order) => {
+              setSearchParams({ chapter: String(order) });
+              setNotesOpen(false);
+            }}
+            onClose={() => setNotesOpen(false)}
           />
-        </aside>
-      </div>
+        )}
 
-      <AskBainderBar draft={askDraft} onDraftChange={setAskDraft} onSubmit={handleAskSubmit} />
-
-      <div className="fixed bottom-5 left-1/2 z-10 -translate-x-1/2 md:hidden">
-        <FloatingToolbar>
-          {toc && (
-            <FloatingToolbarButton aria-label="Table of contents" onClick={() => setTocOpen(true)}>
-              <Icons.BookOpen size={20} />
-            </FloatingToolbarButton>
-          )}
-          <FloatingToolbarButton aria-label="Ask Bainder" onClick={() => setAiOpen(true)}>
-            <Icons.Sparkles size={20} />
-          </FloatingToolbarButton>
-          <FloatingToolbarButton
-            aria-label={
-              fontScale === "standard" ? "Use larger reader type" : "Use standard reader type"
+        {aiOpen && (
+          <ReaderAiSheet
+            theme={theme}
+            title={doc.title}
+            chapterLabel={
+              meta ? `Chapter ${meta.chapterOrder + 1} - ${meta.chapterTitle}` : "Current chapter"
             }
-            onClick={toggleFontScale}
-          >
-            <Icons.Type size={20} />
-          </FloatingToolbarButton>
-          <FloatingToolbarButton aria-label={`Theme: ${theme}`} onClick={cycleTheme}>
-            {theme === "dark" ? <Icons.Sun size={20} /> : <Icons.Moon size={20} />}
-          </FloatingToolbarButton>
-          <FloatingToolbarButton aria-label="Notes" onClick={() => setNotesOpen(true)}>
-            <Icons.Note size={20} />
-          </FloatingToolbarButton>
-        </FloatingToolbar>
-      </div>
-
-      {toc && tocOpen && (
-        <TocSheet
-          toc={toc.toc}
-          sections={toc.sections}
-          currentOrder={toc.currentOrder}
-          onJump={(order) => {
-            toc.onJump(order);
-            setTocOpen(false);
-          }}
-          onClose={() => setTocOpen(false)}
-        />
-      )}
-
-      {notesOpen && (
-        <NotesSheet
-          documentId={doc.id}
-          sections={toc?.sections}
-          currentOrder={currentOrder}
-          refreshToken={refresh?.refreshToken ?? 0}
-          onJumpToOrder={(order) => {
-            setSearchParams({ chapter: String(order) });
-            setNotesOpen(false);
-          }}
-          onClose={() => setNotesOpen(false)}
-        />
-      )}
-
-      {aiOpen && (
-        <ReaderAiSheet
-          theme={theme}
-          title={doc.title}
-          chapterLabel={
-            meta ? `Chapter ${meta.chapterOrder + 1} - ${meta.chapterTitle}` : "Current chapter"
-          }
-          quote={meta?.quote}
-          prompt={lastPrompt}
-          onClose={() => setAiOpen(false)}
-        />
-      )}
-    </main>
+            quote={aiQuote ?? meta?.quote}
+            prompt={lastPrompt}
+            onClose={() => setAiOpen(false)}
+          />
+        )}
+      </main>
+    </ReaderAskContext.Provider>
   );
 }
 
@@ -418,6 +447,7 @@ function ReaderBody({ doc }: { doc: Document }) {
   const { setPosition } = useReaderPosition();
   const { setMeta } = useReaderMeta();
   const { setToc } = useReaderToc();
+  const openAsk = useReaderAsk();
   const [manifest, setManifest] = useState<DocumentManifest | null>(null);
   const [chapterHtml, setChapterHtml] = useState<string | null>(null);
   const [chapterText, setChapterText] = useState<string>("");
@@ -593,6 +623,7 @@ function ReaderBody({ doc }: { doc: Document }) {
         documentId={documentId}
         sectionKey={currentSection.sectionKey}
         contentKey={currentSection.sectionKey}
+        onAskSelection={(quote) => openAsk({ quote, prompt: "What does this passage mean?" })}
       />
 
       <ChapterNav

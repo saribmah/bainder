@@ -32,8 +32,8 @@ type WebMessage =
   | { type: "selection"; rect: Rect; charRange: { start: number; end: number }; text: string }
   | { type: "tap-highlight"; id: string; rect: Rect };
 
-const TOOLBAR_HEIGHT = 44;
-const TOOLBAR_WIDTH = 230;
+const TOOLBAR_HEIGHT = 58;
+const TOOLBAR_WIDTH = 206;
 const TOOLBAR_MARGIN = 8;
 
 export type EpubHtmlBodyProps = {
@@ -50,6 +50,7 @@ export type EpubHtmlBodyProps = {
   onUpdateColor: ReaderHighlights["updateColor"];
   onSetNote: ReaderHighlights["setNoteForHighlight"];
   onRemoveHighlight: ReaderHighlights["remove"];
+  onAskSelection?: (quote: string) => void;
 };
 
 export function EpubHtmlBody({
@@ -66,6 +67,7 @@ export function EpubHtmlBody({
   onUpdateColor,
   onSetNote,
   onRemoveHighlight,
+  onAskSelection,
 }: EpubHtmlBodyProps) {
   const palette = themeColors(theme);
   const webRef = useRef<WebView>(null);
@@ -157,7 +159,36 @@ export function EpubHtmlBody({
     [highlights],
   );
 
-  const handlePickColor = useCallback(
+  const handleCopySelection = useCallback(() => {
+    if (!selection) return;
+    const json = JSON.stringify(selection.text);
+    webRef.current?.injectJavaScript(`
+      (function() {
+        var value = ${json};
+        function fallbackCopy() {
+          var input = document.createElement('textarea');
+          input.value = value;
+          input.style.position = 'fixed';
+          input.style.opacity = '0';
+          document.body.appendChild(input);
+          input.focus();
+          input.select();
+          document.execCommand('copy');
+          document.body.removeChild(input);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(value).catch(fallbackCopy);
+        } else {
+          fallbackCopy();
+        }
+        window.bd_clearSelection && window.bd_clearSelection();
+      })();
+      true;
+    `);
+    setSelection(null);
+  }, [selection]);
+
+  const handleHighlightSelection = useCallback(
     async (c: HighlightColor) => {
       if (!selection) return;
       const captured = selection;
@@ -171,11 +202,25 @@ export function EpubHtmlBody({
     [selection, clearWebSelection, onCreateHighlight],
   );
 
+  const handleAskSelection = useCallback(() => {
+    if (!selection) return;
+    const captured = selection.text;
+    onAskSelection?.(captured);
+    clearWebSelection();
+  }, [selection, onAskSelection, clearWebSelection]);
+
   const handleAddNote = useCallback(() => {
     if (!selection) return;
-    setNoteDraft({ kind: "new", selection });
+    const captured = selection;
     clearWebSelection();
-  }, [selection, clearWebSelection]);
+    void onCreateHighlight("pink", {
+      offsetStart: captured.charRange.start,
+      offsetEnd: captured.charRange.end,
+      text: captured.text,
+    }).then((created) => {
+      if (created) setNoteDraft({ kind: "edit", highlight: created });
+    });
+  }, [selection, clearWebSelection, onCreateHighlight]);
 
   const handleChangeFocusedColor = useCallback(
     async (c: HighlightColor) => {
@@ -205,7 +250,7 @@ export function EpubHtmlBody({
       const trimmed = note.trim();
       if (noteDraft.kind === "new") {
         await onCreateHighlight(
-          "yellow",
+          "pink",
           {
             offsetStart: noteDraft.selection.charRange.start,
             offsetEnd: noteDraft.selection.charRange.end,
@@ -245,7 +290,17 @@ export function EpubHtmlBody({
           pointerEvents="box-none"
           style={[styles.toolbarWrap, { top: toolbarPos.top, left: toolbarPos.left }]}
         >
-          <SelectionToolbar onPickColor={handlePickColor} onAddNote={handleAddNote} />
+          <SelectionToolbar
+            variant="actions"
+            foregroundColor={palette.text}
+            style={{ backgroundColor: floatingBgFor(theme), borderColor: borderFor(theme) }}
+            onCopy={handleCopySelection}
+            onHighlight={() => {
+              void handleHighlightSelection("pink");
+            }}
+            onAsk={handleAskSelection}
+            onAddNote={handleAddNote}
+          />
         </View>
       )}
 
@@ -284,6 +339,14 @@ export function EpubHtmlBody({
               noteDraft.kind === "edit" ? noteDraft.highlight.textSnippet : noteDraft.selection.text
             }
             onCancel={() => setNoteDraft(null)}
+            onAsk={() => {
+              const quote =
+                noteDraft.kind === "edit"
+                  ? noteDraft.highlight.textSnippet
+                  : noteDraft.selection.text;
+              onAskSelection?.(quote);
+              setNoteDraft(null);
+            }}
             onSave={handleSaveNote}
           />
         )}
@@ -362,12 +425,14 @@ function NoteEditor({
   initialNote,
   quote,
   onCancel,
+  onAsk,
   onSave,
 }: {
   theme: Theme;
   initialNote: string;
   quote: string;
   onCancel: () => void;
+  onAsk: () => void;
   onSave: (note: string) => Promise<void>;
 }) {
   const palette = themeColors(theme);
@@ -378,20 +443,29 @@ function NoteEditor({
   return (
     <>
       <View style={styles.cardHeader}>
-        <Text style={[styles.cardLabel, { color: muted }]}>
-          {initialNote ? "Edit note" : "Add note"}
-        </Text>
+        <View style={[styles.segment, { backgroundColor: noteBgFor(theme) }]}>
+          <View style={[styles.segmentActive, { backgroundColor: palette.bg }]}>
+            <Icons.Highlight size={12} color={palette.text} />
+            <Text style={[styles.segmentTextActive, { color: palette.text }]}>On passage</Text>
+          </View>
+          <View style={styles.segmentInactive}>
+            <Icons.Note size={12} color={muted} />
+            <Text style={[styles.segmentText, { color: muted }]}>Standalone</Text>
+          </View>
+        </View>
         <IconButton aria-label="Close" size="sm" onPress={onCancel}>
           <Icons.Close size={14} color={palette.text} />
         </IconButton>
       </View>
-      <Text style={[styles.cardQuote, { color: palette.text }]} numberOfLines={3}>
-        {`“${quote}”`}
-      </Text>
+      <View style={[styles.noteQuote, { borderLeftColor: color.highlight.pink }]}>
+        <Text style={[styles.cardQuote, { color: palette.fgSubtle }]} numberOfLines={4}>
+          {`“${quote}”`}
+        </Text>
+      </View>
       <TextInput
         autoFocus
         multiline
-        placeholder="Add a thought…"
+        placeholder="What did you think?"
         placeholderTextColor={muted}
         value={value}
         onChangeText={setValue}
@@ -400,6 +474,18 @@ function NoteEditor({
           { backgroundColor: noteBgFor(theme), color: palette.text, borderColor: borderFor(theme) },
         ]}
       />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Ask Bainder about this"
+        onPress={onAsk}
+        style={[styles.askShortcut, { backgroundColor: noteBgFor(theme) }]}
+      >
+        <Icons.Sparkles size={14} color={palette.accent} />
+        <Text style={[styles.askShortcutText, { color: palette.accent }]}>
+          Ask Bainder about this
+        </Text>
+        <Icons.Chevron size={12} color={palette.accent} />
+      </Pressable>
       <View style={styles.editorActions}>
         <Pressable
           onPress={onCancel}
@@ -420,7 +506,7 @@ function NoteEditor({
             }
           }}
         >
-          {saving ? "Saving…" : "Save"}
+          {saving ? "Saving..." : "Save note"}
         </Button>
       </View>
     </>
@@ -445,6 +531,12 @@ function noteBgFor(theme: Theme): string {
   return color.paper[100];
 }
 
+function floatingBgFor(theme: Theme): string {
+  if (theme === "dark") return color.night[800];
+  if (theme === "sepia") return color.sepia[50];
+  return color.paper[50];
+}
+
 const styles = StyleSheet.create({
   toolbarWrap: {
     position: "absolute",
@@ -455,6 +547,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingBottom: 4,
+    gap: 8,
   },
   cardLabel: {
     fontSize: 13,
@@ -466,6 +559,47 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontStyle: "italic",
     lineHeight: 22,
+  },
+  segment: {
+    flex: 1,
+    flexDirection: "row",
+    borderRadius: 999,
+    padding: 3,
+  },
+  segmentActive: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    shadowColor: "rgba(0,0,0,1)",
+    shadowOpacity: 0.06,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
+  },
+  segmentInactive: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  segmentTextActive: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  segmentText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  noteQuote: {
+    borderLeftWidth: 2,
+    paddingLeft: 12,
   },
   notePreview: {
     padding: 10,
@@ -479,13 +613,27 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   noteInput: {
-    minHeight: 120,
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    minHeight: 110,
+    borderWidth: 1.5,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     fontSize: 15,
+    lineHeight: 23,
     textAlignVertical: "top",
+  },
+  askShortcut: {
+    minHeight: 44,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  askShortcutText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: "600",
   },
   editorActions: {
     flexDirection: "row",

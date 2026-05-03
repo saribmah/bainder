@@ -193,7 +193,7 @@ export function useHighlightLayer({
   // ---- CRUD ----------------------------------------------------------------
   const create = useCallback(
     async (color: HighlightColor, noteBody?: string) => {
-      if (sectionKey === null || !selection) return;
+      if (sectionKey === null || !selection) return null;
       const res = await client.highlight.create({
         documentId,
         sectionKey,
@@ -224,8 +224,11 @@ export function useHighlightLayer({
           setFocusedId(created.id);
         }
         refresh?.bumpRefresh();
+        clearSelection();
+        return created;
       }
       clearSelection();
+      return null;
     },
     [client, documentId, sectionKey, selection, clearSelection, refresh],
   );
