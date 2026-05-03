@@ -148,6 +148,34 @@ export type User = {
   updatedAt: string;
 };
 
+export enum ProfileTheme {
+  Light = "light",
+  Sepia = "sepia",
+  Night = "night",
+}
+
+export enum ProfileHighlightColor {
+  Pink = "pink",
+  Yellow = "yellow",
+  Green = "green",
+  Blue = "blue",
+  Purple = "purple",
+}
+
+export type Profile = {
+  userId: string;
+  readingTheme: ProfileTheme;
+  readingFont: string;
+  defaultHighlightColor: ProfileHighlightColor;
+  aiCitePages: boolean;
+  aiSuggestFollowups: boolean;
+  aiPersonalizeFromHighlights: boolean;
+  notifyDailyNudge: boolean;
+  notifyWeeklyDigest: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type TestModeStatusResponse = {
   enabled: true;
 };
@@ -1155,6 +1183,65 @@ export type UserUpdateResponses = {
 };
 
 export type UserUpdateResponse = UserUpdateResponses[keyof UserUpdateResponses];
+
+export type ProfileMeData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/profile/me";
+};
+
+export type ProfileMeErrors = {
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+};
+
+export type ProfileMeResponses = {
+  /**
+   * Current profile
+   */
+  200: Profile;
+};
+
+export type ProfileMeResponse = ProfileMeResponses[keyof ProfileMeResponses];
+
+export type ProfileUpdateData = {
+  body: {
+    readingTheme?: ProfileTheme;
+    readingFont?: string;
+    defaultHighlightColor?: ProfileHighlightColor;
+    aiCitePages?: boolean;
+    aiSuggestFollowups?: boolean;
+    aiPersonalizeFromHighlights?: boolean;
+    notifyDailyNudge?: boolean;
+    notifyWeeklyDigest?: boolean;
+  };
+  path?: never;
+  query?: never;
+  url: "/profile/me";
+};
+
+export type ProfileUpdateErrors = {
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * Profile row missing
+   */
+  404: unknown;
+};
+
+export type ProfileUpdateResponses = {
+  /**
+   * Updated profile
+   */
+  200: Profile;
+};
+
+export type ProfileUpdateResponse = ProfileUpdateResponses[keyof ProfileUpdateResponses];
 
 export type GetTestStatusData = {
   body?: never;

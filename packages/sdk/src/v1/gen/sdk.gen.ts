@@ -8,78 +8,84 @@ import {
   type TDataShape,
 } from "./client";
 import { client } from "./client.gen";
-import type {
-  DocumentCreateErrors,
-  DocumentCreateResponses,
-  DocumentDeleteErrors,
-  DocumentDeleteResponses,
-  DocumentGetAssetErrors,
-  DocumentGetAssetResponses,
-  DocumentGetErrors,
-  DocumentGetManifestErrors,
-  DocumentGetManifestResponses,
-  DocumentGetRawErrors,
-  DocumentGetRawResponses,
-  DocumentGetResponses,
-  DocumentGetSectionHtmlErrors,
-  DocumentGetSectionHtmlResponses,
-  DocumentGetSectionTextErrors,
-  DocumentGetSectionTextResponses,
-  DocumentGetStatusErrors,
-  DocumentGetStatusResponses,
-  DocumentListErrors,
-  DocumentListResponses,
-  DocumentListShelvesErrors,
-  DocumentListShelvesResponses,
-  DocumentUpdateErrors,
-  DocumentUpdateResponses,
-  ExampleCreateErrors,
-  ExampleCreateResponses,
-  ExampleGetErrors,
-  ExampleGetResponses,
-  ExampleListResponses,
-  GetTestStatusErrors,
-  GetTestStatusResponses,
-  HealthGetResponses,
-  HighlightCreateErrors,
-  HighlightCreateResponses,
-  HighlightDeleteErrors,
-  HighlightDeleteResponses,
-  HighlightListErrors,
-  HighlightListResponses,
-  HighlightPosition,
-  HighlightUpdateErrors,
-  HighlightUpdateResponses,
-  PostTestResetErrors,
-  PostTestResetResponses,
-  PostTestSignInErrors,
-  PostTestSignInResponses,
-  ProgressPosition,
-  ProgressUpsertErrors,
-  ProgressUpsertResponses,
-  ShelfAddDocumentErrors,
-  ShelfAddDocumentResponses,
-  ShelfCreateErrors,
-  ShelfCreateResponses,
-  ShelfDeleteErrors,
-  ShelfDeleteResponses,
-  ShelfGetErrors,
-  ShelfGetResponses,
-  ShelfListDocumentsErrors,
-  ShelfListDocumentsResponses,
-  ShelfListErrors,
-  ShelfListResponses,
-  ShelfRemoveDocumentErrors,
-  ShelfRemoveDocumentResponses,
-  ShelfReorderDocumentErrors,
-  ShelfReorderDocumentResponses,
-  ShelfUpdateErrors,
-  ShelfUpdateResponses,
-  TestModeSignInInput,
-  UserMeErrors,
-  UserMeResponses,
-  UserUpdateErrors,
-  UserUpdateResponses,
+import {
+  type DocumentCreateErrors,
+  type DocumentCreateResponses,
+  type DocumentDeleteErrors,
+  type DocumentDeleteResponses,
+  type DocumentGetAssetErrors,
+  type DocumentGetAssetResponses,
+  type DocumentGetErrors,
+  type DocumentGetManifestErrors,
+  type DocumentGetManifestResponses,
+  type DocumentGetRawErrors,
+  type DocumentGetRawResponses,
+  type DocumentGetResponses,
+  type DocumentGetSectionHtmlErrors,
+  type DocumentGetSectionHtmlResponses,
+  type DocumentGetSectionTextErrors,
+  type DocumentGetSectionTextResponses,
+  type DocumentGetStatusErrors,
+  type DocumentGetStatusResponses,
+  type DocumentListErrors,
+  type DocumentListResponses,
+  type DocumentListShelvesErrors,
+  type DocumentListShelvesResponses,
+  type DocumentUpdateErrors,
+  type DocumentUpdateResponses,
+  type ExampleCreateErrors,
+  type ExampleCreateResponses,
+  type ExampleGetErrors,
+  type ExampleGetResponses,
+  type ExampleListResponses,
+  type GetTestStatusErrors,
+  type GetTestStatusResponses,
+  type HealthGetResponses,
+  type HighlightCreateErrors,
+  type HighlightCreateResponses,
+  type HighlightDeleteErrors,
+  type HighlightDeleteResponses,
+  type HighlightListErrors,
+  type HighlightListResponses,
+  type HighlightPosition,
+  type HighlightUpdateErrors,
+  type HighlightUpdateResponses,
+  type PostTestResetErrors,
+  type PostTestResetResponses,
+  type PostTestSignInErrors,
+  type PostTestSignInResponses,
+  ProfileHighlightColor,
+  type ProfileMeErrors,
+  type ProfileMeResponses,
+  ProfileTheme,
+  type ProfileUpdateErrors,
+  type ProfileUpdateResponses,
+  type ProgressPosition,
+  type ProgressUpsertErrors,
+  type ProgressUpsertResponses,
+  type ShelfAddDocumentErrors,
+  type ShelfAddDocumentResponses,
+  type ShelfCreateErrors,
+  type ShelfCreateResponses,
+  type ShelfDeleteErrors,
+  type ShelfDeleteResponses,
+  type ShelfGetErrors,
+  type ShelfGetResponses,
+  type ShelfListDocumentsErrors,
+  type ShelfListDocumentsResponses,
+  type ShelfListErrors,
+  type ShelfListResponses,
+  type ShelfRemoveDocumentErrors,
+  type ShelfRemoveDocumentResponses,
+  type ShelfReorderDocumentErrors,
+  type ShelfReorderDocumentResponses,
+  type ShelfUpdateErrors,
+  type ShelfUpdateResponses,
+  type TestModeSignInInput,
+  type UserMeErrors,
+  type UserMeResponses,
+  type UserUpdateErrors,
+  type UserUpdateResponses,
 } from "./types.gen";
 
 export type Options<
@@ -1011,6 +1017,67 @@ export class User extends HeyApiClient {
   }
 }
 
+export class Profile extends HeyApiClient {
+  /**
+   * Get the authenticated user's profile preferences
+   */
+  public me<ThrowOnError extends boolean = false>(options?: Options<never, ThrowOnError>) {
+    return (options?.client ?? this.client).get<ProfileMeResponses, ProfileMeErrors, ThrowOnError>({
+      url: "/profile/me",
+      ...options,
+    });
+  }
+
+  /**
+   * Update the authenticated user's profile preferences
+   */
+  public update<ThrowOnError extends boolean = false>(
+    parameters?: {
+      readingTheme?: ProfileTheme;
+      readingFont?: string;
+      defaultHighlightColor?: ProfileHighlightColor;
+      aiCitePages?: boolean;
+      aiSuggestFollowups?: boolean;
+      aiPersonalizeFromHighlights?: boolean;
+      notifyDailyNudge?: boolean;
+      notifyWeeklyDigest?: boolean;
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "body", key: "readingTheme" },
+            { in: "body", key: "readingFont" },
+            { in: "body", key: "defaultHighlightColor" },
+            { in: "body", key: "aiCitePages" },
+            { in: "body", key: "aiSuggestFollowups" },
+            { in: "body", key: "aiPersonalizeFromHighlights" },
+            { in: "body", key: "notifyDailyNudge" },
+            { in: "body", key: "notifyWeeklyDigest" },
+          ],
+        },
+      ],
+    );
+    return (options?.client ?? this.client).patch<
+      ProfileUpdateResponses,
+      ProfileUpdateErrors,
+      ThrowOnError
+    >({
+      url: "/profile/me",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    });
+  }
+}
+
 export class Health extends HeyApiClient {
   /**
    * Health check
@@ -1122,6 +1189,11 @@ export class ApiClient extends HeyApiClient {
   private _user?: User;
   get user(): User {
     return (this._user ??= new User({ client: this.client }));
+  }
+
+  private _profile?: Profile;
+  get profile(): Profile {
+    return (this._profile ??= new Profile({ client: this.client }));
   }
 
   private _health?: Health;

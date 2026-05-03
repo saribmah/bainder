@@ -1,37 +1,34 @@
-import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { Button, Chip, Icons } from "@bainder/ui";
-import type { User } from "@bainder/sdk";
-import { signOutProfile, useProfileName } from "../../profile";
-import { LibraryRail } from "../components/LibraryRail";
-import { useLibraryDocuments } from "../hooks/useLibraryDocuments";
-import { useLibraryHighlights } from "../hooks/useLibraryHighlights";
-import { useSdk } from "../../../sdk";
+import { Button, Chip, ChipButton, Icons } from "@bainder/ui";
+import { ProfileHighlightColor, ProfileTheme } from "@bainder/sdk";
+import { useLibraryDocuments } from "../../library/hooks/useLibraryDocuments";
+import { useLibraryHighlights } from "../../library/hooks/useLibraryHighlights";
+import { LibraryRail } from "../../library/components/LibraryRail";
+import { signOutProfile } from "../actions";
+import { useProfile } from "../hooks/useProfile";
+import { useProfileName } from "../hooks/useProfileName";
+import { useUserProfile } from "../hooks/useUserProfile";
 
-export function Settings() {
+const themes: { value: ProfileTheme; label: string }[] = [
+  { value: ProfileTheme.Light, label: "Light" },
+  { value: ProfileTheme.Sepia, label: "Sepia" },
+  { value: ProfileTheme.Night, label: "Night" },
+];
+
+const highlightColors: { value: ProfileHighlightColor; cssVar: string }[] = [
+  { value: ProfileHighlightColor.Pink, cssVar: "var(--hl-pink)" },
+  { value: ProfileHighlightColor.Yellow, cssVar: "var(--hl-yellow)" },
+  { value: ProfileHighlightColor.Green, cssVar: "var(--hl-green)" },
+  { value: ProfileHighlightColor.Blue, cssVar: "var(--hl-blue)" },
+  { value: ProfileHighlightColor.Purple, cssVar: "var(--hl-purple)" },
+];
+
+export function SettingsPage() {
   const reader = useProfileName();
-  const { client } = useSdk();
   const { documents, counts, uploading, uploadDocument } = useLibraryDocuments();
   const { highlights } = useLibraryHighlights(documents);
-  const [user, setUser] = useState<User | null>(null);
-  const [citePages, setCitePages] = useState(true);
-  const [followups, setFollowups] = useState(true);
-  const [personalize, setPersonalize] = useState(false);
-  const [dailyNudge, setDailyNudge] = useState(true);
-  const [weeklyDigest, setWeeklyDigest] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    client.user
-      .me()
-      .then((res) => {
-        if (!cancelled && res.data) setUser(res.data);
-      })
-      .catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
-  }, [client]);
+  const { user } = useUserProfile();
+  const { profile, update } = useProfile();
 
   const displayName = user?.name?.trim() || reader;
   const email = user?.email ?? "";
@@ -72,62 +69,78 @@ export function Settings() {
             <Section label="Reading">
               <Row label="Default theme" sub="Light · Sepia · Night">
                 <div className="flex gap-1 rounded-full bg-paper-100 p-1">
-                  {["Light", "Sepia", "Night"].map((theme, index) => (
-                    <Chip key={theme} variant={index === 0 ? "active" : "filled"}>
-                      {theme}
-                    </Chip>
+                  {themes.map(({ value, label }) => (
+                    <ChipButton
+                      key={value}
+                      variant={profile?.readingTheme === value ? "active" : "filled"}
+                      onClick={() => void update({ readingTheme: value })}
+                    >
+                      {label}
+                    </ChipButton>
                   ))}
                 </div>
               </Row>
               <Row label="Reading font" sub="Newsreader, Iowan Old Style, Charter, Georgia">
                 <Chip variant="outline" iconEnd={<Icons.Chevron size={12} />}>
-                  Newsreader
+                  {profile?.readingFont ?? "Newsreader"}
                 </Chip>
               </Row>
               <Row label="Default highlight color" sub="The color when you tap Highlight">
                 <div className="flex gap-1.5">
-                  {[
-                    "var(--hl-pink)",
-                    "var(--hl-yellow)",
-                    "var(--hl-green)",
-                    "var(--hl-blue)",
-                    "var(--hl-purple)",
-                  ].map((color, index) => (
-                    <span
-                      key={color}
-                      className="h-6 w-6 rounded-full"
-                      style={{
-                        background: color,
-                        border:
-                          index === 0 ? "2px solid var(--paper-900)" : "2px solid transparent",
-                      }}
-                    />
-                  ))}
+                  {highlightColors.map(({ value, cssVar }) => {
+                    const active = profile?.defaultHighlightColor === value;
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        aria-label={value}
+                        aria-pressed={active}
+                        onClick={() => void update({ defaultHighlightColor: value })}
+                        className="h-6 w-6 rounded-full border-0 p-0"
+                        style={{
+                          background: cssVar,
+                          outline: active ? "2px solid var(--paper-900)" : "2px solid transparent",
+                          outlineOffset: 1,
+                        }}
+                      />
+                    );
+                  })}
                 </div>
               </Row>
             </Section>
 
             <Section label="AI · Bainder">
               <Row label="Cite the page in every answer" sub="Show page or section references">
-                <Toggle checked={citePages} onChange={() => setCitePages((value) => !value)} />
+                <Toggle
+                  checked={profile?.aiCitePages ?? false}
+                  onChange={() => void update({ aiCitePages: !(profile?.aiCitePages ?? false) })}
+                />
               </Row>
               <Row label="Suggest follow-up questions" sub="Three contextual chips after answers">
-                <Toggle checked={followups} onChange={() => setFollowups((value) => !value)} />
+                <Toggle
+                  checked={profile?.aiSuggestFollowups ?? false}
+                  onChange={() =>
+                    void update({ aiSuggestFollowups: !(profile?.aiSuggestFollowups ?? false) })
+                  }
+                />
               </Row>
               <Row
                 label="Use my highlights to personalize"
                 sub="Bainder learns what passages matter"
               >
-                <Toggle checked={personalize} onChange={() => setPersonalize((value) => !value)} />
+                <Toggle
+                  checked={profile?.aiPersonalizeFromHighlights ?? false}
+                  onChange={() =>
+                    void update({
+                      aiPersonalizeFromHighlights: !(profile?.aiPersonalizeFromHighlights ?? false),
+                    })
+                  }
+                />
               </Row>
             </Section>
 
             <Section label="Account">
-              <Row label="Email" sub={email || "Not available"}>
-                <Button variant="ghost" size="sm">
-                  Change
-                </Button>
-              </Row>
+              <Row label="Email" sub={email || "Not available"} />
               <Row label="Plan" sub={`${counts.all} imports / unlimited reading`}>
                 <Chip variant="outline">Free</Chip>
               </Row>
@@ -140,12 +153,19 @@ export function Settings() {
 
             <Section label="Notifications">
               <Row label="Daily reading nudge" sub="A quiet evening reminder">
-                <Toggle checked={dailyNudge} onChange={() => setDailyNudge((value) => !value)} />
+                <Toggle
+                  checked={profile?.notifyDailyNudge ?? false}
+                  onChange={() =>
+                    void update({ notifyDailyNudge: !(profile?.notifyDailyNudge ?? false) })
+                  }
+                />
               </Row>
               <Row label="Weekly digest" sub="What you read, highlighted, and asked about">
                 <Toggle
-                  checked={weeklyDigest}
-                  onChange={() => setWeeklyDigest((value) => !value)}
+                  checked={profile?.notifyWeeklyDigest ?? false}
+                  onChange={() =>
+                    void update({ notifyWeeklyDigest: !(profile?.notifyWeeklyDigest ?? false) })
+                  }
                 />
               </Row>
             </Section>
@@ -165,7 +185,7 @@ function Section({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function Row({ label, sub, children }: { label: string; sub?: string; children: ReactNode }) {
+function Row({ label, sub, children }: { label: string; sub?: string; children?: ReactNode }) {
   return (
     <div className="flex items-center gap-4">
       <div className="min-w-0 flex-1">
