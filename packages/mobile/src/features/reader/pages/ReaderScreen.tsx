@@ -118,6 +118,8 @@ function ReaderShell({ doc, onClose }: { doc: Document; onClose: () => void }) {
   const [tocOpen, setTocOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
+  const [aiQuote, setAiQuote] = useState<string | null>(null);
+  const [aiPrompt, setAiPrompt] = useState("");
   const [fontScale, setFontScale] = useState<ReaderFontScale>("standard");
 
   const toggleFontScale = useCallback(() => {
@@ -156,6 +158,11 @@ function ReaderShell({ doc, onClose }: { doc: Document; onClose: () => void }) {
           onTocChange={setTocState}
           onNotesChange={setNotesState}
           fontScale={fontScale}
+          onAskSelection={(quote) => {
+            setAiQuote(quote);
+            setAiPrompt("What does this passage mean?");
+            setAiOpen(true);
+          }}
         />
       </ScrollView>
 
@@ -175,7 +182,14 @@ function ReaderShell({ doc, onClose }: { doc: Document; onClose: () => void }) {
           >
             <Icons.BookOpen size={20} color={palette.text} />
           </FloatingToolbarButton>
-          <FloatingToolbarButton aria-label="Ask Bainder" onPress={() => setAiOpen(true)}>
+          <FloatingToolbarButton
+            aria-label="Ask Bainder"
+            onPress={() => {
+              setAiQuote(null);
+              setAiPrompt("");
+              setAiOpen(true);
+            }}
+          >
             <Icons.Headphones size={20} color={palette.text} />
           </FloatingToolbarButton>
           <FloatingToolbarButton
@@ -232,6 +246,8 @@ function ReaderShell({ doc, onClose }: { doc: Document; onClose: () => void }) {
         onClose={() => setAiOpen(false)}
         theme={theme}
         chapterLabel={position ?? "Current chapter"}
+        quote={aiQuote}
+        prompt={aiPrompt}
       />
     </View>
   );
@@ -245,6 +261,7 @@ function ReaderBody({
   onTocChange,
   onNotesChange,
   fontScale,
+  onAskSelection,
 }: {
   doc: Document;
   theme: Theme;
@@ -252,6 +269,7 @@ function ReaderBody({
   onTocChange: (s: TocContext | null) => void;
   onNotesChange: (s: NotesContext | null) => void;
   fontScale: ReaderFontScale;
+  onAskSelection: (quote: string) => void;
 }) {
   const { client, baseUrl, authedFetch } = useSdk();
   const documentId = doc.id;
@@ -404,6 +422,7 @@ function ReaderBody({
         onUpdateColor={highlightLayer.updateColor}
         onSetNote={highlightLayer.setNoteForHighlight}
         onRemoveHighlight={highlightLayer.remove}
+        onAskSelection={onAskSelection}
       />
       <ChapterNav
         canPrev={order > 0}
@@ -544,14 +563,22 @@ function ReaderAiSheet({
   onClose,
   theme,
   chapterLabel,
+  quote,
+  prompt,
 }: {
   visible: boolean;
   onClose: () => void;
   theme: Theme;
   chapterLabel: string;
+  quote: string | null;
+  prompt: string;
 }) {
   const palette = themeColors(theme);
   const muted = mutedForTheme(theme);
+  const quoteText =
+    quote ??
+    "Affordances define what actions are possible. Signifiers specify how people discover those possibilities.";
+  const promptText = prompt || "What's the most important idea in this chapter?";
   return (
     <Sheet visible={visible} onClose={onClose} style={{ backgroundColor: palette.bg }}>
       <View style={aiStyles.header}>
@@ -562,16 +589,11 @@ function ReaderAiSheet({
         <Text style={[aiStyles.chapter, { color: muted }]}>{chapterLabel}</Text>
       </View>
       <View style={[aiStyles.quote, { backgroundColor: palette.surfaceRaised }]}>
-        <Text style={[aiStyles.quoteText, { color: palette.fgSubtle }]}>
-          "Affordances define what actions are possible. Signifiers specify how people discover
-          those possibilities."
-        </Text>
+        <Text style={[aiStyles.quoteText, { color: palette.fgSubtle }]}>{`"${quoteText}"`}</Text>
       </View>
       <View style={aiStyles.promptRow}>
         <View style={[aiStyles.promptBubble, { backgroundColor: palette.action }]}>
-          <Text style={[aiStyles.promptText, { color: palette.actionFg }]}>
-            What's the difference between these two terms?
-          </Text>
+          <Text style={[aiStyles.promptText, { color: palette.actionFg }]}>{promptText}</Text>
         </View>
       </View>
       <Text style={[aiStyles.answer, { color: palette.fgSubtle }]}>

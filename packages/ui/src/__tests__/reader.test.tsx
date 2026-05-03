@@ -146,6 +146,20 @@ describe("AISheetThinking", () => {
 });
 
 describe("SelectionToolbar", () => {
+  test("selection actions", () => {
+    expect(
+      html(
+        <SelectionToolbar
+          variant="actions"
+          onCopy={() => {}}
+          onHighlight={() => {}}
+          onAsk={() => {}}
+          onAddNote={() => {}}
+        />,
+      ),
+    ).toMatchSnapshot();
+  });
+
   test("default colors with note action", () => {
     expect(
       html(<SelectionToolbar onPickColor={() => {}} onAddNote={() => {}} />),

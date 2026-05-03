@@ -3,13 +3,16 @@ import { Button, IconButton, Icons, SelectionToolbar, Sheet, useTheme } from "@b
 import { useHighlightLayer, type HighlightColor } from "./useHighlightLayer";
 
 const TOOLBAR_OFFSET_Y = 12;
-const TOOLBAR_HEIGHT_ESTIMATE = 44;
+const TOOLBAR_HEIGHT_ESTIMATE = 58;
+const NOTE_POPOVER_WIDTH = 360;
+const NOTE_POPOVER_GAP = 14;
 
 export type HighlightLayerProps = {
   containerRef: RefObject<HTMLElement | null>;
   documentId: string;
   sectionKey: string | null;
   contentKey: string;
+  onAskSelection?: (quote: string) => void;
 };
 
 export function HighlightLayer({
@@ -17,6 +20,7 @@ export function HighlightLayer({
   documentId,
   sectionKey,
   contentKey,
+  onAskSelection,
 }: HighlightLayerProps) {
   const layer = useHighlightLayer({
     containerRef,
@@ -26,12 +30,41 @@ export function HighlightLayer({
     enabled: sectionKey !== null,
   });
 
-  // `noteDraft` is non-null while the user is editing or composing a note.
-  // `null` value means "creating from selection", a string id means
-  // "editing existing highlight `id`".
-  const [noteDraft, setNoteDraft] = useState<{ kind: "new" } | { kind: "edit"; id: string } | null>(
-    null,
-  );
+  const [noteDraft, setNoteDraft] = useState<{
+    id: string;
+    quote: string;
+    anchorRect?: DOMRect;
+  } | null>(null);
+
+  const handleCopySelection = () => {
+    const text = layer.selection?.text;
+    if (!text) return;
+    void copyText(text).finally(layer.clearSelection);
+  };
+
+  const handleHighlightSelection = () => {
+    void layer.create("pink");
+  };
+
+  const handleAskSelection = () => {
+    const text = layer.selection?.text;
+    if (!text) return;
+    onAskSelection?.(text);
+    layer.clearSelection();
+  };
+
+  const handleAddNoteFromSelection = () => {
+    const activeSelection = layer.selection;
+    if (!activeSelection) return;
+    void layer.create("pink").then((created) => {
+      if (!created) return;
+      setNoteDraft({
+        id: created.id,
+        quote: created.textSnippet,
+        anchorRect: activeSelection.rect,
+      });
+    });
+  };
 
   if (sectionKey === null) return null;
 
@@ -40,10 +73,10 @@ export function HighlightLayer({
       {layer.selection && !noteDraft && (
         <SelectionToolbarPositioned
           rect={layer.selection.rect}
-          onPickColor={(color) => {
-            void layer.create(color);
-          }}
-          onAddNote={() => setNoteDraft({ kind: "new" })}
+          onCopy={handleCopySelection}
+          onHighlight={handleHighlightSelection}
+          onAsk={handleAskSelection}
+          onAddNote={handleAddNoteFromSelection}
         />
       )}
 
@@ -59,7 +92,12 @@ export function HighlightLayer({
           onChangeColor={(color) => {
             void layer.updateColor(layer.focused!.id, color);
           }}
-          onEditNote={() => setNoteDraft({ kind: "edit", id: layer.focused!.id })}
+          onEditNote={() =>
+            setNoteDraft({
+              id: layer.focused!.id,
+              quote: layer.focused!.textSnippet,
+            })
+          }
           onDelete={() => {
             void layer.remove(layer.focused!.id);
           }}
@@ -67,25 +105,21 @@ export function HighlightLayer({
       )}
 
       {noteDraft && (
-        <NoteSheet
-          initialNote={
-            noteDraft.kind === "edit" && layer.focused
-              ? (layer.getNoteForHighlight(layer.focused.id)?.body ?? "")
-              : ""
-          }
-          quote={
-            noteDraft.kind === "edit"
-              ? (layer.focused?.textSnippet ?? "")
-              : (layer.selection?.text ?? "")
-          }
+        <NotePopover
+          highlightId={noteDraft.id}
+          containerRef={containerRef}
+          contentKey={contentKey}
+          anchorRect={noteDraft.anchorRect}
+          initialNote={layer.getNoteForHighlight(noteDraft.id)?.body ?? ""}
+          quote={noteDraft.quote}
           onCancel={() => setNoteDraft(null)}
+          onAsk={() => {
+            onAskSelection?.(noteDraft.quote);
+            setNoteDraft(null);
+          }}
           onSave={async (note) => {
             const trimmed = note.trim();
-            if (noteDraft.kind === "new") {
-              await layer.create("yellow", trimmed.length > 0 ? trimmed : undefined);
-            } else {
-              await layer.setNoteForHighlight(noteDraft.id, trimmed.length > 0 ? trimmed : null);
-            }
+            await layer.setNoteForHighlight(noteDraft.id, trimmed.length > 0 ? trimmed : null);
             setNoteDraft(null);
           }}
         />
@@ -96,11 +130,15 @@ export function HighlightLayer({
 
 function SelectionToolbarPositioned({
   rect,
-  onPickColor,
+  onCopy,
+  onHighlight,
+  onAsk,
   onAddNote,
 }: {
   rect: DOMRect;
-  onPickColor: (color: HighlightColor) => void;
+  onCopy: () => void;
+  onHighlight: () => void;
+  onAsk: () => void;
   onAddNote: () => void;
 }) {
   // Prefer above the selection; if there's no room, fall back to below.
@@ -120,7 +158,13 @@ function SelectionToolbarPositioned({
         zIndex: 30,
       }}
     >
-      <SelectionToolbar onPickColor={onPickColor} onAddNote={onAddNote} />
+      <SelectionToolbar
+        variant="actions"
+        onCopy={onCopy}
+        onHighlight={onHighlight}
+        onAsk={onAsk}
+        onAddNote={onAddNote}
+      />
     </div>
   );
 }
@@ -245,30 +289,56 @@ function HighlightPopover({
   );
 }
 
-function NoteSheet({
+function NotePopover({
+  highlightId,
+  containerRef,
+  contentKey,
+  anchorRect,
   initialNote,
   quote,
   onCancel,
+  onAsk,
   onSave,
 }: {
+  highlightId: string;
+  containerRef: RefObject<HTMLElement | null>;
+  contentKey: string;
+  anchorRect?: DOMRect;
   initialNote: string;
   quote: string;
   onCancel: () => void;
+  onAsk: () => void;
   onSave: (note: string) => Promise<void>;
 }) {
   const [value, setValue] = useState(initialNote);
   const [saving, setSaving] = useState(false);
   const { theme } = useTheme();
+  const [rect, setRect] = useState<DOMRect | null>(anchorRect ?? null);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onCancel();
     };
+    const onDoc = (e: MouseEvent) => {
+      const target = e.target;
+      if (!(target instanceof Element)) return;
+      if (target.closest("[data-note-popover]")) return;
+      onCancel();
+    };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onDoc);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onDoc);
+    };
   }, [onCancel]);
 
-  const backdropBg = theme === "dark" ? "rgba(0, 0, 0, 0.6)" : "rgba(20, 15, 10, 0.35)";
+  useEffect(() => {
+    const container = containerRef.current;
+    const mark = container?.querySelector<HTMLElement>(`mark[data-highlight-id="${highlightId}"]`);
+    if (mark) setRect(mark.getBoundingClientRect());
+  }, [highlightId, containerRef, contentKey]);
+
   const inputBg =
     theme === "dark"
       ? "bg-[oklch(15%_0.008_240)] text-night-50 border-[oklch(28%_0.012_240)]"
@@ -276,56 +346,170 @@ function NoteSheet({
         ? "bg-sepia-50 text-sepia-900 border-sepia-200"
         : "bg-paper-50 text-paper-900 border-paper-200";
 
+  const surface =
+    theme === "dark"
+      ? "var(--night-800)"
+      : theme === "sepia"
+        ? "var(--sepia-50)"
+        : "var(--paper-50)";
+  const border =
+    theme === "dark"
+      ? "oklch(30% 0.012 240)"
+      : theme === "sepia"
+        ? "var(--sepia-200)"
+        : "var(--paper-200)";
+  const muted =
+    theme === "dark"
+      ? "var(--night-200)"
+      : theme === "sepia"
+        ? "var(--sepia-700)"
+        : "var(--paper-500)";
+  const raised =
+    theme === "dark"
+      ? "oklch(15% 0.008 240)"
+      : theme === "sepia"
+        ? "var(--sepia-100)"
+        : "var(--paper-100)";
+  const position = rect ? notePopoverPosition(rect) : null;
+
+  if (!position) return null;
+
   return (
     <div
+      data-note-popover
       role="dialog"
       aria-label="Edit note"
-      className="fixed inset-0 z-30 flex flex-col justify-end"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onCancel();
+      className="fixed z-30"
+      style={{
+        top: position.top,
+        left: position.left,
+        transform: position.transform,
+        width: "min(360px, calc(100vw - 16px))",
       }}
-      style={{ background: backdropBg }}
     >
-      <div onClick={(e) => e.stopPropagation()} className="mx-auto w-full max-w-2xl">
-        <Sheet>
-          <div className="flex items-center justify-between gap-3 px-1">
-            <span className="t-label-l">{initialNote ? "Edit note" : "Add note"}</span>
-            <IconButton aria-label="Close" size="sm" onClick={onCancel}>
-              <Icons.Close size={14} />
-            </IconButton>
-          </div>
-
-          <p className="t-body-s mt-1 italic opacity-70">"{quote}"</p>
-
-          <textarea
-            autoFocus
-            className={`t-body-m mt-3 min-h-[140px] w-full rounded-md border px-3 py-2 outline-none ${inputBg}`}
-            placeholder="Add a thought…"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-          />
-
-          <div className="mt-3 flex justify-end gap-2">
-            <Button variant="ghost" onClick={onCancel} disabled={saving}>
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              disabled={saving}
-              onClick={async () => {
-                setSaving(true);
-                try {
-                  await onSave(value);
-                } finally {
-                  setSaving(false);
-                }
-              }}
+      <div
+        className="flex flex-col gap-3 rounded-[18px] border p-5"
+        style={{
+          background: surface,
+          borderColor: border,
+          boxShadow: "0 24px 48px rgba(20,15,10,0.20), 0 4px 12px rgba(20,15,10,0.10)",
+        }}
+      >
+        <div className="flex items-center gap-2">
+          <div className="flex rounded-full p-[3px]" style={{ background: raised }}>
+            <span
+              className="font-ui rounded-full px-3 py-1.5 text-[11px] font-semibold"
+              style={{ background: surface, boxShadow: "0 1px 2px rgba(0,0,0,0.06)" }}
             >
-              {saving ? "Saving…" : "Save"}
-            </Button>
+              On highlight
+            </span>
+            <span
+              className="font-ui px-3 py-1.5 text-[11px] font-semibold"
+              style={{ color: muted }}
+            >
+              Standalone
+            </span>
           </div>
-        </Sheet>
+          <div className="flex-1" />
+          <IconButton aria-label="Close" size="sm" onClick={onCancel}>
+            <Icons.Close size={12} />
+          </IconButton>
+        </div>
+
+        <blockquote
+          className="m-0 border-l-2 pl-3 font-reading text-[13px] leading-normal italic"
+          style={{ borderColor: "var(--hl-pink)", color: "var(--bd-fg-subtle)" }}
+        >
+          "{quote}"
+        </blockquote>
+
+        <textarea
+          autoFocus
+          className={`t-body-m min-h-20 w-full resize-none rounded-[12px] border px-3 py-2 font-reading leading-relaxed outline-none ${inputBg}`}
+          placeholder="What did you think?"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+        />
+
+        <button
+          type="button"
+          className="flex items-center gap-2 rounded-[10px] px-3 py-2 text-left"
+          style={{ background: raised, color: "var(--bd-accent)" }}
+          onClick={onAsk}
+        >
+          <Icons.Sparkles size={13} />
+          <span className="t-body-s font-semibold">Ask Bainder about this passage instead</span>
+        </button>
+
+        <div className="flex items-center gap-2">
+          <span className="t-body-s text-[11px]" style={{ color: muted }}>
+            On highlight
+          </span>
+          <div className="flex-1" />
+          <Button variant="ghost" size="sm" onClick={onCancel} disabled={saving}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            disabled={saving}
+            onClick={async () => {
+              setSaving(true);
+              try {
+                await onSave(value);
+              } finally {
+                setSaving(false);
+              }
+            }}
+          >
+            {saving ? "Saving..." : "Save note"}
+          </Button>
+        </div>
       </div>
     </div>
   );
+}
+
+function notePopoverPosition(rect: DOMRect) {
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const width = Math.min(NOTE_POPOVER_WIDTH, viewportWidth - 16);
+  const top = Math.max(8, Math.min(rect.top - 20, viewportHeight - 280));
+
+  if (rect.right + NOTE_POPOVER_GAP + width <= viewportWidth - 8) {
+    return { top, left: rect.right + NOTE_POPOVER_GAP, transform: "none" };
+  }
+
+  if (rect.left - NOTE_POPOVER_GAP - width >= 8) {
+    return { top, left: rect.left - NOTE_POPOVER_GAP - width, transform: "none" };
+  }
+
+  const centeredLeft = Math.max(
+    width / 2 + 8,
+    Math.min(viewportWidth - width / 2 - 8, rect.left + rect.width / 2),
+  );
+  return {
+    top: Math.max(8, Math.min(rect.bottom + NOTE_POPOVER_GAP, viewportHeight - 280)),
+    left: centeredLeft,
+    transform: "translateX(-50%)",
+  };
+}
+
+async function copyText(text: string) {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return;
+    } catch {
+      // Fall through to the legacy copy path for restricted browser contexts.
+    }
+  }
+  const input = document.createElement("textarea");
+  input.value = text;
+  input.style.position = "fixed";
+  input.style.opacity = "0";
+  document.body.append(input);
+  input.select();
+  document.execCommand("copy");
+  input.remove();
 }
