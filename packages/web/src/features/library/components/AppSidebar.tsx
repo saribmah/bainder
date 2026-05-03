@@ -51,7 +51,7 @@ export function AppSidebar({
   ];
 
   return (
-    <aside className="hidden w-[230px] shrink-0 flex-col gap-5 border-r border-paper-200 px-[18px] py-6 lg:flex">
+    <aside className="hidden w-[230px] shrink-0 flex-col gap-5 border-r border-bd-border px-[18px] py-6 lg:flex">
       <Wordmark size="md" />
 
       <UploadDropTarget uploading={uploading} onFile={onUpload}>
@@ -76,7 +76,7 @@ export function AppSidebar({
         ))}
       </nav>
 
-      <div className="h-px bg-paper-200" />
+      <div className="h-px bg-bd-border" />
 
       <div className="min-h-0 flex-1">
         <div className="mb-2.5 flex items-center justify-between px-1">
@@ -84,7 +84,7 @@ export function AppSidebar({
             type="button"
             onClick={() => setShelvesOpen((open) => !open)}
             aria-expanded={shelvesOpen}
-            className="t-label-s flex items-center gap-1.5 rounded-md border-0 bg-transparent px-2 py-1 text-paper-500 hover:text-paper-700"
+            className="t-label-s flex items-center gap-1.5 rounded-md border-0 bg-transparent px-2 py-1 text-bd-fg-muted hover:text-bd-fg-subtle"
           >
             <span
               className="inline-flex items-center justify-center transition-transform"
@@ -99,7 +99,7 @@ export function AppSidebar({
             <button
               type="button"
               aria-label="Create shelf"
-              className="flex h-6 w-6 items-center justify-center rounded-full border-0 bg-transparent text-paper-600 hover:bg-paper-100"
+              className="flex h-6 w-6 items-center justify-center rounded-full border-0 bg-transparent text-bd-fg-subtle hover:bg-bd-surface-hover"
               onClick={onCreateShelf}
             >
               <Icons.Plus size={13} color="currentColor" />
@@ -118,12 +118,12 @@ export function AppSidebar({
               />
             ))}
             {shelves === null && (
-              <div className="px-3 py-2 text-[13px] text-paper-500">Loading shelves...</div>
+              <div className="px-3 py-2 text-[13px] text-bd-fg-muted">Loading shelves...</div>
             )}
             {shelves && shelves.length <= 2 && onCreateShelf && (
               <button
                 type="button"
-                className="flex items-center gap-2.5 rounded-md border-0 bg-transparent px-3 py-2 text-left text-wine-700 hover:bg-wine-50"
+                className="flex items-center gap-2.5 rounded-md border-0 bg-transparent px-3 py-2 text-left text-bd-accent hover:bg-bd-surface-hover"
                 onClick={onCreateShelf}
               >
                 <Icons.Plus size={13} color="currentColor" />
@@ -143,10 +143,10 @@ function SidebarNavItem({ item }: { item: NavItem }) {
   const Icon = item.icon;
   const body = (active: boolean) => (
     <>
-      <Icon size={18} color={active ? "var(--paper-900)" : "var(--paper-600)"} />
+      <Icon size={18} color={active ? "var(--bd-fg)" : "var(--bd-fg-subtle)"} />
       <span className="t-label-m flex-1">{item.name}</span>
       {item.count !== undefined && (
-        <span className="font-mono text-[11px] text-paper-500">{item.count}</span>
+        <span className="font-mono text-[11px] text-bd-fg-muted">{item.count}</span>
       )}
     </>
   );
@@ -159,7 +159,9 @@ function SidebarNavItem({ item }: { item: NavItem }) {
         className={({ isActive }) =>
           [
             "flex items-center gap-2.5 rounded-md px-3 py-2 text-left no-underline transition-colors",
-            isActive ? "bg-paper-100 text-paper-900" : "text-paper-700 hover:bg-paper-100",
+            isActive
+              ? "bg-bd-surface-raised text-bd-fg"
+              : "text-bd-fg-subtle hover:bg-bd-surface-hover",
           ].join(" ")
         }
       >
@@ -171,7 +173,7 @@ function SidebarNavItem({ item }: { item: NavItem }) {
   return (
     <button
       type="button"
-      className="flex items-center gap-2.5 rounded-md border-0 bg-transparent px-3 py-2 text-left text-paper-700 transition-colors hover:bg-paper-100"
+      className="flex items-center gap-2.5 rounded-md border-0 bg-transparent px-3 py-2 text-left text-bd-fg-subtle transition-colors hover:bg-bd-surface-hover"
     >
       {body(false)}
     </button>
@@ -194,10 +196,10 @@ function SidebarShelfItem({
       className={({ isActive }) =>
         [
           "flex items-center gap-2.5 rounded-md px-3 py-2 text-left no-underline transition-colors",
-          index === 2 ? "mt-1 border-t border-paper-200 pt-3" : "",
+          index === 2 ? "mt-1 border-t border-bd-border pt-3" : "",
           isActive || activeShelfId === shelf.id
-            ? "bg-paper-100 text-paper-900"
-            : "text-paper-700 hover:bg-paper-100",
+            ? "bg-bd-surface-raised text-bd-fg"
+            : "text-bd-fg-subtle hover:bg-bd-surface-hover",
         ].join(" ")
       }
     >
@@ -206,9 +208,12 @@ function SidebarShelfItem({
         return (
           <>
             {smart ? (
-              <span className="font-mono text-[9px] text-paper-500">—</span>
+              <span className="font-mono text-[9px] text-bd-fg-muted">—</span>
             ) : (
-              <Icons.Bookmark size={13} color={active ? "var(--wine-700)" : "var(--paper-500)"} />
+              <Icons.Bookmark
+                size={13}
+                color={active ? "var(--bd-accent)" : "var(--bd-fg-muted)"}
+              />
             )}
             <span
               className={[
@@ -218,7 +223,7 @@ function SidebarShelfItem({
             >
               {shelf.name}
             </span>
-            <span className="font-mono text-[11px] text-paper-500">{shelf.itemCount}</span>
+            <span className="font-mono text-[11px] text-bd-fg-muted">{shelf.itemCount}</span>
           </>
         );
       }}

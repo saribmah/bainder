@@ -15,8 +15,8 @@ export function DashboardHeader({
   return (
     <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
       <div>
-        <div className="t-label-s text-paper-500">{formatDayLabel()}</div>
-        <h1 className="mt-1 font-display text-[40px] font-normal leading-[1.05] tracking-normal text-paper-900 lg:text-[44px]">
+        <div className="t-label-s text-bd-fg-muted">{formatDayLabel()}</div>
+        <h1 className="mt-1 font-display text-[40px] font-normal leading-[1.05] tracking-normal text-bd-fg lg:text-[44px]">
           Good evening, {reader}.
         </h1>
       </div>
@@ -26,7 +26,7 @@ export function DashboardHeader({
             value={query}
             onChange={(event) => onQuery(event.target.value)}
             placeholder="Search across everything..."
-            iconEnd={<Icons.Search size={18} color="var(--paper-500)" />}
+            iconEnd={<Icons.Search size={18} color="var(--bd-fg-muted)" />}
           />
         </div>
       ) : null}

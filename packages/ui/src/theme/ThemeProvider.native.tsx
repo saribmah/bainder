@@ -4,6 +4,7 @@ import { themeColors, THEME_ORDER, type Theme, type ThemeColors } from "./themeC
 
 type ThemeContextValue = {
   theme: Theme;
+  palette: ThemeColors;
   setTheme: (theme: Theme) => void;
   cycleTheme: () => void;
 };
@@ -27,6 +28,7 @@ export function ThemeProvider({
 }: ThemeProviderProps) {
   const [internal, setInternal] = useState<Theme>(defaultTheme);
   const theme = controlled ?? internal;
+  const palette = themeColors(theme);
 
   const setTheme = useCallback(
     (next: Theme) => {
@@ -42,8 +44,10 @@ export function ThemeProvider({
     if (next) setTheme(next);
   }, [theme, setTheme]);
 
-  const value = useMemo(() => ({ theme, setTheme, cycleTheme }), [theme, setTheme, cycleTheme]);
-  const palette = themeColors(theme);
+  const value = useMemo(
+    () => ({ theme, palette, setTheme, cycleTheme }),
+    [theme, palette, setTheme, cycleTheme],
+  );
 
   return (
     <ThemeContext.Provider value={value}>
@@ -64,5 +68,14 @@ export function useTheme(): ThemeContextValue {
 
 export function useThemeColors(): ThemeColors {
   const ctx = useContext(ThemeContext);
-  return themeColors(ctx?.theme ?? "light");
+  return ctx?.palette ?? themeColors("light");
+}
+
+// Builders should be defined at module scope so memoization is effective.
+// The hook re-evaluates the builder only when the active theme changes.
+export function useThemedStyles<T>(builder: (palette: ThemeColors, theme: Theme) => T): T {
+  const ctx = useContext(ThemeContext);
+  const theme = ctx?.theme ?? "light";
+  const palette = ctx?.palette ?? themeColors("light");
+  return useMemo(() => builder(palette, theme), [palette, theme, builder]);
 }

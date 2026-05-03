@@ -56,7 +56,7 @@ export function DashboardContent({
             ))
           ) : (
             <Card className="px-5 py-6 xl:col-span-3">
-              <p className="t-body-m text-paper-600">
+              <p className="t-body-m text-bd-fg-subtle">
                 Open a document and Bainder will keep your place here.
               </p>
             </Card>

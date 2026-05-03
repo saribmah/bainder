@@ -1,9 +1,17 @@
+import { useEffect, type ReactNode } from "react";
 import { Outlet, BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { ThemeProvider } from "@bainder/ui";
 import { RequireAuth, SignIn, SignUp } from "./features/auth";
 import { Dashboard } from "./features/dashboard";
 import { Landing } from "./features/landing";
 import { Highlights, Library, LibraryDetail, Notes, ShelfDetail } from "./features/library";
-import { ProfileProvider, SettingsPage } from "./features/profile";
+import {
+  profileThemeToUi,
+  ProfileProvider,
+  SettingsPage,
+  uiThemeToProfile,
+  useProfile,
+} from "./features/profile";
 import { Reader } from "./features/reader";
 
 export function App() {
@@ -34,7 +42,31 @@ export function App() {
 function SignedInShell() {
   return (
     <ProfileProvider>
-      <Outlet />
+      <ThemedAppShell>
+        <Outlet />
+      </ThemedAppShell>
     </ProfileProvider>
+  );
+}
+
+function ThemedAppShell({ children }: { children: ReactNode }) {
+  const { profile, update } = useProfile();
+  const theme = profileThemeToUi(profile?.readingTheme);
+
+  // Mirror to <html> so body/viewport area stays themed even outside the
+  // wrapper div (e.g., during route transitions or scroll overflow).
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [theme]);
+
+  return (
+    <ThemeProvider
+      theme={theme}
+      onThemeChange={(next) => {
+        void update({ readingTheme: uiThemeToProfile(next) });
+      }}
+    >
+      {children}
+    </ThemeProvider>
   );
 }

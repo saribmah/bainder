@@ -2,8 +2,8 @@ import { useState } from "react";
 import { Redirect, useRouter } from "expo-router";
 import { ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Button, Input, Monogram, color } from "@bainder/ui";
-import { authStyles as styles } from "./auth.styles";
+import { Button, Input, Monogram, useThemeColors, useThemedStyles } from "@bainder/ui";
+import { buildAuthStyles } from "./auth.styles";
 import { authClient } from "./auth.client";
 import { BackButton } from "./components/BackButton";
 import { OtpScreen } from "./components/OtpScreen";
@@ -37,6 +37,8 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
   const session = authClient.useSession();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const styles = useThemedStyles(buildAuthStyles);
+  const palette = useThemeColors();
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [phase, setPhase] = useState<Phase>("email");
@@ -106,8 +108,8 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
       <View style={styles.intro}>
         <Monogram
           size="md"
-          backgroundColor={color.paper[900]}
-          color={color.paper[50]}
+          backgroundColor={palette.action}
+          color={palette.actionFg}
           style={styles.monogram}
           textStyle={styles.monogramText}
         />

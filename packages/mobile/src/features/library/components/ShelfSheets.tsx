@@ -1,6 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { Button, Icons, Input, Sheet, color, font, radius } from "@bainder/ui";
+import {
+  Button,
+  Icons,
+  Input,
+  Sheet,
+  font,
+  radius,
+  useThemeColors,
+  useThemedStyles,
+  type ThemeColors,
+} from "@bainder/ui";
 import type { Document, ShelfCustom } from "@bainder/sdk";
 import { LibraryCover } from "./LibraryCover";
 import { SpineFan } from "./ShelfArtwork";
@@ -20,6 +30,7 @@ export function CreateShelfSheet({
   onClose: () => void;
   onCreate: (draft: ShelfDraft) => Promise<void>;
 }) {
+  const styles = useThemedStyles(buildShelfSheetsStyles);
   const [draft, setDraft] = useState<ShelfDraft>({ name: "", description: "" });
   const [saving, setSaving] = useState(false);
   const canSave = draft.name.trim().length > 0 && !saving;
@@ -37,8 +48,8 @@ export function CreateShelfSheet({
 
   return (
     <Sheet visible={visible} onClose={onClose} style={styles.sheet}>
-      <SheetHeader eyebrow="New shelf" title="Group books your way." />
-      <ShelfFields draft={draft} onChange={setDraft} />
+      <SheetHeader eyebrow="New shelf" title="Group books your way." styles={styles} />
+      <ShelfFields draft={draft} onChange={setDraft} styles={styles} />
       <View style={styles.previewRow}>
         <SpineFan
           shelf={{
@@ -80,6 +91,7 @@ export function EditShelfSheet({
   onSave: (draft: ShelfDraft) => Promise<void>;
   onDelete: () => Promise<void>;
 }) {
+  const styles = useThemedStyles(buildShelfSheetsStyles);
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [draft, setDraft] = useState<ShelfDraft>({
@@ -112,8 +124,8 @@ export function EditShelfSheet({
 
   return (
     <Sheet visible={visible} onClose={onClose} style={styles.sheet}>
-      <SheetHeader eyebrow="Edit shelf" title="Keep the shelf clear." />
-      <ShelfFields draft={draft} onChange={setDraft} />
+      <SheetHeader eyebrow="Edit shelf" title="Keep the shelf clear." styles={styles} />
+      <ShelfFields draft={draft} onChange={setDraft} styles={styles} />
       <View style={styles.actionsSplit}>
         <Button
           variant="ghost"
@@ -165,6 +177,8 @@ export function AddToShelfSheet({
   onToggle: (shelf: ShelfCustom, selected: boolean) => void;
   onCreate: () => void;
 }) {
+  const styles = useThemedStyles(buildShelfSheetsStyles);
+  const palette = useThemeColors();
   const selectedIds = new Set(selectedShelves.map((shelf) => shelf.id));
 
   return (
@@ -195,7 +209,7 @@ export function AddToShelfSheet({
               onPress={() => onToggle(shelf, selected)}
             >
               <View style={[styles.checkbox, selected ? styles.checkboxActive : null]}>
-                {selected && <Icons.Check size={13} color={color.paper[50]} strokeWidth={2.5} />}
+                {selected && <Icons.Check size={13} color={palette.actionFg} strokeWidth={2.5} />}
               </View>
               <View style={styles.shelfBody}>
                 <Text style={styles.shelfName} numberOfLines={1}>
@@ -237,6 +251,7 @@ export function AddBooksSheet({
   onClose: () => void;
   onAdd: (doc: Document) => Promise<void>;
 }) {
+  const styles = useThemedStyles(buildShelfSheetsStyles);
   const [query, setQuery] = useState("");
   const [workingId, setWorkingId] = useState<string | null>(null);
   const available = useMemo(() => {
@@ -257,7 +272,7 @@ export function AddBooksSheet({
 
   return (
     <Sheet visible={visible} onClose={onClose} style={styles.sheetTall}>
-      <SheetHeader eyebrow="Add books" title={shelf.name} />
+      <SheetHeader eyebrow="Add books" title={shelf.name} styles={styles} />
       <Input value={query} onChangeText={setQuery} placeholder="Find books..." />
       <ScrollView style={styles.list} contentContainerStyle={{ gap: 4 }}>
         {available.length === 0 ? (
@@ -308,9 +323,11 @@ export function AddBooksSheet({
 function ShelfFields({
   draft,
   onChange,
+  styles,
 }: {
   draft: ShelfDraft;
   onChange: (draft: ShelfDraft) => void;
+  styles: ShelfSheetsStyles;
 }) {
   return (
     <View style={styles.fields}>
@@ -336,7 +353,15 @@ function ShelfFields({
   );
 }
 
-function SheetHeader({ eyebrow, title }: { eyebrow: string; title: string }) {
+function SheetHeader({
+  eyebrow,
+  title,
+  styles,
+}: {
+  eyebrow: string;
+  title: string;
+  styles: ShelfSheetsStyles;
+}) {
   return (
     <View>
       <Text style={styles.eyebrow}>{eyebrow}</Text>
@@ -345,161 +370,164 @@ function SheetHeader({ eyebrow, title }: { eyebrow: string; title: string }) {
   );
 }
 
-const styles = StyleSheet.create({
-  sheet: {
-    gap: 16,
-  },
-  sheetTall: {
-    maxHeight: "86%",
-    gap: 16,
-  },
-  eyebrow: {
-    fontFamily: font.nativeFamily.ui,
-    fontSize: 11,
-    fontWeight: "600",
-    letterSpacing: 0.44,
-    textTransform: "uppercase",
-    color: color.paper[500],
-  },
-  title: {
-    marginTop: 4,
-    fontFamily: font.nativeFamily.display,
-    fontSize: 26,
-    fontWeight: "400",
-    lineHeight: 30,
-    color: color.paper[900],
-  },
-  fields: {
-    gap: 12,
-  },
-  label: {
-    marginBottom: 6,
-    fontFamily: font.nativeFamily.ui,
-    fontSize: 11,
-    fontWeight: "600",
-    letterSpacing: 0.44,
-    textTransform: "uppercase",
-    color: color.paper[600],
-  },
-  previewRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    borderRadius: 14,
-    backgroundColor: color.paper[100],
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  muted: {
-    flex: 1,
-    fontFamily: font.nativeFamily.ui,
-    fontSize: 12,
-    lineHeight: 16,
-    color: color.paper[500],
-  },
-  actions: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 8,
-  },
-  actionsSplit: {
-    gap: 12,
-    borderTopWidth: 1,
-    borderTopColor: color.paper[200],
-    paddingTop: 14,
-  },
-  bookRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    borderRadius: radius.lg,
-    paddingVertical: 8,
-  },
-  bookBody: {
-    flex: 1,
-    minWidth: 0,
-  },
-  bookTitle: {
-    fontFamily: font.nativeFamily.ui,
-    fontSize: 14,
-    fontWeight: "600",
-    lineHeight: 18,
-    color: color.paper[900],
-  },
-  bookSub: {
-    marginTop: 1,
-    fontFamily: font.nativeFamily.ui,
-    fontSize: 11,
-    color: color.paper[500],
-  },
-  shelfRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: color.paper[200],
-    paddingVertical: 12,
-  },
-  checkbox: {
-    width: 22,
-    height: 22,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1.5,
-    borderColor: color.paper[300],
-    borderRadius: 6,
-  },
-  checkboxActive: {
-    borderColor: color.paper[900],
-    backgroundColor: color.paper[900],
-  },
-  shelfBody: {
-    flex: 1,
-    minWidth: 0,
-  },
-  shelfName: {
-    fontFamily: font.nativeFamily.ui,
-    fontSize: 14,
-    fontWeight: "600",
-    color: color.paper[900],
-  },
-  shelfNote: {
-    marginTop: 1,
-    fontFamily: font.nativeFamily.ui,
-    fontSize: 11,
-    color: color.paper[500],
-  },
-  count: {
-    fontFamily: font.nativeFamily.mono,
-    fontSize: 11,
-    color: color.paper[500],
-  },
-  list: {
-    maxHeight: 420,
-  },
-  empty: {
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 160,
-    borderWidth: 1,
-    borderStyle: "dashed",
-    borderColor: color.paper[300],
-    borderRadius: radius.lg,
-    backgroundColor: color.paper[100],
-    padding: 20,
-  },
-  emptyTitle: {
-    fontFamily: font.nativeFamily.display,
-    fontSize: 20,
-    fontWeight: "500",
-    color: color.paper[900],
-  },
-  emptyText: {
-    marginTop: 4,
-    textAlign: "center",
-    fontFamily: font.nativeFamily.ui,
-    fontSize: 12,
-    lineHeight: 16,
-    color: color.paper[600],
-  },
-});
+const buildShelfSheetsStyles = (palette: ThemeColors) =>
+  StyleSheet.create({
+    sheet: {
+      gap: 16,
+    },
+    sheetTall: {
+      maxHeight: "86%",
+      gap: 16,
+    },
+    eyebrow: {
+      fontFamily: font.nativeFamily.ui,
+      fontSize: 11,
+      fontWeight: "600",
+      letterSpacing: 0.44,
+      textTransform: "uppercase",
+      color: palette.fgMuted,
+    },
+    title: {
+      marginTop: 4,
+      fontFamily: font.nativeFamily.display,
+      fontSize: 26,
+      fontWeight: "400",
+      lineHeight: 30,
+      color: palette.fg,
+    },
+    fields: {
+      gap: 12,
+    },
+    label: {
+      marginBottom: 6,
+      fontFamily: font.nativeFamily.ui,
+      fontSize: 11,
+      fontWeight: "600",
+      letterSpacing: 0.44,
+      textTransform: "uppercase",
+      color: palette.fgSubtle,
+    },
+    previewRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      borderRadius: 14,
+      backgroundColor: palette.surfaceRaised,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+    },
+    muted: {
+      flex: 1,
+      fontFamily: font.nativeFamily.ui,
+      fontSize: 12,
+      lineHeight: 16,
+      color: palette.fgMuted,
+    },
+    actions: {
+      flexDirection: "row",
+      justifyContent: "flex-end",
+      gap: 8,
+    },
+    actionsSplit: {
+      gap: 12,
+      borderTopWidth: 1,
+      borderTopColor: palette.border,
+      paddingTop: 14,
+    },
+    bookRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      borderRadius: radius.lg,
+      paddingVertical: 8,
+    },
+    bookBody: {
+      flex: 1,
+      minWidth: 0,
+    },
+    bookTitle: {
+      fontFamily: font.nativeFamily.ui,
+      fontSize: 14,
+      fontWeight: "600",
+      lineHeight: 18,
+      color: palette.fg,
+    },
+    bookSub: {
+      marginTop: 1,
+      fontFamily: font.nativeFamily.ui,
+      fontSize: 11,
+      color: palette.fgMuted,
+    },
+    shelfRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: palette.border,
+      paddingVertical: 12,
+    },
+    checkbox: {
+      width: 22,
+      height: 22,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1.5,
+      borderColor: palette.borderStrong,
+      borderRadius: 6,
+    },
+    checkboxActive: {
+      borderColor: palette.action,
+      backgroundColor: palette.action,
+    },
+    shelfBody: {
+      flex: 1,
+      minWidth: 0,
+    },
+    shelfName: {
+      fontFamily: font.nativeFamily.ui,
+      fontSize: 14,
+      fontWeight: "600",
+      color: palette.fg,
+    },
+    shelfNote: {
+      marginTop: 1,
+      fontFamily: font.nativeFamily.ui,
+      fontSize: 11,
+      color: palette.fgMuted,
+    },
+    count: {
+      fontFamily: font.nativeFamily.mono,
+      fontSize: 11,
+      color: palette.fgMuted,
+    },
+    list: {
+      maxHeight: 420,
+    },
+    empty: {
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: 160,
+      borderWidth: 1,
+      borderStyle: "dashed",
+      borderColor: palette.borderStrong,
+      borderRadius: radius.lg,
+      backgroundColor: palette.surfaceRaised,
+      padding: 20,
+    },
+    emptyTitle: {
+      fontFamily: font.nativeFamily.display,
+      fontSize: 20,
+      fontWeight: "500",
+      color: palette.fg,
+    },
+    emptyText: {
+      marginTop: 4,
+      textAlign: "center",
+      fontFamily: font.nativeFamily.ui,
+      fontSize: 12,
+      lineHeight: 16,
+      color: palette.fgSubtle,
+    },
+  });
+
+type ShelfSheetsStyles = ReturnType<typeof buildShelfSheetsStyles>;

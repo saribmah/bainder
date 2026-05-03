@@ -90,10 +90,10 @@ export function NotesSheet({
   }, [client, documentId, refreshToken, visible]);
 
   const palette = themeColors(theme);
-  const muted = mutedFor(theme);
-  const cardBg = cardBgFor(theme);
+  const muted = palette.fgMuted;
+  const cardBg = palette.surfaceRaised;
   const noteBg = noteBgFor(theme);
-  const ringColor = ringFor(theme);
+  const ringColor = palette.borderStrong;
 
   return (
     <Sheet visible={visible} onClose={onClose} style={{ backgroundColor: palette.surface }}>
@@ -148,7 +148,7 @@ export function NotesSheet({
                     {
                       backgroundColor: highlight
                         ? color.highlight[highlight.color]
-                        : color.paper[300],
+                        : palette.borderStrong,
                     },
                   ]}
                 />
@@ -181,28 +181,10 @@ const labelFor = (info: { order: number; title: string } | undefined, note: Note
   return "Document";
 };
 
-function mutedFor(theme: Theme): string {
-  if (theme === "dark") return color.night[200];
-  if (theme === "sepia") return color.sepia[700];
-  return color.paper[500];
-}
-
-function cardBgFor(theme: Theme): string {
-  if (theme === "dark") return color.night[800];
-  if (theme === "sepia") return color.sepia[100];
-  return color.paper[100];
-}
-
 function noteBgFor(theme: Theme): string {
   if (theme === "dark") return color.night[700];
   if (theme === "sepia") return color.sepia[50];
   return color.paper[50];
-}
-
-function ringFor(theme: Theme): string {
-  if (theme === "dark") return color.night[500];
-  if (theme === "sepia") return color.sepia[200];
-  return color.paper[300];
 }
 
 const styles = StyleSheet.create({

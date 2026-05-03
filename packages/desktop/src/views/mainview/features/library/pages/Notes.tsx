@@ -107,7 +107,7 @@ export function Notes() {
   };
 
   return (
-    <main className="flex h-dvh min-h-screen overflow-hidden bg-paper-50 text-paper-900">
+    <main className="flex h-dvh min-h-screen overflow-hidden bg-bd-bg text-bd-fg">
       <AppSidebar
         totalCount={counts.all}
         highlightsCount={highlights?.length ?? 0}
@@ -123,7 +123,7 @@ export function Notes() {
           <div className="mx-auto max-w-5xl">
             <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <div className="t-label-s text-paper-500">
+                <div className="t-label-s text-bd-fg-muted">
                   Notes · {countsByFilter.all} across {sourceCounts.length} sources ·{" "}
                   {countsByFilter.standalone} standalone
                 </div>
@@ -154,12 +154,12 @@ export function Notes() {
                   </ChipButton>
                 );
               })}
-              <div className="h-5 w-px bg-paper-200" />
+              <div className="h-5 w-px bg-bd-border" />
               <ChipButton variant="outline">Recent</ChipButton>
             </div>
 
             {(error || operationError) && (
-              <p className="t-body-s mt-4 rounded-md bg-wine-50 px-4 py-3 text-error">
+              <p className="t-body-s mt-4 rounded-md bg-bd-surface-hover px-4 py-3 text-error">
                 {operationError ?? error}
               </p>
             )}
@@ -168,7 +168,7 @@ export function Notes() {
               {!visible ? (
                 <NotesSkeleton />
               ) : visible.length === 0 ? (
-                <p className="t-body-m border-t border-paper-200 py-6 text-paper-600">
+                <p className="t-body-m border-t border-bd-border py-6 text-bd-fg-subtle">
                   No notes in this view yet.
                 </p>
               ) : (
@@ -188,22 +188,22 @@ export function Notes() {
           </div>
         </div>
 
-        <aside className="hidden w-[300px] shrink-0 border-l border-paper-200 px-7 py-8 xl:block">
-          <div className="t-label-s mb-3 text-paper-500">By source</div>
+        <aside className="hidden w-[300px] shrink-0 border-l border-bd-border px-7 py-8 xl:block">
+          <div className="t-label-s mb-3 text-bd-fg-muted">By source</div>
           <div className="flex flex-col gap-1">
             {sourceCounts.map((source) => (
               <div key={source.title} className="flex items-center gap-3 rounded-md px-3 py-2">
-                <span className="t-body-m min-w-0 flex-1 truncate text-paper-700">
+                <span className="t-body-m min-w-0 flex-1 truncate text-bd-fg-subtle">
                   {source.title}
                 </span>
-                <span className="font-mono text-[11px] text-paper-500">{source.count}</span>
+                <span className="font-mono text-[11px] text-bd-fg-muted">{source.count}</span>
               </div>
             ))}
           </div>
 
-          <div className="t-label-s mb-3 mt-8 text-paper-500">Standalone notes</div>
-          <div className="rounded-xl bg-paper-100 px-4 py-3.5">
-            <p className="t-body-s m-0 leading-6 text-paper-700">
+          <div className="t-label-s mb-3 mt-8 text-bd-fg-muted">Standalone notes</div>
+          <div className="rounded-xl bg-bd-surface-raised px-4 py-3.5">
+            <p className="t-body-s m-0 leading-6 text-bd-fg-subtle">
               Notes that aren't tied to a highlight: chapter-level reflections, quick thoughts, and
               whole-book reminders.
             </p>
@@ -219,7 +219,7 @@ export function Notes() {
             </Button>
           </div>
 
-          <div className="t-label-s mb-3 mt-8 text-paper-500">Export</div>
+          <div className="t-label-s mb-3 mt-8 text-bd-fg-muted">Export</div>
           <button className="bd-btn bd-btn-rounded bd-btn-secondary bd-btn-sm mb-2 w-full">
             Export to Markdown
           </button>
@@ -248,7 +248,7 @@ function NotesSkeleton() {
   return (
     <div className="flex flex-col">
       {Array.from({ length: 5 }).map((_, index) => (
-        <div key={index} className="border-b border-paper-200 py-4">
+        <div key={index} className="border-b border-bd-border py-4">
           <Skeleton width="45%" height={14} />
           <Skeleton width="92%" height={34} className="mt-3" />
           <Skeleton width="74%" height={42} className="mt-3" />

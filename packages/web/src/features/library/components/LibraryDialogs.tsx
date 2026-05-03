@@ -104,7 +104,7 @@ export function DeleteDialog({
           <Icons.Close size={14} />
         </IconButton>
       </div>
-      <p className="t-body-m mt-2 text-paper-700">
+      <p className="t-body-m mt-2 text-bd-fg-subtle">
         <span className="font-medium">"{doc.title}"</span> and all of its highlights will be
         permanently removed. This can't be undone.
       </p>

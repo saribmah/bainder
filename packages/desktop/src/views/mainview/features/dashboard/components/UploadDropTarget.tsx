@@ -62,7 +62,7 @@ export function UploadDropTarget({
       className={[
         "transition-colors",
         compact ? "flex items-center gap-3" : "cursor-pointer",
-        dragging ? "border-wine-700 bg-wine-50" : "",
+        dragging ? "border-bd-accent bg-bd-surface-hover" : "",
         uploading ? "pointer-events-none opacity-70" : "",
         className,
       ].join(" ")}

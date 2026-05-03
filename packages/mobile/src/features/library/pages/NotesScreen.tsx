@@ -9,9 +9,11 @@ import {
   Sheet,
   Skeleton,
   Wordmark,
-  color,
   font,
   radius,
+  useThemeColors,
+  useThemedStyles,
+  type ThemeColors,
 } from "@bainder/ui";
 import type { Document, Highlight, Note } from "@bainder/sdk";
 import { useSdk } from "../../../sdk/sdk.provider";
@@ -19,7 +21,7 @@ import { HIGHLIGHT_COLOR } from "../constants";
 import { useLibraryDocuments } from "../hooks/useLibraryDocuments";
 import { useLibraryHighlights } from "../hooks/useLibraryHighlights";
 import { useLibraryNotes, type LibraryNote } from "../hooks/useLibraryNotes";
-import { libraryStyles } from "../library.styles";
+import { buildLibraryStyles } from "../library.styles";
 
 type NoteFilter = "all" | "attached" | "standalone";
 type EditorState = Note | "new" | null;
@@ -35,6 +37,9 @@ export function NotesScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { client } = useSdk();
+  const library = useThemedStyles(buildLibraryStyles);
+  const styles = useThemedStyles(buildNotesScreenStyles);
+  const palette = useThemeColors();
   const { documents } = useLibraryDocuments();
   const { highlights } = useLibraryHighlights(documents);
   const { notes, error, refresh } = useLibraryNotes(documents);
@@ -102,42 +107,42 @@ export function NotesScreen() {
   };
 
   return (
-    <View style={libraryStyles.root}>
+    <View style={library.root}>
       <ScrollView
-        style={libraryStyles.scroll}
+        style={library.scroll}
         contentContainerStyle={[
-          libraryStyles.content,
+          library.content,
           { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 110 },
         ]}
       >
-        <View style={libraryStyles.header}>
+        <View style={library.header}>
           <Wordmark size="sm" />
           <View style={styles.headerActions}>
-            <View style={libraryStyles.iconButton}>
-              <Icons.Search size={16} color={color.paper[800]} />
+            <View style={library.iconButton}>
+              <Icons.Search size={16} color={palette.fg} />
             </View>
             <Pressable
               accessibilityRole="button"
               disabled={readyDocuments.length === 0}
-              style={[libraryStyles.iconButton, styles.primaryIcon]}
+              style={[library.iconButton, styles.primaryIcon]}
               onPress={() => setEditor("new")}
             >
-              <Icons.Plus size={16} color={color.paper[50]} />
+              <Icons.Plus size={16} color={palette.actionFg} />
             </Pressable>
           </View>
         </View>
 
-        <View style={libraryStyles.titleBlock}>
-          <Text style={libraryStyles.eyebrow}>
+        <View style={library.titleBlock}>
+          <Text style={library.eyebrow}>
             {counts.all} notes · {sourceCount} sources
           </Text>
-          <Text style={libraryStyles.title}>Notes</Text>
+          <Text style={library.title}>Notes</Text>
         </View>
 
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={libraryStyles.chipRow}
+          contentContainerStyle={library.chipRow}
         >
           {filters.map((item) => (
             <ChipButton
@@ -150,13 +155,13 @@ export function NotesScreen() {
           ))}
         </ScrollView>
 
-        {error && <Text style={libraryStyles.error}>{error}</Text>}
+        {error && <Text style={library.error}>{error}</Text>}
         {!visible ? (
-          <NotesSkeleton />
+          <NotesSkeleton styles={styles} />
         ) : visible.length === 0 ? (
-          <View style={libraryStyles.empty}>
-            <Text style={libraryStyles.emptyTitle}>No notes yet</Text>
-            <Text style={libraryStyles.emptyText}>
+          <View style={library.empty}>
+            <Text style={library.emptyTitle}>No notes yet</Text>
+            <Text style={library.emptyText}>
               Standalone thoughts and highlighted notes collect here.
             </Text>
           </View>
@@ -165,6 +170,8 @@ export function NotesScreen() {
             <NoteItem
               key={note.id}
               note={note}
+              styles={styles}
+              palette={palette}
               onPress={() => setEditor(note)}
               onOpen={() => router.push(`/read/${note.document.id}`)}
             />
@@ -176,6 +183,8 @@ export function NotesScreen() {
         visible={editor !== null}
         note={editor && editor !== "new" ? editor : null}
         documents={readyDocuments}
+        styles={styles}
+        palette={palette}
         onClose={() => setEditor(null)}
         onSave={saveNote}
         onDelete={editor && editor !== "new" ? deleteNote : undefined}
@@ -186,15 +195,19 @@ export function NotesScreen() {
 
 function NoteItem({
   note,
+  styles,
+  palette,
   onPress,
   onOpen,
 }: {
   note: EnrichedNote;
+  styles: NotesScreenStyles;
+  palette: ThemeColors;
   onPress: () => void;
   onOpen: () => void;
 }) {
   const attached = Boolean(note.highlight);
-  const accent = note.highlight ? HIGHLIGHT_COLOR[note.highlight.color] : color.paper[400];
+  const accent = note.highlight ? HIGHLIGHT_COLOR[note.highlight.color] : palette.fgMuted;
   return (
     <Pressable
       accessibilityRole="button"
@@ -205,7 +218,7 @@ function NoteItem({
         {attached ? (
           <View style={[styles.noteDot, { backgroundColor: accent }]} />
         ) : (
-          <Icons.Note size={13} color={color.paper[500]} />
+          <Icons.Note size={13} color={palette.fgMuted} />
         )}
         <Text style={styles.noteSource} numberOfLines={1}>
           {note.document.title}
@@ -220,7 +233,7 @@ function NoteItem({
       )}
 
       <View style={[styles.noteBody, attached ? styles.noteBodyAttached : null]}>
-        <Icons.Note size={13} color={color.paper[600]} />
+        <Icons.Note size={13} color={palette.fgSubtle} />
         <Text style={styles.noteBodyText}>{note.body}</Text>
       </View>
 
@@ -239,6 +252,8 @@ function NoteEditorSheet({
   visible,
   note,
   documents,
+  styles,
+  palette,
   onClose,
   onSave,
   onDelete,
@@ -246,6 +261,8 @@ function NoteEditorSheet({
   visible: boolean;
   note: Note | null;
   documents: ReadonlyArray<Document>;
+  styles: NotesScreenStyles;
+  palette: ThemeColors;
   onClose: () => void;
   onSave: (documentId: string, body: string) => Promise<void>;
   onDelete?: () => Promise<void>;
@@ -318,7 +335,7 @@ function NoteEditorSheet({
         value={body}
         multiline
         placeholder="What did you think?"
-        placeholderTextColor={color.paper[500]}
+        placeholderTextColor={palette.fgMuted}
         style={styles.noteInput}
         onChangeText={setBody}
       />
@@ -356,7 +373,7 @@ function NoteEditorSheet({
   );
 }
 
-function NotesSkeleton() {
+function NotesSkeleton({ styles }: { styles: NotesScreenStyles }) {
   return (
     <View>
       {Array.from({ length: 4 }).map((_, index) => (
@@ -374,132 +391,135 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-const styles = StyleSheet.create({
-  headerActions: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  primaryIcon: {
-    backgroundColor: color.paper[900],
-  },
-  pressed: {
-    opacity: 0.72,
-  },
-  noteItem: {
-    gap: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: color.paper[200],
-    paddingVertical: 14,
-  },
-  noteMeta: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  noteDot: {
-    width: 8,
-    height: 8,
-    borderRadius: radius.pill,
-  },
-  noteSource: {
-    flex: 1,
-    fontFamily: font.nativeFamily.ui,
-    fontSize: 12,
-    fontWeight: "600",
-    color: color.paper[800],
-  },
-  noteDate: {
-    fontFamily: font.nativeFamily.ui,
-    fontSize: 11,
-    color: color.paper[500],
-  },
-  noteQuote: {
-    marginLeft: 18,
-    borderLeftWidth: 2,
-    paddingLeft: 12,
-    fontFamily: font.nativeFamily.reading,
-    fontSize: 13,
-    fontStyle: "italic",
-    lineHeight: 20,
-    color: color.paper[900],
-  },
-  noteBody: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 9,
-    borderRadius: 12,
-    backgroundColor: color.paper[100],
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  noteBodyAttached: {
-    marginLeft: 18,
-  },
-  noteBodyText: {
-    flex: 1,
-    fontFamily: font.nativeFamily.reading,
-    fontSize: 13,
-    lineHeight: 20,
-    color: color.paper[800],
-  },
-  noteActions: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  noteActionsAttached: {
-    marginLeft: 18,
-  },
-  noteAction: {
-    fontFamily: font.nativeFamily.ui,
-    fontSize: 12,
-    color: color.paper[500],
-  },
-  noteAsk: {
-    fontFamily: font.nativeFamily.ui,
-    fontSize: 12,
-    fontWeight: "600",
-    color: color.wine[700],
-  },
-  sheet: {
-    paddingHorizontal: 24,
-  },
-  sheetEyebrow: {
-    fontFamily: font.nativeFamily.ui,
-    fontSize: 11,
-    fontWeight: "600",
-    letterSpacing: 0.44,
-    textTransform: "uppercase",
-    color: color.paper[500],
-  },
-  sheetTitle: {
-    fontFamily: font.nativeFamily.display,
-    fontSize: 24,
-    fontWeight: "400",
-    lineHeight: 28,
-    color: color.paper[900],
-  },
-  sourceRow: {
-    gap: 8,
-    paddingVertical: 4,
-  },
-  noteInput: {
-    minHeight: 132,
-    borderWidth: 1.5,
-    borderColor: color.paper[900],
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontFamily: font.nativeFamily.reading,
-    fontSize: 15,
-    lineHeight: 23,
-    color: color.paper[900],
-    textAlignVertical: "top",
-  },
-  sheetActions: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  deleteButton: {
-    flex: 1,
-  },
-});
+const buildNotesScreenStyles = (palette: ThemeColors) =>
+  StyleSheet.create({
+    headerActions: {
+      flexDirection: "row",
+      gap: 8,
+    },
+    primaryIcon: {
+      backgroundColor: palette.action,
+    },
+    pressed: {
+      opacity: 0.72,
+    },
+    noteItem: {
+      gap: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: palette.border,
+      paddingVertical: 14,
+    },
+    noteMeta: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    noteDot: {
+      width: 8,
+      height: 8,
+      borderRadius: radius.pill,
+    },
+    noteSource: {
+      flex: 1,
+      fontFamily: font.nativeFamily.ui,
+      fontSize: 12,
+      fontWeight: "600",
+      color: palette.fg,
+    },
+    noteDate: {
+      fontFamily: font.nativeFamily.ui,
+      fontSize: 11,
+      color: palette.fgMuted,
+    },
+    noteQuote: {
+      marginLeft: 18,
+      borderLeftWidth: 2,
+      paddingLeft: 12,
+      fontFamily: font.nativeFamily.reading,
+      fontSize: 13,
+      fontStyle: "italic",
+      lineHeight: 20,
+      color: palette.fg,
+    },
+    noteBody: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: 9,
+      borderRadius: 12,
+      backgroundColor: palette.surfaceRaised,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+    },
+    noteBodyAttached: {
+      marginLeft: 18,
+    },
+    noteBodyText: {
+      flex: 1,
+      fontFamily: font.nativeFamily.reading,
+      fontSize: 13,
+      lineHeight: 20,
+      color: palette.fg,
+    },
+    noteActions: {
+      flexDirection: "row",
+      gap: 12,
+    },
+    noteActionsAttached: {
+      marginLeft: 18,
+    },
+    noteAction: {
+      fontFamily: font.nativeFamily.ui,
+      fontSize: 12,
+      color: palette.fgMuted,
+    },
+    noteAsk: {
+      fontFamily: font.nativeFamily.ui,
+      fontSize: 12,
+      fontWeight: "600",
+      color: palette.accent,
+    },
+    sheet: {
+      paddingHorizontal: 24,
+    },
+    sheetEyebrow: {
+      fontFamily: font.nativeFamily.ui,
+      fontSize: 11,
+      fontWeight: "600",
+      letterSpacing: 0.44,
+      textTransform: "uppercase",
+      color: palette.fgMuted,
+    },
+    sheetTitle: {
+      fontFamily: font.nativeFamily.display,
+      fontSize: 24,
+      fontWeight: "400",
+      lineHeight: 28,
+      color: palette.fg,
+    },
+    sourceRow: {
+      gap: 8,
+      paddingVertical: 4,
+    },
+    noteInput: {
+      minHeight: 132,
+      borderWidth: 1.5,
+      borderColor: palette.action,
+      borderRadius: 14,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      fontFamily: font.nativeFamily.reading,
+      fontSize: 15,
+      lineHeight: 23,
+      color: palette.fg,
+      textAlignVertical: "top",
+    },
+    sheetActions: {
+      flexDirection: "row",
+      gap: 8,
+    },
+    deleteButton: {
+      flex: 1,
+    },
+  });
+
+type NotesScreenStyles = ReturnType<typeof buildNotesScreenStyles>;

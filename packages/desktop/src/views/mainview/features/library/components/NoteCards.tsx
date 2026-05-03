@@ -49,12 +49,12 @@ export function NoteCard({
   onAsk?: () => void;
 }) {
   const attached = Boolean(note.highlight);
-  const accent = note.highlight ? HIGHLIGHT_COLOR[note.highlight.color] : "var(--paper-400)";
+  const accent = note.highlight ? HIGHLIGHT_COLOR[note.highlight.color] : "var(--bd-fg-muted)";
 
   return (
     <article
       className={[
-        "flex flex-col gap-2 border-b border-paper-200",
+        "flex flex-col gap-2 border-b border-bd-border",
         dense ? "py-3.5" : "py-[18px]",
       ].join(" ")}
     >
@@ -62,13 +62,13 @@ export function NoteCard({
         {attached ? (
           <span aria-hidden className="h-2 w-2 rounded-full" style={{ background: accent }} />
         ) : (
-          <Icons.Note size={13} color="var(--paper-500)" />
+          <Icons.Note size={13} color="var(--bd-fg-muted)" />
         )}
-        <span className="t-label-m min-w-0 max-w-[48%] truncate text-paper-800">{source}</span>
-        <span className="t-body-s min-w-0 truncate text-[11px] text-paper-500">· {location}</span>
+        <span className="t-label-m min-w-0 max-w-[48%] truncate text-bd-fg">{source}</span>
+        <span className="t-body-s min-w-0 truncate text-[11px] text-bd-fg-muted">· {location}</span>
         <div className="min-w-3 flex-1" />
         {!attached && !dense && (
-          <span className="bd-chip h-5 border-0 bg-paper-100 px-2 text-[9px] text-paper-600">
+          <span className="bd-chip h-5 border-0 bg-bd-surface-raised px-2 text-[9px] text-bd-fg-subtle">
             Standalone
           </span>
         )}
@@ -77,7 +77,7 @@ export function NoteCard({
       {note.highlight && (
         <blockquote
           className={[
-            "m-0 border-l-2 pl-3 font-reading leading-[1.55] text-paper-900",
+            "m-0 border-l-2 pl-3 font-reading leading-[1.55] text-bd-fg",
             dense ? "ml-[18px] text-[13px]" : "ml-[18px] text-[15px]",
           ].join(" ")}
           style={{ borderColor: accent }}
@@ -88,15 +88,15 @@ export function NoteCard({
 
       <div
         className={[
-          "flex items-start gap-2.5 rounded-xl bg-paper-100",
+          "flex items-start gap-2.5 rounded-xl bg-bd-surface-raised",
           attached ? "ml-[18px]" : "",
           dense ? "px-3 py-2" : "px-3.5 py-3",
         ].join(" ")}
       >
-        <Icons.Note size={dense ? 12 : 14} color="var(--paper-600)" />
+        <Icons.Note size={dense ? 12 : 14} color="var(--bd-fg-subtle)" />
         <p
           className={[
-            "m-0 flex-1 font-reading leading-[1.55] text-paper-800",
+            "m-0 flex-1 font-reading leading-[1.55] text-bd-fg",
             dense ? "text-[13px]" : "text-sm",
           ].join(" ")}
         >
@@ -156,24 +156,24 @@ export function NoteComposer({
   onSubmit: () => void;
 }) {
   return (
-    <div className="mb-5 flex items-start gap-3 rounded-2xl bg-paper-100 px-4 py-3.5">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-paper-200">
-        <Icons.Note size={14} color="var(--paper-700)" />
+    <div className="mb-5 flex items-start gap-3 rounded-2xl bg-bd-surface-raised px-4 py-3.5">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-bd-border">
+        <Icons.Note size={14} color="var(--bd-fg-subtle)" />
       </div>
       <div className="min-w-0 flex-1">
         <textarea
           value={value}
           placeholder={placeholder}
           rows={2}
-          className="w-full resize-none border-0 bg-transparent p-0 font-reading text-[15px] leading-6 text-paper-900 outline-none placeholder:text-paper-500"
+          className="w-full resize-none border-0 bg-transparent p-0 font-reading text-[15px] leading-6 text-bd-fg outline-none placeholder:text-bd-fg-muted"
           onChange={(event) => onChange(event.currentTarget.value)}
         />
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          <span className="bd-chip h-6 border border-paper-200 bg-paper-50 text-[11px]">
-            <Icons.Bookmark size={10} color="var(--paper-600)" />
+          <span className="bd-chip h-6 border border-bd-border bg-bd-bg text-[11px]">
+            <Icons.Bookmark size={10} color="var(--bd-fg-subtle)" />
             Whole book
           </span>
-          <span className="t-body-s text-[11px] text-paper-500">
+          <span className="t-body-s text-[11px] text-bd-fg-muted">
             or attach to a passage when you're reading
           </span>
           <div className="min-w-3 flex-1" />
@@ -188,7 +188,7 @@ export function NoteComposer({
 
 function noteActionStyle(tone: "muted" | "ask"): CSSProperties {
   return {
-    color: tone === "ask" ? "var(--wine-700)" : "var(--paper-500)",
+    color: tone === "ask" ? "var(--bd-accent)" : "var(--bd-fg-muted)",
     cursor: "pointer",
     fontFamily: "var(--font-ui)",
     fontSize: 12,

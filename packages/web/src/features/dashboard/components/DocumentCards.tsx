@@ -25,9 +25,9 @@ export function ContinueCard({
       <button type="button" onClick={onOpen} className="contents text-left">
         <DocumentCover doc={doc} width={52} height={70} />
         <div className="min-w-0 flex-1">
-          <div className="t-label-s mb-1 text-paper-500">{KIND_LABEL[doc.kind]}</div>
-          <div className="t-label-l truncate text-paper-900">{doc.title}</div>
-          <div className="t-body-s mt-1 truncate text-paper-500">{subtitle}</div>
+          <div className="t-label-s mb-1 text-bd-fg-muted">{KIND_LABEL[doc.kind]}</div>
+          <div className="t-label-l truncate text-bd-fg">{doc.title}</div>
+          <div className="t-body-s mt-1 truncate text-bd-fg-muted">{subtitle}</div>
           <ProgressLine doc={doc} />
         </div>
       </button>
@@ -41,8 +41,8 @@ export function ProgressCard({ doc }: { doc: Document }) {
     <Card className="flex items-center gap-4 px-4 py-4">
       <DocumentCover doc={doc} width={52} height={70} />
       <div className="min-w-0 flex-1">
-        <div className="t-label-l truncate text-paper-900">{doc.title}</div>
-        <div className="t-body-s mt-1 text-paper-500">
+        <div className="t-label-l truncate text-bd-fg">{doc.title}</div>
+        <div className="t-body-s mt-1 text-bd-fg-muted">
           {doc.status === "failed" ? (doc.errorReason ?? "Failed") : "Processing..."}
         </div>
       </div>
@@ -73,8 +73,8 @@ export function RecentDocumentCard({
       </button>
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1">
-          <div className="t-label-m line-clamp-2 text-paper-900">{doc.title}</div>
-          <div className="t-body-s mt-1 truncate text-[11px] text-paper-500">
+          <div className="t-label-m line-clamp-2 text-bd-fg">{doc.title}</div>
+          <div className="t-body-s mt-1 truncate text-[11px] text-bd-fg-muted">
             {formatRelativeTime(doc.createdAt)}
           </div>
         </div>

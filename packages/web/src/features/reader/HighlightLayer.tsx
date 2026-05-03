@@ -244,7 +244,7 @@ function HighlightPopover({
       ? "bg-[oklch(15%_0.008_240)] text-night-50"
       : theme === "sepia"
         ? "bg-sepia-100 text-sepia-900"
-        : "bg-paper-100 text-paper-900";
+        : "bg-bd-surface-raised text-bd-fg";
 
   return (
     <div
@@ -347,7 +347,7 @@ function NotePopover({
       ? "bg-[oklch(15%_0.008_240)] text-night-50 border-[oklch(28%_0.012_240)]"
       : theme === "sepia"
         ? "bg-sepia-50 text-sepia-900 border-sepia-200"
-        : "bg-paper-50 text-paper-900 border-paper-200";
+        : "bg-bd-bg text-bd-fg border-bd-border";
 
   const surface =
     theme === "dark"

@@ -1,13 +1,14 @@
 import type { ReactNode } from "react";
 import { Redirect, usePathname, useSegments } from "expo-router";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
-import { color } from "@bainder/ui";
+import { useThemeColors } from "@bainder/ui";
 import { authClient } from "./auth.client.ts";
 
 export function AuthGate({ children }: { children: ReactNode }) {
   const session = authClient.useSession();
   const segments = useSegments();
   const pathname = usePathname();
+  const palette = useThemeColors();
   const inSignIn = segments[0] === "signin";
   const inSignUp = segments[0] === "signup";
   const inLanding = pathname === "/";
@@ -16,8 +17,8 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
   if (session.isPending) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator color={color.paper[500]} />
+      <View style={[styles.loading, { backgroundColor: palette.bg }]}>
+        <ActivityIndicator color={palette.fgMuted} />
       </View>
     );
   }
@@ -35,6 +36,5 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: color.paper[50],
   },
 });

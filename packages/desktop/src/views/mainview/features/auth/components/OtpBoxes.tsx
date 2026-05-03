@@ -28,11 +28,11 @@ export function OtpBoxes({
           <span
             key={index}
             className={[
-              "flex h-14 w-12 items-center justify-center rounded-md border bg-paper-100 font-display text-[28px] font-medium leading-none text-paper-900 sm:h-16 sm:w-14 sm:text-[32px]",
-              active ? "border-paper-900" : "border-transparent",
+              "flex h-14 w-12 items-center justify-center rounded-md border bg-bd-surface-raised font-display text-[28px] font-medium leading-none text-bd-fg sm:h-16 sm:w-14 sm:text-[32px]",
+              active ? "border-bd-fg" : "border-transparent",
             ].join(" ")}
           >
-            {digit.trim() ? digit : active ? <span className="h-7 w-px bg-paper-900" /> : null}
+            {digit.trim() ? digit : active ? <span className="h-7 w-px bg-bd-action" /> : null}
           </span>
         );
       })}

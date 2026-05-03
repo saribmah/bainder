@@ -1,11 +1,23 @@
 import { useRouter } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Button, Icons, Wordmark, color, font, radius } from "@bainder/ui";
+import {
+  Button,
+  Icons,
+  Wordmark,
+  color,
+  font,
+  radius,
+  useThemeColors,
+  useThemedStyles,
+  type ThemeColors,
+} from "@bainder/ui";
 
 export function LandingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const styles = useThemedStyles(buildStyles);
+  const palette = useThemeColors();
   const goToSignIn = () => router.push("/signin");
   const goToSignUp = () => router.push("/signup");
 
@@ -47,7 +59,7 @@ export function LandingScreen() {
 
         <View style={styles.answer}>
           <View style={styles.answerHeader}>
-            <Icons.Sparkles size={12} color={color.wine[700]} />
+            <Icons.Sparkles size={12} color={palette.accent} />
             <Text style={styles.answerLabel}>Bainder</Text>
           </View>
           <Text style={styles.answerBody}>
@@ -69,115 +81,116 @@ export function LandingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: color.paper[50],
-  },
-  content: {
-    paddingHorizontal: 22,
-  },
-  nav: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  signIn: {
-    fontFamily: font.nativeFamily.ui,
-    fontSize: 13,
-    fontWeight: "500",
-    color: color.paper[800],
-  },
-  heroText: {
-    marginTop: 22,
-  },
-  eyebrow: {
-    fontFamily: font.nativeFamily.ui,
-    fontSize: 11,
-    fontWeight: "500",
-    lineHeight: 14,
-    letterSpacing: 0.44,
-    color: color.paper[500],
-  },
-  title: {
-    marginTop: 12,
-    fontFamily: font.nativeFamily.display,
-    fontSize: 36,
-    fontWeight: "400",
-    lineHeight: 36,
-    color: color.paper[900],
-  },
-  lead: {
-    marginTop: 12,
-    fontFamily: font.nativeFamily.ui,
-    fontSize: 13,
-    lineHeight: 19,
-    color: color.paper[700],
-  },
-  preview: {
-    marginTop: 14,
-    minHeight: 188,
-    overflow: "hidden",
-    borderRadius: radius.xl,
-    backgroundColor: color.paper[100],
-    paddingHorizontal: 18,
-    paddingTop: 18,
-    paddingBottom: 16,
-  },
-  previewTitle: {
-    alignSelf: "center",
-    maxWidth: 280,
-    textAlign: "center",
-    fontFamily: font.nativeFamily.display,
-    fontSize: 17,
-    fontWeight: "400",
-    lineHeight: 22,
-    color: color.paper[900],
-  },
-  previewText: {
-    marginTop: 14,
-    fontFamily: font.nativeFamily.reading,
-    fontSize: 14,
-    lineHeight: 22,
-    color: color.paper[800],
-  },
-  highlight: {
-    backgroundColor: color.highlight.pink,
-  },
-  answer: {
-    marginTop: 14,
-    borderRadius: radius.lg,
-    backgroundColor: color.paper[50],
-    padding: 12,
-    shadowColor: color.paper[900],
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 3,
-  },
-  answerHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  answerLabel: {
-    fontFamily: font.nativeFamily.ui,
-    fontSize: 11,
-    fontWeight: "500",
-    color: color.wine[700],
-  },
-  answerBody: {
-    marginTop: 4,
-    fontFamily: font.nativeFamily.reading,
-    fontSize: 11,
-    lineHeight: 16,
-    color: color.paper[800],
-  },
-  em: {
-    fontStyle: "italic",
-  },
-  actions: {
-    marginTop: 16,
-    gap: 8,
-  },
-});
+const buildStyles = (palette: ThemeColors) =>
+  StyleSheet.create({
+    root: {
+      flex: 1,
+      backgroundColor: palette.bg,
+    },
+    content: {
+      paddingHorizontal: 22,
+    },
+    nav: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    signIn: {
+      fontFamily: font.nativeFamily.ui,
+      fontSize: 13,
+      fontWeight: "500",
+      color: palette.fg,
+    },
+    heroText: {
+      marginTop: 22,
+    },
+    eyebrow: {
+      fontFamily: font.nativeFamily.ui,
+      fontSize: 11,
+      fontWeight: "500",
+      lineHeight: 14,
+      letterSpacing: 0.44,
+      color: palette.fgMuted,
+    },
+    title: {
+      marginTop: 12,
+      fontFamily: font.nativeFamily.display,
+      fontSize: 36,
+      fontWeight: "400",
+      lineHeight: 36,
+      color: palette.fg,
+    },
+    lead: {
+      marginTop: 12,
+      fontFamily: font.nativeFamily.ui,
+      fontSize: 13,
+      lineHeight: 19,
+      color: palette.fgSubtle,
+    },
+    preview: {
+      marginTop: 14,
+      minHeight: 188,
+      overflow: "hidden",
+      borderRadius: radius.xl,
+      backgroundColor: palette.surfaceRaised,
+      paddingHorizontal: 18,
+      paddingTop: 18,
+      paddingBottom: 16,
+    },
+    previewTitle: {
+      alignSelf: "center",
+      maxWidth: 280,
+      textAlign: "center",
+      fontFamily: font.nativeFamily.display,
+      fontSize: 17,
+      fontWeight: "400",
+      lineHeight: 22,
+      color: palette.fg,
+    },
+    previewText: {
+      marginTop: 14,
+      fontFamily: font.nativeFamily.reading,
+      fontSize: 14,
+      lineHeight: 22,
+      color: palette.fg,
+    },
+    highlight: {
+      backgroundColor: color.highlight.pink,
+    },
+    answer: {
+      marginTop: 14,
+      borderRadius: radius.lg,
+      backgroundColor: palette.bg,
+      padding: 12,
+      shadowColor: palette.fg,
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.08,
+      shadowRadius: 16,
+      elevation: 3,
+    },
+    answerHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+    },
+    answerLabel: {
+      fontFamily: font.nativeFamily.ui,
+      fontSize: 11,
+      fontWeight: "500",
+      color: palette.accent,
+    },
+    answerBody: {
+      marginTop: 4,
+      fontFamily: font.nativeFamily.reading,
+      fontSize: 11,
+      lineHeight: 16,
+      color: palette.fg,
+    },
+    em: {
+      fontStyle: "italic",
+    },
+    actions: {
+      marginTop: 16,
+      gap: 8,
+    },
+  });

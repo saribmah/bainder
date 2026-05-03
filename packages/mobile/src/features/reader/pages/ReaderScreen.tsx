@@ -10,12 +10,12 @@ import {
   Icons,
   Sheet,
   Skeleton,
-  ThemeProvider,
   color,
   font,
-  themeColors,
   useTheme,
+  useThemeColors,
   type Theme,
+  type ThemeColors,
 } from "@bainder/ui";
 import type { Document, DocumentManifest, DocumentSectionSummary, EpubTocItem } from "@bainder/sdk";
 import { useSdk } from "../../../sdk/sdk.provider.tsx";
@@ -44,6 +44,7 @@ export function ReaderScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { client } = useSdk();
   const router = useRouter();
+  const palette = useThemeColors();
   const [doc, setDoc] = useState<Document | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -89,7 +90,7 @@ export function ReaderScreen() {
   if (doc.status !== "processed") {
     return (
       <ReaderState>
-        <Text style={shellStyles.muted}>
+        <Text style={[shellStyles.muted, { color: palette.fgMuted }]}>
           {doc.status === "failed"
             ? (doc.errorReason ?? "Processing failed.")
             : "This document is still being processed. Please wait a moment and try again."}
@@ -101,17 +102,13 @@ export function ReaderScreen() {
     );
   }
 
-  return (
-    <ThemeProvider defaultTheme="light">
-      <ReaderShell doc={doc} onClose={handleClose} />
-    </ThemeProvider>
-  );
+  return <ReaderShell doc={doc} onClose={handleClose} />;
 }
 
 function ReaderShell({ doc, onClose }: { doc: Document; onClose: () => void }) {
   const insets = useSafeAreaInsets();
   const { theme, cycleTheme } = useTheme();
-  const palette = themeColors(theme);
+  const palette = useThemeColors();
   const [position, setPosition] = useState<string | null>(null);
   const [tocState, setTocState] = useState<TocContext | null>(null);
   const [notesState, setNotesState] = useState<NotesContext | null>(null);
@@ -131,7 +128,7 @@ function ReaderShell({ doc, onClose }: { doc: Document; onClose: () => void }) {
       <View
         style={[
           shellStyles.header,
-          { paddingTop: insets.top + 8, borderBottomColor: borderForTheme(theme) },
+          { paddingTop: insets.top + 8, borderBottomColor: palette.border },
         ]}
       >
         <IconButton aria-label="Close reader" size="sm" onPress={onClose}>
@@ -141,7 +138,7 @@ function ReaderShell({ doc, onClose }: { doc: Document; onClose: () => void }) {
           {doc.title}
         </Text>
         {position && (
-          <Text style={[shellStyles.position, { color: mutedForTheme(theme) }]} numberOfLines={1}>
+          <Text style={[shellStyles.position, { color: palette.fgMuted }]} numberOfLines={1}>
             {position}
           </Text>
         )}
@@ -154,6 +151,7 @@ function ReaderShell({ doc, onClose }: { doc: Document; onClose: () => void }) {
         <ReaderBody
           doc={doc}
           theme={theme}
+          palette={palette}
           onPosition={setPosition}
           onTocChange={setTocState}
           onNotesChange={setNotesState}
@@ -167,7 +165,7 @@ function ReaderShell({ doc, onClose }: { doc: Document; onClose: () => void }) {
       </ScrollView>
 
       <View style={[shellStyles.toolbarWrap, { bottom: insets.bottom + 24 }]}>
-        <FloatingToolbar style={{ backgroundColor: floatingBgForTheme(theme) }}>
+        <FloatingToolbar>
           <FloatingToolbarButton aria-label={`Theme: ${theme}`} onPress={cycleTheme}>
             {theme === "dark" ? (
               <Icons.Sun size={20} color={palette.text} />
@@ -221,7 +219,7 @@ function ReaderShell({ doc, onClose }: { doc: Document; onClose: () => void }) {
             tocState.onJump(order);
             setTocOpen(false);
           }}
-          theme={theme}
+          palette={palette}
         />
       )}
 
@@ -244,7 +242,7 @@ function ReaderShell({ doc, onClose }: { doc: Document; onClose: () => void }) {
       <ReaderAiSheet
         visible={aiOpen}
         onClose={() => setAiOpen(false)}
-        theme={theme}
+        palette={palette}
         chapterLabel={position ?? "Current chapter"}
         quote={aiQuote}
         prompt={aiPrompt}
@@ -257,6 +255,7 @@ function ReaderShell({ doc, onClose }: { doc: Document; onClose: () => void }) {
 function ReaderBody({
   doc,
   theme,
+  palette,
   onPosition,
   onTocChange,
   onNotesChange,
@@ -265,6 +264,7 @@ function ReaderBody({
 }: {
   doc: Document;
   theme: Theme;
+  palette: ThemeColors;
   onPosition: (p: string | null) => void;
   onTocChange: (s: TocContext | null) => void;
   onNotesChange: (s: NotesContext | null) => void;
@@ -402,10 +402,10 @@ function ReaderBody({
 
   return (
     <>
-      <Text style={[shellStyles.chapterKicker, { color: themeColors(theme).text }]}>
+      <Text style={[shellStyles.chapterKicker, { color: palette.text }]}>
         Chapter {String(order + 1).padStart(2, "0")}
       </Text>
-      <Text style={[shellStyles.chapterTitle, { color: themeColors(theme).text }]}>
+      <Text style={[shellStyles.chapterTitle, { color: palette.text }]}>
         {currentSection.title}
       </Text>
       <EpubHtmlBody
@@ -486,7 +486,7 @@ function TocSheet({
   sections,
   currentOrder,
   onJump,
-  theme,
+  palette,
 }: {
   visible: boolean;
   onClose: () => void;
@@ -494,7 +494,7 @@ function TocSheet({
   sections: ReadonlyArray<DocumentSectionSummary>;
   currentOrder: number;
   onJump: (order: number) => void;
-  theme: Theme;
+  palette: ThemeColors;
 }) {
   const orderByFile = useMemo(() => {
     const map = new Map<string, number>();
@@ -504,11 +504,8 @@ function TocSheet({
     return map;
   }, [sections]);
 
-  const palette = themeColors(theme);
-  const muted = mutedForTheme(theme);
-
   return (
-    <Sheet visible={visible} onClose={onClose} style={{ backgroundColor: palette.surface }}>
+    <Sheet visible={visible} onClose={onClose}>
       <View style={tocStyles.header}>
         <Text style={[tocStyles.title, { color: palette.text }]}>Contents</Text>
         <IconButton aria-label="Close" size="sm" onPress={onClose}>
@@ -537,12 +534,12 @@ function TocSheet({
                   height: undefined,
                   paddingVertical: 10,
                 },
-                active && { backgroundColor: activeBgForTheme(theme) },
+                active && { backgroundColor: palette.surfaceHover },
               ]}
             >
               <Text
                 style={{
-                  color: reachable ? palette.text : muted,
+                  color: reachable ? palette.text : palette.fgMuted,
                   fontSize: 15,
                   flex: 1,
                 }}
@@ -561,34 +558,37 @@ function TocSheet({
 function ReaderAiSheet({
   visible,
   onClose,
-  theme,
+  palette,
   chapterLabel,
   quote,
   prompt,
 }: {
   visible: boolean;
   onClose: () => void;
-  theme: Theme;
+  palette: ThemeColors;
   chapterLabel: string;
   quote: string | null;
   prompt: string;
 }) {
-  const palette = themeColors(theme);
-  const muted = mutedForTheme(theme);
   const quoteText =
     quote ??
     "Affordances define what actions are possible. Signifiers specify how people discover those possibilities.";
   const promptText = prompt || "What's the most important idea in this chapter?";
   return (
-    <Sheet visible={visible} onClose={onClose} style={{ backgroundColor: palette.bg }}>
+    <Sheet visible={visible} onClose={onClose}>
       <View style={aiStyles.header}>
         <View style={aiStyles.brandRow}>
           <Icons.Sparkles size={18} color={palette.accent} />
           <Text style={[aiStyles.brand, { color: palette.accent }]}>Bainder</Text>
         </View>
-        <Text style={[aiStyles.chapter, { color: muted }]}>{chapterLabel}</Text>
+        <Text style={[aiStyles.chapter, { color: palette.fgMuted }]}>{chapterLabel}</Text>
       </View>
-      <View style={[aiStyles.quote, { backgroundColor: palette.surfaceRaised }]}>
+      <View
+        style={[
+          aiStyles.quote,
+          { backgroundColor: palette.surfaceRaised, borderLeftColor: palette.accent },
+        ]}
+      >
         <Text style={[aiStyles.quoteText, { color: palette.fgSubtle }]}>{`"${quoteText}"`}</Text>
       </View>
       <View style={aiStyles.promptRow}>
@@ -614,7 +614,7 @@ function ReaderAiSheet({
       <View style={[aiStyles.inputRow, { backgroundColor: palette.surfaceRaised }]}>
         <TextInput
           placeholder="Ask a follow-up..."
-          placeholderTextColor={muted}
+          placeholderTextColor={palette.fgMuted}
           style={[aiStyles.input, { color: palette.text }]}
         />
         <Pressable
@@ -630,8 +630,9 @@ function ReaderAiSheet({
 }
 
 function ReaderState({ children }: { children: React.ReactNode }) {
+  const palette = useThemeColors();
   return (
-    <View style={shellStyles.stateRoot}>
+    <View style={[shellStyles.stateRoot, { backgroundColor: palette.bg }]}>
       <View style={{ gap: 16, padding: 24, alignItems: "center" }}>{children}</View>
     </View>
   );
@@ -645,38 +646,12 @@ const parseSectionOrder = (sectionKey: string): number | null => {
   return Number(match[1]);
 };
 
-// ─── Theme helpers ──────────────────────────────────────────────────────
-function borderForTheme(theme: Theme): string {
-  if (theme === "dark") return color.night[800];
-  if (theme === "sepia") return color.sepia[200];
-  return color.paper[200];
-}
-
-function mutedForTheme(theme: Theme): string {
-  if (theme === "dark") return color.night[200];
-  if (theme === "sepia") return color.sepia[700];
-  return color.paper[500];
-}
-
-function floatingBgForTheme(theme: Theme): string {
-  if (theme === "dark") return color.night[800];
-  if (theme === "sepia") return color.sepia[50];
-  return color.paper[50];
-}
-
-function activeBgForTheme(theme: Theme): string {
-  if (theme === "dark") return color.night[800];
-  if (theme === "sepia") return color.sepia[100];
-  return color.paper[100];
-}
-
 const shellStyles = StyleSheet.create({
   root: { flex: 1 },
   stateRoot: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: color.paper[50],
     padding: 24,
   },
   header: {
@@ -733,7 +708,7 @@ const shellStyles = StyleSheet.create({
     alignItems: "center",
   },
   errorText: { fontSize: 15, color: color.status.error },
-  muted: { fontSize: 15, color: color.paper[500] },
+  muted: { fontSize: 15 },
 });
 
 const tocStyles = StyleSheet.create({
@@ -771,7 +746,6 @@ const aiStyles = StyleSheet.create({
   },
   quote: {
     borderLeftWidth: 2,
-    borderLeftColor: color.wine[700],
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 12,

@@ -1,7 +1,9 @@
 import { Text, View } from "react-native";
-import { dashboardStyles as styles } from "../dashboard.styles";
+import { useThemedStyles } from "@bainder/ui";
+import { buildDashboardStyles } from "../dashboard.styles";
 
 export function SectionHeader({ title, meta }: { title: string; meta: string }) {
+  const styles = useThemedStyles(buildDashboardStyles);
   return (
     <View style={styles.sectionHeader}>
       <Text style={styles.sectionTitle}>{title}</Text>

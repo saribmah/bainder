@@ -8,10 +8,10 @@ export function ProgressLine({ doc }: { doc: Document }) {
 
   return (
     <>
-      <div className="mt-2 h-[3px] overflow-hidden rounded-full bg-paper-200">
-        <div className="h-full rounded-full bg-paper-900" style={{ width: `${width}%` }} />
+      <div className="mt-2 h-[3px] overflow-hidden rounded-full bg-bd-border">
+        <div className="h-full rounded-full bg-bd-action" style={{ width: `${width}%` }} />
       </div>
-      <div className="t-body-s mt-1 text-[11px] text-paper-500">
+      <div className="t-body-s mt-1 text-[11px] text-bd-fg-muted">
         {doc.progress ? "Continue reading" : "Ready to begin"}
       </div>
     </>

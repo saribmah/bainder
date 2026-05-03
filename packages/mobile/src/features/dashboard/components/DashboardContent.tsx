@@ -1,7 +1,7 @@
 import { Text, View } from "react-native";
-import { Card } from "@bainder/ui";
+import { Card, useThemedStyles } from "@bainder/ui";
 import type { Document } from "@bainder/sdk";
-import { dashboardStyles as styles } from "../dashboard.styles";
+import { buildDashboardStyles } from "../dashboard.styles";
 import { DocumentRow, RecentCard } from "./DocumentCards";
 import { QuickAdd } from "./QuickAdd";
 import { SectionHeader } from "./SectionHeader";
@@ -23,6 +23,7 @@ export function DashboardContent({
   onOpen: (doc: Document) => void;
   onMore: (doc: Document) => void;
 }) {
+  const styles = useThemedStyles(buildDashboardStyles);
   return (
     <View>
       <QuickAdd uploading={uploading} onPress={onUpload} />

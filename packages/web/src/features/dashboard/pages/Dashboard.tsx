@@ -38,7 +38,7 @@ export function Dashboard() {
   const { shelves } = useLibraryShelves(documents);
 
   return (
-    <main className="flex min-h-screen bg-paper-50 text-paper-900">
+    <main className="flex min-h-screen bg-bd-bg text-bd-fg">
       <AppSidebar
         totalCount={documents?.length ?? 0}
         highlightsCount={highlights?.length ?? 0}
@@ -57,7 +57,9 @@ export function Dashboard() {
             showSearch={hasDocuments}
           />
 
-          {error && <p className="t-body-s rounded-md bg-wine-50 px-4 py-3 text-error">{error}</p>}
+          {error && (
+            <p className="t-body-s rounded-md bg-bd-surface-hover px-4 py-3 text-error">{error}</p>
+          )}
 
           {documents === null ? (
             <DashboardLoading />

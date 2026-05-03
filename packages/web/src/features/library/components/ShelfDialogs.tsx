@@ -36,7 +36,7 @@ export function CreateShelfDialog({
     <ShelfModal label="Create shelf" onCancel={onCancel}>
       <ShelfDialogHeader eyebrow="New shelf" title="Group books your way." onCancel={onCancel} />
       <ShelfForm draft={draft} onChange={setDraft} onSubmit={save} />
-      <div className="flex items-center gap-3 rounded-[14px] bg-paper-100 px-4 py-3">
+      <div className="flex items-center gap-3 rounded-[14px] bg-bd-surface-raised px-4 py-3">
         <SpineFan
           shelf={{
             kind: "custom",
@@ -50,7 +50,7 @@ export function CreateShelfDialog({
           }}
           size={36}
         />
-        <p className="t-body-s text-paper-500">The first covers you add will shape this shelf.</p>
+        <p className="t-body-s text-bd-fg-muted">The first covers you add will shape this shelf.</p>
       </div>
       <div className="flex justify-end gap-2">
         <Button variant="ghost" onClick={onCancel} disabled={saving}>
@@ -99,10 +99,10 @@ export function EditShelfDialog({
     <ShelfModal label="Edit shelf" onCancel={onCancel}>
       <ShelfDialogHeader eyebrow="Edit shelf" title="Keep the shelf clear." onCancel={onCancel} />
       <ShelfForm draft={draft} onChange={setDraft} onSubmit={save} />
-      <div className="flex flex-col gap-2 border-t border-paper-200 pt-4 sm:flex-row sm:justify-between">
+      <div className="flex flex-col gap-2 border-t border-bd-border pt-4 sm:flex-row sm:justify-between">
         <Button
           variant="ghost"
-          className="text-wine-700"
+          className="text-bd-accent"
           disabled={saving}
           onClick={async () => {
             if (!confirmDelete) {
@@ -172,9 +172,9 @@ export function AddBooksDialog({
       />
       <div className="max-h-[420px] overflow-y-auto pr-1">
         {available.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-paper-300 bg-paper-100 px-5 py-8 text-center">
-            <p className="t-label-m text-paper-900">No available books</p>
-            <p className="t-body-s mt-1 text-paper-500">
+          <div className="rounded-xl border border-dashed border-bd-border-strong bg-bd-surface-raised px-5 py-8 text-center">
+            <p className="t-label-m text-bd-fg">No available books</p>
+            <p className="t-body-s mt-1 text-bd-fg-muted">
               {query.trim() ? "Try a different search." : "Everything processed is already here."}
             </p>
           </div>
@@ -183,19 +183,19 @@ export function AddBooksDialog({
             {available.map((doc) => (
               <div
                 key={doc.id}
-                className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-paper-100"
+                className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-bd-surface-hover"
               >
                 <LibraryCover doc={doc} width={42} className="shrink-0" />
                 <div className="min-w-0 flex-1">
-                  <div className="t-label-m truncate text-paper-900">{doc.title}</div>
-                  <div className="t-body-s mt-0.5 truncate text-[11px] text-paper-500">
+                  <div className="t-label-m truncate text-bd-fg">{doc.title}</div>
+                  <div className="t-body-s mt-0.5 truncate text-[11px] text-bd-fg-muted">
                     {sourceLabel(doc)} · {statusLabel(doc)}
                   </div>
                 </div>
                 <Button
                   size="sm"
                   variant="secondary"
-                  className="text-wine-700"
+                  className="text-bd-accent"
                   disabled={workingId === doc.id}
                   onClick={async () => {
                     setWorkingId(doc.id);
@@ -234,7 +234,7 @@ function ShelfForm({
   return (
     <div className="flex flex-col gap-3">
       <label>
-        <span className="t-label-s mb-1.5 block text-paper-600">Name</span>
+        <span className="t-label-s mb-1.5 block text-bd-fg-subtle">Name</span>
         <Input
           autoFocus
           value={draft.name}
@@ -250,8 +250,8 @@ function ShelfForm({
         />
       </label>
       <label>
-        <span className="t-label-s mb-1.5 block text-paper-600">
-          Note <span className="font-normal normal-case text-paper-400">· optional</span>
+        <span className="t-label-s mb-1.5 block text-bd-fg-subtle">
+          Note <span className="font-normal normal-case text-bd-fg-muted">· optional</span>
         </span>
         <Input
           value={draft.description}
@@ -276,8 +276,8 @@ function ShelfDialogHeader({
   return (
     <div className="flex items-start justify-between gap-4">
       <div>
-        <div className="t-label-s text-paper-500">{eyebrow}</div>
-        <h2 className="mt-1 font-display text-[28px] font-normal leading-[1.1] text-paper-900">
+        <div className="t-label-s text-bd-fg-muted">{eyebrow}</div>
+        <h2 className="mt-1 font-display text-[28px] font-normal leading-[1.1] text-bd-fg">
           {title}
         </h2>
       </div>

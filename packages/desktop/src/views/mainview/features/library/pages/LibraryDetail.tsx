@@ -150,7 +150,7 @@ export function LibraryDetail() {
 
   if (error) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-paper-50 px-6 text-paper-900">
+      <main className="flex min-h-screen items-center justify-center bg-bd-bg px-6 text-bd-fg">
         <div className="text-center">
           <p className="t-body-m text-error">{error}</p>
           <Button variant="secondary" className="mt-4" onClick={() => navigate("/library")}>
@@ -162,7 +162,7 @@ export function LibraryDetail() {
   }
 
   return (
-    <main className="flex h-dvh min-h-screen overflow-hidden bg-paper-50 text-paper-900">
+    <main className="flex h-dvh min-h-screen overflow-hidden bg-bd-bg text-bd-fg">
       <AppSidebar
         totalCount={counts.all}
         highlightsCount={highlights.length}
@@ -178,7 +178,7 @@ export function LibraryDetail() {
         <DetailSkeleton />
       ) : (
         <section className="flex min-w-0 flex-1 overflow-hidden">
-          <aside className="hidden w-[380px] shrink-0 flex-col gap-6 border-r border-paper-200 px-9 py-10 lg:flex">
+          <aside className="hidden w-[380px] shrink-0 flex-col gap-6 border-r border-bd-border px-9 py-10 lg:flex">
             <Button
               variant="ghost"
               size="sm"
@@ -190,9 +190,9 @@ export function LibraryDetail() {
             </Button>
             <LibraryCover doc={doc} width={220} priority className="self-center" />
             <div className="text-center">
-              <div className="t-label-s text-paper-500">{KIND_LABEL[doc.kind]} · EPUB</div>
-              <h1 className="t-display-s mt-2 text-paper-900">{doc.title}</h1>
-              <div className="t-body-m mt-1 text-paper-700">{sourceLabel(doc, manifest)}</div>
+              <div className="t-label-s text-bd-fg-muted">{KIND_LABEL[doc.kind]} · EPUB</div>
+              <h1 className="t-display-s mt-2 text-bd-fg">{doc.title}</h1>
+              <div className="t-body-m mt-1 text-bd-fg-subtle">{sourceLabel(doc, manifest)}</div>
             </div>
             <div className="flex flex-col gap-2">
               <Button size="lg" onClick={() => navigate(`/read/${doc.id}`)} className="w-full">
@@ -202,7 +202,7 @@ export function LibraryDetail() {
                 variant="secondary"
                 iconStart={<Icons.Sparkles size={14} />}
                 onClick={() => navigate(`/read/${doc.id}`)}
-                className="w-full text-wine-700"
+                className="w-full text-bd-accent"
               >
                 Ask Bainder about this book
               </Button>
@@ -223,9 +223,11 @@ export function LibraryDetail() {
               <div className="mt-5 flex gap-5">
                 <LibraryCover doc={doc} width={116} priority className="shrink-0" />
                 <div className="min-w-0 flex-1">
-                  <div className="t-label-s text-paper-500">{KIND_LABEL[doc.kind]}</div>
-                  <h1 className="t-display-xs mt-1 text-paper-900">{doc.title}</h1>
-                  <div className="t-body-s mt-1 text-paper-600">{sourceLabel(doc, manifest)}</div>
+                  <div className="t-label-s text-bd-fg-muted">{KIND_LABEL[doc.kind]}</div>
+                  <h1 className="t-display-xs mt-1 text-bd-fg">{doc.title}</h1>
+                  <div className="t-body-s mt-1 text-bd-fg-subtle">
+                    {sourceLabel(doc, manifest)}
+                  </div>
                   <Button size="sm" className="mt-4" onClick={() => navigate(`/read/${doc.id}`)}>
                     Continue
                   </Button>
@@ -233,7 +235,7 @@ export function LibraryDetail() {
               </div>
             </div>
 
-            <div className="mt-8 flex gap-1 overflow-x-auto border-b border-paper-200 lg:mt-0">
+            <div className="mt-8 flex gap-1 overflow-x-auto border-b border-bd-border lg:mt-0">
               {[
                 { id: "contents", name: "Contents", count: manifest?.sections.length ?? 0 },
                 { id: "about", name: "About", count: null },
@@ -247,13 +249,13 @@ export function LibraryDetail() {
                   className={[
                     "flex shrink-0 items-center gap-1.5 border-0 border-b-2 bg-transparent px-4 py-3 font-ui text-sm font-semibold",
                     activeTab === tab.id
-                      ? "border-paper-900 text-paper-900"
-                      : "border-transparent text-paper-500",
+                      ? "border-bd-fg text-bd-fg"
+                      : "border-transparent text-bd-fg-muted",
                   ].join(" ")}
                 >
                   {tab.name}
                   {typeof tab.count === "number" && (
-                    <span className="font-mono text-[11px] font-normal text-paper-500">
+                    <span className="font-mono text-[11px] font-normal text-bd-fg-muted">
                       · {tab.count}
                     </span>
                   )}
@@ -342,11 +344,11 @@ function Stats({
   ];
 
   return (
-    <div className="grid grid-cols-3 gap-3 border-y border-paper-200 py-4">
+    <div className="grid grid-cols-3 gap-3 border-y border-bd-border py-4">
       {stats.map((stat) => (
         <div key={stat.label} className="text-center">
-          <div className="font-display text-[22px] font-medium text-paper-900">{stat.value}</div>
-          <div className="t-body-s text-paper-500">{stat.label}</div>
+          <div className="font-display text-[22px] font-medium text-bd-fg">{stat.value}</div>
+          <div className="t-body-s text-bd-fg-muted">{stat.label}</div>
         </div>
       ))}
       <div className="col-span-3 text-center">
@@ -368,8 +370,8 @@ function Contents({
   return (
     <section>
       <div className="mb-2 flex items-baseline justify-between gap-4">
-        <span className="t-label-s text-paper-500">Contents</span>
-        <span className="t-body-s text-paper-500">
+        <span className="t-label-s text-bd-fg-muted">Contents</span>
+        <span className="t-body-s text-bd-fg-muted">
           {manifest.chapterCount} chapters · {formatWordCount(manifest.wordCount)}
         </span>
       </div>
@@ -381,11 +383,11 @@ function Contents({
             <div
               key={section.sectionKey}
               className={[
-                "flex items-center gap-4 border-b border-paper-200 py-3",
-                current ? "rounded-md bg-paper-100 px-3" : "",
+                "flex items-center gap-4 border-b border-bd-border py-3",
+                current ? "rounded-md bg-bd-surface-raised px-3" : "",
               ].join(" ")}
             >
-              <span className="min-w-6 font-mono text-[11px] text-paper-500">
+              <span className="min-w-6 font-mono text-[11px] text-bd-fg-muted">
                 {String(section.order + 1).padStart(2, "0")}
               </span>
               <div className="min-w-0 flex-1">
@@ -394,7 +396,7 @@ function Contents({
                 >
                   {section.title || `Section ${section.order + 1}`}
                 </div>
-                <div className="t-body-s mt-0.5 text-[11px] text-paper-500">
+                <div className="t-body-s mt-0.5 text-[11px] text-bd-fg-muted">
                   {estimateMinutes(section)}
                 </div>
               </div>
@@ -416,36 +418,36 @@ function RecentNotes({
   highlightsById: Map<string, Highlight>;
 }) {
   return (
-    <aside className="border-paper-200 xl:border-l xl:pl-7">
+    <aside className="border-bd-border xl:border-l xl:pl-7">
       <div className="mb-2 flex items-baseline justify-between gap-4">
-        <span className="t-label-s text-paper-500">Recent notes · {notes.length}</span>
-        <span className="t-body-s font-semibold text-wine-700">View all</span>
+        <span className="t-label-s text-bd-fg-muted">Recent notes · {notes.length}</span>
+        <span className="t-body-s font-semibold text-bd-accent">View all</span>
       </div>
       {notes.length === 0 ? (
-        <p className="t-body-m border-t border-paper-200 py-4 text-paper-600">
+        <p className="t-body-m border-t border-bd-border py-4 text-bd-fg-subtle">
           Notes you write while reading will collect here.
         </p>
       ) : (
         notes.slice(0, 5).map((note) => {
           const highlight = note.highlightId ? highlightsById.get(note.highlightId) : undefined;
-          const accent = highlight ? HIGHLIGHT_COLOR[highlight.color] : "var(--paper-300)";
+          const accent = highlight ? HIGHLIGHT_COLOR[highlight.color] : "var(--bd-border-strong)";
           return (
-            <div key={note.id} className="flex flex-col gap-1.5 border-b border-paper-200 py-3">
+            <div key={note.id} className="flex flex-col gap-1.5 border-b border-bd-border py-3">
               <div className="flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full" style={{ background: accent }} />
-                <span className="t-body-s text-[11px] text-paper-500">
+                <span className="t-body-s text-[11px] text-bd-fg-muted">
                   {new Date(note.createdAt).toLocaleDateString()}
                 </span>
               </div>
               {highlight && (
                 <blockquote
-                  className="m-0 border-l-2 pl-3 font-reading text-[13px] leading-6 text-paper-900"
+                  className="m-0 border-l-2 pl-3 font-reading text-[13px] leading-6 text-bd-fg"
                   style={{ borderColor: accent }}
                 >
                   "{highlight.textSnippet}"
                 </blockquote>
               )}
-              <p className="t-body-s pl-3 text-paper-700">
+              <p className="t-body-s pl-3 text-bd-fg-subtle">
                 <span className="italic">{note.body}</span>
               </p>
             </div>
@@ -503,11 +505,11 @@ function NotesTab({
           </ChipButton>
         ))}
         <div className="min-w-3 flex-1" />
-        <span className="t-body-s text-[11px] text-paper-500">By chapter</span>
+        <span className="t-body-s text-[11px] text-bd-fg-muted">By chapter</span>
       </div>
 
       {notes.length === 0 ? (
-        <p className="t-body-m border-t border-paper-200 py-6 text-paper-600">
+        <p className="t-body-m border-t border-bd-border py-6 text-bd-fg-subtle">
           Notes you write while reading will collect here.
         </p>
       ) : (
@@ -531,21 +533,23 @@ function HighlightsTab({ highlights }: { highlights: Highlight[] }) {
   return (
     <section className="pt-5">
       {highlights.length === 0 ? (
-        <p className="t-body-m border-t border-paper-200 py-6 text-paper-600">
+        <p className="t-body-m border-t border-bd-border py-6 text-bd-fg-subtle">
           Highlights you mark while reading will collect here.
         </p>
       ) : (
         highlights.map((highlight) => (
-          <article key={highlight.id} className="border-b border-paper-200 py-4">
+          <article key={highlight.id} className="border-b border-bd-border py-4">
             <div className="mb-2 flex items-center gap-2">
               <span
                 className="h-2.5 w-2.5 rounded-full"
                 style={{ background: HIGHLIGHT_COLOR[highlight.color] }}
               />
-              <span className="t-body-s text-paper-500">{noteDateLabel(highlight.createdAt)}</span>
+              <span className="t-body-s text-bd-fg-muted">
+                {noteDateLabel(highlight.createdAt)}
+              </span>
             </div>
             <blockquote
-              className="m-0 border-l-[3px] pl-3 font-reading text-base leading-7 text-paper-900"
+              className="m-0 border-l-[3px] pl-3 font-reading text-base leading-7 text-bd-fg"
               style={{ borderColor: HIGHLIGHT_COLOR[highlight.color] }}
             >
               "{highlight.textSnippet}"
@@ -560,9 +564,9 @@ function HighlightsTab({ highlights }: { highlights: Highlight[] }) {
 function AboutTab({ doc, manifest }: { doc: Document; manifest: DocumentManifest | null }) {
   return (
     <section className="max-w-2xl pt-6">
-      <div className="t-label-s text-paper-500">About</div>
-      <h2 className="t-display-xs mt-1 text-paper-900">{doc.title}</h2>
-      <p className="t-body-m mt-3 leading-7 text-paper-700">
+      <div className="t-label-s text-bd-fg-muted">About</div>
+      <h2 className="t-display-xs mt-1 text-bd-fg">{doc.title}</h2>
+      <p className="t-body-m mt-3 leading-7 text-bd-fg-subtle">
         {sourceLabel(doc, manifest)} ·{" "}
         {manifest ? formatWordCount(manifest.wordCount) : "Processing metadata"}
       </p>

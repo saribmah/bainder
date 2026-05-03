@@ -1,8 +1,9 @@
 import { View } from "react-native";
-import { Skeleton } from "@bainder/ui";
-import { dashboardStyles as styles } from "../dashboard.styles";
+import { Skeleton, useThemedStyles } from "@bainder/ui";
+import { buildDashboardStyles } from "../dashboard.styles";
 
 export function DashboardLoading() {
+  const styles = useThemedStyles(buildDashboardStyles);
   return (
     <View style={styles.loading}>
       <Skeleton width="100%" height={52} />

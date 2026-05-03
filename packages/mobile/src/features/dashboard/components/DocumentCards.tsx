@@ -1,8 +1,8 @@
 import { Pressable, Text, View } from "react-native";
-import { Card, IconButton, Icons, color } from "@bainder/ui";
+import { Card, IconButton, Icons, useThemeColors, useThemedStyles } from "@bainder/ui";
 import type { Document } from "@bainder/sdk";
 import { KIND_LABEL } from "../constants";
-import { dashboardStyles as styles } from "../dashboard.styles";
+import { buildDashboardStyles } from "../dashboard.styles";
 import { formatRelativeTime } from "../utils/date";
 import { getProgressLabel } from "../utils/document";
 import { DocumentCover } from "./DocumentCover";
@@ -17,6 +17,8 @@ export function DocumentRow({
   onPress?: () => void;
   onMore?: () => void;
 }) {
+  const styles = useThemedStyles(buildDashboardStyles);
+  const palette = useThemeColors();
   const subtitle = getProgressLabel(doc) ?? doc.originalFilename;
 
   return (
@@ -34,7 +36,7 @@ export function DocumentRow({
       </View>
       {doc.status === "processed" && onMore ? (
         <IconButton aria-label="More actions" size="sm" onPress={onMore}>
-          <Icons.MoreVertical size={16} color={color.paper[700]} />
+          <Icons.MoreVertical size={16} color={palette.fgSubtle} />
         </IconButton>
       ) : null}
     </Card>
@@ -50,6 +52,8 @@ export function RecentCard({
   onPress: () => void;
   onMore: () => void;
 }) {
+  const styles = useThemedStyles(buildDashboardStyles);
+  const palette = useThemeColors();
   return (
     <View style={styles.recentCard}>
       <Pressable accessibilityRole="button" onPress={onPress}>
@@ -65,7 +69,7 @@ export function RecentCard({
           </Text>
         </View>
         <IconButton aria-label="More actions" size="sm" onPress={onMore}>
-          <Icons.MoreVertical size={14} color={color.paper[600]} />
+          <Icons.MoreVertical size={14} color={palette.fgSubtle} />
         </IconButton>
       </View>
     </View>

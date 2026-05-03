@@ -1,8 +1,10 @@
 import { Pressable } from "react-native";
-import { Icons, color } from "@bainder/ui";
-import { authStyles as styles } from "../auth.styles";
+import { Icons, useThemeColors, useThemedStyles } from "@bainder/ui";
+import { buildAuthStyles } from "../auth.styles";
 
 export function BackButton({ onPress }: { onPress: () => void }) {
+  const styles = useThemedStyles(buildAuthStyles);
+  const palette = useThemeColors();
   return (
     <Pressable
       accessibilityRole="button"
@@ -10,7 +12,7 @@ export function BackButton({ onPress }: { onPress: () => void }) {
       onPress={onPress}
       style={styles.back}
     >
-      <Icons.Back size={18} color={color.paper[800]} />
+      <Icons.Back size={18} color={palette.fg} />
     </Pressable>
   );
 }

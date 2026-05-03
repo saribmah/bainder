@@ -85,29 +85,29 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
   }
 
   return (
-    <main className="grid min-h-screen bg-paper-50 text-paper-900 lg:grid-cols-2">
+    <main className="grid min-h-screen bg-bd-bg text-bd-fg lg:grid-cols-2">
       <section className="flex min-h-screen flex-col px-6 py-8 sm:px-12 lg:px-16 lg:py-10">
         <button
           type="button"
           onClick={() => navigate("/")}
-          className="w-fit border-0 bg-transparent p-0 text-paper-900"
+          className="w-fit border-0 bg-transparent p-0 text-bd-fg"
         >
           <Wordmark size="md" />
         </button>
 
         <div className="my-auto w-full max-w-[440px] py-12">
-          <div className="t-label-s text-paper-500">{copy.eyebrow}</div>
-          <h1 className="mt-3 whitespace-pre-line font-display text-[44px] font-normal leading-[1.04] tracking-normal text-paper-900 sm:text-[56px]">
+          <div className="t-label-s text-bd-fg-muted">{copy.eyebrow}</div>
+          <h1 className="mt-3 whitespace-pre-line font-display text-[44px] font-normal leading-[1.04] tracking-normal text-bd-fg sm:text-[56px]">
             {copy.title}
           </h1>
-          <p className="t-body-l mt-4 text-paper-700">{copy.lead}</p>
+          <p className="t-body-l mt-4 text-bd-fg-subtle">{copy.lead}</p>
 
           <div className="mt-9 flex flex-col gap-4">
             <SocialButtons />
             <OrDivider />
 
             <form onSubmit={requestOtp} className="flex flex-col gap-3">
-              <label htmlFor="auth-email" className="t-label-s text-paper-600">
+              <label htmlFor="auth-email" className="t-label-s text-bd-fg-subtle">
                 EMAIL
               </label>
               <Input
@@ -118,7 +118,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="reader@bainder.app"
-                className="border-paper-300 bg-paper-50"
+                className="border-bd-border-strong bg-bd-bg"
               />
               <Button type="submit" size="lg" disabled={busy || !email.includes("@")}>
                 {busy ? "Sending..." : copy.submit}
@@ -126,11 +126,11 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
             </form>
           </div>
 
-          <p className="t-body-m mt-6 text-paper-500">
+          <p className="t-body-m mt-6 text-bd-fg-muted">
             {copy.switchLead}{" "}
             <Link
               to={copy.switchTo}
-              className="font-medium text-paper-900 underline underline-offset-4"
+              className="font-medium text-bd-fg underline underline-offset-4"
             >
               {copy.switchAction}
             </Link>
@@ -139,7 +139,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
           {error && <p className="t-body-s mt-4 text-error">{error}</p>}
         </div>
 
-        <p className="t-body-s m-0 text-paper-500">
+        <p className="t-body-s m-0 text-bd-fg-muted">
           By continuing, you agree to our{" "}
           <span className="underline underline-offset-4">Terms</span> and{" "}
           <span className="underline underline-offset-4">Privacy Policy</span>.
@@ -154,9 +154,9 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
 function OrDivider() {
   return (
     <div className="flex items-center gap-4">
-      <div className="h-px flex-1 bg-paper-200" />
-      <span className="t-label-s text-paper-500">OR</span>
-      <div className="h-px flex-1 bg-paper-200" />
+      <div className="h-px flex-1 bg-bd-border" />
+      <span className="t-label-s text-bd-fg-muted">OR</span>
+      <div className="h-px flex-1 bg-bd-border" />
     </div>
   );
 }

@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Modal, Pressable, Text, View } from "react-native";
-import { Button, IconButton, Icons, Input, color } from "@bainder/ui";
+import { Button, IconButton, Icons, Input, useThemeColors, useThemedStyles } from "@bainder/ui";
 import type { Document } from "@bainder/sdk";
-import { dashboardStyles as styles } from "../dashboard.styles";
+import { buildDashboardStyles } from "../dashboard.styles";
 
 export function RenameDialog({
   doc,
@@ -13,6 +13,8 @@ export function RenameDialog({
   onCancel: () => void;
   onSave: (title: string) => Promise<void>;
 }) {
+  const styles = useThemedStyles(buildDashboardStyles);
+  const palette = useThemeColors();
   const [value, setValue] = useState(doc.title);
   const [saving, setSaving] = useState(false);
   const trimmed = value.trim();
@@ -34,7 +36,7 @@ export function RenameDialog({
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Rename</Text>
             <IconButton aria-label="Close" size="sm" onPress={onCancel}>
-              <Icons.Close size={14} color={color.paper[700]} />
+              <Icons.Close size={14} color={palette.fgSubtle} />
             </IconButton>
           </View>
           <Input value={value} onChangeText={setValue} autoFocus maxLength={200} />
@@ -61,6 +63,8 @@ export function DeleteDialog({
   onCancel: () => void;
   onConfirm: () => Promise<void>;
 }) {
+  const styles = useThemedStyles(buildDashboardStyles);
+  const palette = useThemeColors();
   const [working, setWorking] = useState(false);
 
   const confirm = async () => {
@@ -79,7 +83,7 @@ export function DeleteDialog({
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Delete document?</Text>
             <IconButton aria-label="Close" size="sm" onPress={onCancel}>
-              <Icons.Close size={14} color={color.paper[700]} />
+              <Icons.Close size={14} color={palette.fgSubtle} />
             </IconButton>
           </View>
           <Text style={styles.modalBody}>

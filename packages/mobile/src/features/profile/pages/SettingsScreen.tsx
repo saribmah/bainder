@@ -1,15 +1,15 @@
 import type { ReactNode } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Chip, ChipButton, Icons, Wordmark, color } from "@bainder/ui";
+import { Chip, ChipButton, Icons, Wordmark, useThemeColors, useThemedStyles } from "@bainder/ui";
 import { ProfileHighlightColor, ProfileTheme } from "@bainder/sdk";
 import { useLibraryDocuments } from "../../library/hooks/useLibraryDocuments";
-import { libraryStyles } from "../../library/library.styles";
+import { buildLibraryStyles } from "../../library/library.styles";
 import { signOutProfile } from "../actions";
 import { useProfile } from "../ProfileProvider";
 import { useProfileName } from "../hooks/useProfileName";
 import { useUserProfile } from "../hooks/useUserProfile";
-import { profileStyles as styles } from "../profile.styles";
+import { buildProfileStyles } from "../profile.styles";
 
 const themes: { value: ProfileTheme; label: string }[] = [
   { value: ProfileTheme.Light, label: "Light" },
@@ -31,6 +31,9 @@ export function SettingsScreen() {
   const { counts } = useLibraryDocuments();
   const { user } = useUserProfile();
   const { profile, update } = useProfile();
+  const styles = useThemedStyles(buildProfileStyles);
+  const libraryStyles = useThemedStyles(buildLibraryStyles);
+  const palette = useThemeColors();
 
   const displayName = user?.name?.trim() || reader;
   const email = user?.email ?? "";
@@ -98,7 +101,7 @@ export function SettingsScreen() {
                       borderRadius: 999,
                       backgroundColor: highlightColorToHex(value),
                       borderWidth: active ? 2 : 0,
-                      borderColor: color.paper[900],
+                      borderColor: palette.fg,
                     }}
                   />
                 );
@@ -159,7 +162,7 @@ export function SettingsScreen() {
             <Chip variant="outline">Free</Chip>
           </Row>
           <Row label="Sign out" onPress={signOutProfile} last>
-            <Icons.Chevron size={14} color={color.paper[500]} />
+            <Icons.Chevron size={14} color={palette.fgMuted} />
           </Row>
         </Group>
       </ScrollView>
@@ -183,6 +186,7 @@ function highlightColorToHex(value: ProfileHighlightColor): string {
 }
 
 function Group({ label, children }: { label: string; children: ReactNode }) {
+  const styles = useThemedStyles(buildProfileStyles);
   return (
     <View style={styles.group}>
       <Text style={styles.groupLabel}>{label}</Text>
@@ -204,6 +208,7 @@ function Row({
   last?: boolean;
   onPress?: () => void;
 }) {
+  const styles = useThemedStyles(buildProfileStyles);
   const body = (
     <>
       <View style={{ flex: 1 }}>
@@ -230,6 +235,8 @@ function Row({
 }
 
 function Toggle({ checked, onPress }: { checked: boolean; onPress: () => void }) {
+  const styles = useThemedStyles(buildProfileStyles);
+  const palette = useThemeColors();
   return (
     <Pressable
       accessibilityRole="switch"
@@ -238,7 +245,7 @@ function Toggle({ checked, onPress }: { checked: boolean; onPress: () => void })
       style={[
         styles.toggle,
         {
-          backgroundColor: checked ? color.paper[900] : color.paper[300],
+          backgroundColor: checked ? palette.action : palette.borderStrong,
           alignItems: checked ? "flex-end" : "flex-start",
         },
       ]}

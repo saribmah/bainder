@@ -1,6 +1,6 @@
 import { ScrollView, Text, View } from "react-native";
-import { Button, Icons, color } from "@bainder/ui";
-import { authStyles as styles } from "../auth.styles";
+import { Button, Icons, useThemeColors, useThemedStyles } from "@bainder/ui";
+import { buildAuthStyles } from "../auth.styles";
 import { BackButton } from "./BackButton";
 import { OtpBoxes } from "./OtpBoxes";
 
@@ -25,6 +25,8 @@ export function OtpScreen({
   paddingTop: number;
   paddingBottom: number;
 }) {
+  const styles = useThemedStyles(buildAuthStyles);
+  const palette = useThemeColors();
   return (
     <ScrollView
       style={styles.root}
@@ -56,7 +58,7 @@ export function OtpScreen({
       {error && <Text style={styles.error}>{error}</Text>}
 
       <View style={styles.tip}>
-        <Icons.Sparkles size={16} color={color.wine[700]} />
+        <Icons.Sparkles size={16} color={palette.accent} />
         <Text style={styles.tipText}>Tip: paste codes directly - we'll auto-fill the boxes.</Text>
       </View>
     </ScrollView>

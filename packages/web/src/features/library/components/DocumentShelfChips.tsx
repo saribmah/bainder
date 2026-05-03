@@ -17,8 +17,8 @@ export function DocumentShelfChips({
   const selectedIds = new Set(selectedShelves.map((shelf) => shelf.id));
 
   return (
-    <section className="rounded-[18px] bg-paper-100 px-5 py-4">
-      <div className="t-label-s mb-3 text-paper-500">On shelves · {selectedShelves.length}</div>
+    <section className="rounded-[18px] bg-bd-surface-raised px-5 py-4">
+      <div className="t-label-s mb-3 text-bd-fg-muted">On shelves · {selectedShelves.length}</div>
       <div className="flex flex-wrap items-center gap-2">
         {shelves.map((shelf) => {
           const selected = selectedIds.has(shelf.id);
@@ -38,7 +38,7 @@ export function DocumentShelfChips({
         })}
         <button
           type="button"
-          className="bd-chip border-0 bg-transparent text-wine-700"
+          className="bd-chip border-0 bg-transparent text-bd-accent"
           onClick={onCreate}
         >
           <Icons.Plus size={12} color="currentColor" />

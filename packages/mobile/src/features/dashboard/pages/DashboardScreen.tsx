@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ActionSheetIOS, Alert, Platform, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Icons, Toast, color } from "@bainder/ui";
+import { Icons, Toast, color, useThemedStyles } from "@bainder/ui";
 import type { Document } from "@bainder/sdk";
 import { useProfileName } from "../../profile";
 import { DashboardContent } from "../components/DashboardContent";
@@ -10,13 +10,14 @@ import { DropDashboard, FilteredEmpty } from "../components/DashboardEmptyStates
 import { DashboardHeader } from "../components/DashboardHeader";
 import { DashboardLoading } from "../components/DashboardLoading";
 import { DeleteDialog, RenameDialog } from "../components/DocumentDialogs";
-import { dashboardStyles as styles } from "../dashboard.styles";
+import { buildDashboardStyles } from "../dashboard.styles";
 import { useDashboardDocuments } from "../hooks/useDashboardDocuments";
 
 export function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const reader = useProfileName();
+  const styles = useThemedStyles(buildDashboardStyles);
   const [searchOpen, setSearchOpen] = useState(false);
   const [renameTarget, setRenameTarget] = useState<Document | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Document | null>(null);

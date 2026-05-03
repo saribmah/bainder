@@ -7,7 +7,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from "react-native";
-import { color } from "../tokens/color.ts";
+import { useThemeColors } from "../theme/ThemeProvider.native.tsx";
 import { radius } from "../tokens/radius.ts";
 
 export type FloatingToolbarProps = {
@@ -16,8 +16,16 @@ export type FloatingToolbarProps = {
 };
 
 export function FloatingToolbar({ children, style }: FloatingToolbarProps) {
+  const palette = useThemeColors();
   return (
-    <View accessibilityRole="toolbar" style={[styles.toolbar, style]}>
+    <View
+      accessibilityRole="toolbar"
+      style={[
+        styles.toolbar,
+        { backgroundColor: palette.surface, borderColor: palette.border },
+        style,
+      ]}
+    >
       {children}
     </View>
   );
@@ -36,6 +44,7 @@ export function FloatingToolbarButton({
   disabled,
   ...rest
 }: FloatingToolbarButtonProps) {
+  const palette = useThemeColors();
   return (
     <Pressable
       accessibilityRole="button"
@@ -43,7 +52,7 @@ export function FloatingToolbarButton({
       disabled={disabled}
       style={({ pressed }) => [
         styles.btn,
-        { backgroundColor: pressed && !disabled ? color.paper[100] : "transparent" },
+        { backgroundColor: pressed && !disabled ? palette.surfaceHover : "transparent" },
         disabled ? { opacity: 0.5 } : null,
         style,
       ]}
@@ -60,9 +69,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
     padding: 6,
-    backgroundColor: color.paper[50],
     borderWidth: 1,
-    borderColor: color.paper[200],
     borderRadius: radius.pill,
     shadowColor: "rgba(20,15,10,1)",
     shadowOpacity: 0.18,
