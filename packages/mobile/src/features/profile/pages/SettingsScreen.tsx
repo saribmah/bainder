@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Chip, ChipButton, Icons, color } from "@bainder/ui";
+import { Chip, ChipButton, Icons, Wordmark, color } from "@bainder/ui";
 import { ProfileHighlightColor, ProfileTheme } from "@bainder/sdk";
-import { LibraryBottomTabs } from "../../library/components/LibraryBottomTabs";
+import { BottomTabs } from "../../shell";
 import { useLibraryDocuments } from "../../library/hooks/useLibraryDocuments";
 import { libraryStyles } from "../../library/library.styles";
 import { signOutProfile } from "../actions";
@@ -29,7 +29,7 @@ const highlightColors: ProfileHighlightColor[] = [
 export function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const reader = useProfileName();
-  const { uploadDocument } = useLibraryDocuments();
+  const { counts, uploadDocument } = useLibraryDocuments();
   const { user } = useUserProfile();
   const { profile, update } = useProfile();
 
@@ -52,10 +52,7 @@ export function SettingsScreen() {
         ]}
       >
         <View style={libraryStyles.header}>
-          <Text style={libraryStyles.wordmark}>bainder</Text>
-          <View style={libraryStyles.iconButton}>
-            <Icons.Close size={16} color={color.paper[800]} />
-          </View>
+          <Wordmark size="sm" />
         </View>
 
         <View style={styles.profileRow}>
@@ -66,7 +63,6 @@ export function SettingsScreen() {
             <Text style={styles.profileName}>{displayName}</Text>
             <Text style={styles.settingSub}>{email || "Reader profile"}</Text>
           </View>
-          <Chip variant="outline">Free</Chip>
         </View>
 
         <Group label="Reading">
@@ -159,13 +155,17 @@ export function SettingsScreen() {
         </Group>
 
         <Group label="Account">
+          <Row label="Email" sub={email || "Not available"} />
+          <Row label="Plan" sub={`${counts.all} imports / unlimited reading`}>
+            <Chip variant="outline">Free</Chip>
+          </Row>
           <Row label="Sign out" onPress={signOutProfile} last>
             <Icons.Chevron size={14} color={color.paper[500]} />
           </Row>
         </Group>
       </ScrollView>
 
-      <LibraryBottomTabs active="settings" bottom={insets.bottom} onUpload={uploadDocument} />
+      <BottomTabs active="settings" bottom={insets.bottom} onUpload={uploadDocument} />
     </View>
   );
 }

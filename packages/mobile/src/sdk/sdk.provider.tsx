@@ -13,14 +13,19 @@ type SDKContextValue = {
   baseUrl: string;
   client: ApiClient;
   authedFetch: typeof fetch;
+  authHeaders: () => Record<string, string>;
 };
 
 const SDKContext = createContext<SDKContextValue | null>(null);
 
-const authedFetch: typeof fetch = (input, init) => {
+const authHeaders = (): Record<string, string> => {
   const cookies = authClient.getCookie();
+  return cookies ? { Cookie: cookies } : {};
+};
+
+const authedFetch: typeof fetch = (input, init) => {
   const headers = new Headers(init?.headers);
-  if (cookies) headers.set("Cookie", cookies);
+  for (const [key, value] of Object.entries(authHeaders())) headers.set(key, value);
   return fetch(input, { ...init, headers });
 };
 
@@ -30,7 +35,7 @@ export const SDKProvider = ({ children }: PropsWithChildren): ReactElement => {
       baseUrl: API_URL,
       fetch: authedFetch,
     });
-    return { baseUrl: API_URL, client, authedFetch };
+    return { baseUrl: API_URL, client, authedFetch, authHeaders };
   }, []);
 
   return <SDKContext.Provider value={value}>{children}</SDKContext.Provider>;

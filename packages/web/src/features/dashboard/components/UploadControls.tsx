@@ -2,29 +2,6 @@ import { Button, Icons } from "@bainder/ui";
 import { ChipButton } from "./ChipButton";
 import { UploadDropTarget } from "./UploadDropTarget";
 
-export function UploadButton({
-  uploading,
-  onFile,
-}: {
-  uploading: boolean;
-  onFile: (file: File) => void;
-}) {
-  return (
-    <UploadDropTarget uploading={uploading} onFile={onFile}>
-      {({ browse }) => (
-        <Button
-          size="md"
-          iconStart={<Icons.Plus size={16} />}
-          onClick={browse}
-          className="w-full justify-start"
-        >
-          {uploading ? "Uploading..." : "Add to dashboard"}
-        </Button>
-      )}
-    </UploadDropTarget>
-  );
-}
-
 export function QuickAdd({
   uploading,
   onUpload,

@@ -48,7 +48,7 @@ exports[`MatchBadge custom label 1`] = `"<div class="bd-match"><span class="bd-m
 
 exports[`BookCover with background gradient 1`] = `"<div role="img" aria-label="Design for Impact" class="bd-book-cover" style="width:76px;height:110px;background:linear-gradient(160deg, oklch(60% 0.18 35), oklch(45% 0.16 30))"></div>"`;
 
-exports[`BookCover with src 1`] = `"<div role="img" aria-label="The Design of Everyday Things" class="bd-book-cover" style="width:56px;height:80px;background-image:url(https://example.com/cover.jpg)"></div>"`;
+exports[`BookCover with src 1`] = `"<div role="img" aria-label="The Design of Everyday Things" class="bd-book-cover" style="width:56px;height:80px"><img src="https://example.com/cover.jpg" alt="The Design of Everyday Things" loading="lazy" decoding="async" class="absolute inset-0 h-full w-full object-cover"/></div>"`;
 
 exports[`Highlight default pink 1`] = `"<mark class="bd-highlight">Affordances define what actions are possible.</mark>"`;
 

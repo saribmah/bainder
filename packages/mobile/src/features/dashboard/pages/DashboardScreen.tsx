@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icons, Toast, color } from "@bainder/ui";
 import type { Document } from "@bainder/sdk";
 import { useProfileName } from "../../profile";
-import { BottomTabs } from "../components/BottomTabs";
+import { BottomTabs } from "../../shell";
 import { DashboardContent } from "../components/DashboardContent";
 import { DropDashboard, FilteredEmpty } from "../components/DashboardEmptyStates";
 import { DashboardHeader } from "../components/DashboardHeader";
@@ -101,7 +101,7 @@ export function DashboardScreen() {
         )}
       </ScrollView>
 
-      <BottomTabs bottom={insets.bottom} onUpload={uploadDocument} />
+      <BottomTabs active="home" bottom={insets.bottom} onUpload={uploadDocument} />
 
       {renameTarget && (
         <RenameDialog

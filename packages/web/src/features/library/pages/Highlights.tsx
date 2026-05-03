@@ -3,7 +3,8 @@ import { ChipButton, Icons, Skeleton } from "@bainder/ui";
 import type { Highlight } from "@bainder/sdk";
 import { useProfileName } from "../../profile";
 import { HIGHLIGHT_COLOR, HIGHLIGHT_LABEL } from "../constants";
-import { LibraryRail } from "../components/LibraryRail";
+import { AppSidebar } from "../components/AppSidebar";
+import { useLibraryShelves } from "../hooks/useLibraryShelves";
 import { useLibraryDocuments } from "../hooks/useLibraryDocuments";
 import { useLibraryHighlights, type LibraryHighlight } from "../hooks/useLibraryHighlights";
 
@@ -15,6 +16,7 @@ export function Highlights() {
   const reader = useProfileName();
   const { documents, counts, uploading, uploadDocument } = useLibraryDocuments();
   const { highlights, error } = useLibraryHighlights(documents);
+  const { shelves } = useLibraryShelves(documents);
   const [filter, setFilter] = useState<ColorFilter>("all");
 
   const visible = useMemo(() => {
@@ -46,12 +48,13 @@ export function Highlights() {
 
   return (
     <main className="flex h-dvh min-h-screen overflow-hidden bg-paper-50 text-paper-900">
-      <LibraryRail
+      <AppSidebar
         totalCount={counts.all}
         highlightsCount={highlights?.length ?? 0}
         reader={reader}
         uploading={uploading}
         onUpload={uploadDocument}
+        shelves={shelves}
       />
 
       <section className="flex min-w-0 flex-1 overflow-hidden">

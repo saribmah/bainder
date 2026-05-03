@@ -22,7 +22,6 @@ export function BookCover({
   const cover: CSSProperties = {
     width,
     height,
-    backgroundImage: src ? `url(${src})` : undefined,
     background: !src && background ? background : undefined,
     ...style,
   };
@@ -33,6 +32,16 @@ export function BookCover({
       className={cx("bd-book-cover", className)}
       style={cover}
       {...rest}
-    />
+    >
+      {src && (
+        <img
+          src={src}
+          alt={alt ?? ""}
+          loading="lazy"
+          decoding="async"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      )}
+    </div>
   );
 }

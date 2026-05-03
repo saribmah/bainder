@@ -3,11 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { Icons, Toast } from "@bainder/ui";
 import type { Document } from "@bainder/sdk";
 import { useProfileName } from "../../profile";
+import { AppSidebar } from "../../library/components/AppSidebar";
+import { useLibraryHighlights } from "../../library/hooks/useLibraryHighlights";
+import { useLibraryShelves } from "../../library/hooks/useLibraryShelves";
 import { DashboardContent } from "../components/DashboardContent";
 import { DropDashboard, FilteredEmpty } from "../components/DashboardEmptyStates";
 import { DashboardHeader } from "../components/DashboardHeader";
 import { DashboardLoading } from "../components/DashboardLoading";
-import { DashboardRail } from "../components/DashboardRail";
 import { DeleteDialog, RenameDialog } from "../components/DocumentDialogs";
 import { useDashboardDocuments } from "../hooks/useDashboardDocuments";
 
@@ -19,7 +21,6 @@ export function Dashboard() {
   const {
     documents,
     pendingDocuments,
-    readyDocuments,
     inProgressDocuments,
     recentDocuments,
     hasDocuments,
@@ -33,16 +34,18 @@ export function Dashboard() {
     renameDocument,
     deleteDocument,
   } = useDashboardDocuments();
+  const { highlights } = useLibraryHighlights(documents);
+  const { shelves } = useLibraryShelves(documents);
 
   return (
     <main className="flex min-h-screen bg-paper-50 text-paper-900">
-      <DashboardRail
+      <AppSidebar
         totalCount={documents?.length ?? 0}
-        pendingCount={pendingDocuments.length}
-        readyCount={readyDocuments.length}
+        highlightsCount={highlights?.length ?? 0}
         reader={reader}
         onUpload={uploadDocument}
         uploading={uploading}
+        shelves={shelves}
       />
 
       <section className="min-w-0 flex-1 px-6 py-8 lg:px-12">

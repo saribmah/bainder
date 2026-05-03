@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button, ChipButton, Icons, Skeleton, Toast, color } from "@bainder/ui";
 import type { Document, Shelf } from "@bainder/sdk";
 import { useSdk } from "../../../sdk/sdk.provider";
-import { LibraryBottomTabs } from "../components/LibraryBottomTabs";
+import { BottomTabs } from "../../shell";
 import { LibraryCover } from "../components/LibraryCover";
 import { AddBooksSheet, CreateShelfSheet, EditShelfSheet } from "../components/ShelfSheets";
 import { SpineFan } from "../components/ShelfArtwork";
@@ -164,7 +164,7 @@ export function ShelfDetailScreen() {
           </>
         )}
       </ScrollView>
-      <LibraryBottomTabs active="library" bottom={insets.bottom} onUpload={uploadDocument} />
+      <BottomTabs active="library" bottom={insets.bottom} onUpload={uploadDocument} />
       {toast && (
         <View style={{ position: "absolute", left: 24, right: 24, bottom: insets.bottom + 78 }}>
           <Toast iconStart={<Icons.Check size={18} color={color.status.success} />}>{toast}</Toast>

@@ -2,6 +2,7 @@ import { Image, StyleSheet, View, type StyleProp, type ViewStyle } from "react-n
 
 export type BookCoverProps = {
   src?: string;
+  headers?: Record<string, string>;
   backgroundColor?: string;
   width?: number;
   height?: number;
@@ -9,14 +10,24 @@ export type BookCoverProps = {
   style?: StyleProp<ViewStyle>;
 };
 
-export function BookCover({ src, backgroundColor, width, height, alt, style }: BookCoverProps) {
+export function BookCover({
+  src,
+  headers,
+  backgroundColor,
+  width,
+  height,
+  alt,
+  style,
+}: BookCoverProps) {
   return (
     <View
       accessibilityRole={alt ? "image" : undefined}
       accessibilityLabel={alt}
       style={[styles.cover, { width, height, backgroundColor }, style]}
     >
-      {src && <Image source={{ uri: src }} style={StyleSheet.absoluteFill} resizeMode="cover" />}
+      {src && (
+        <Image source={{ uri: src, headers }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+      )}
     </View>
   );
 }

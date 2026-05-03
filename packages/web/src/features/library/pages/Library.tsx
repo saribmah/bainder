@@ -7,7 +7,7 @@ import { FILTER_LABEL, type LibraryFilter } from "../constants";
 import { LibraryActionsMenu } from "../components/LibraryActionsMenu";
 import { LibraryCover } from "../components/LibraryCover";
 import { DeleteDialog, RenameDialog } from "../components/LibraryDialogs";
-import { LibraryRail } from "../components/LibraryRail";
+import { AppSidebar } from "../components/AppSidebar";
 import { CreateShelfDialog } from "../components/ShelfDialogs";
 import { ShelfCard } from "../components/ShelfArtwork";
 import { useLibraryDocuments } from "../hooks/useLibraryDocuments";
@@ -70,7 +70,7 @@ export function Library() {
 
   return (
     <main className="flex h-dvh min-h-screen overflow-hidden bg-paper-50 text-paper-900">
-      <LibraryRail
+      <AppSidebar
         totalCount={counts.all}
         highlightsCount={highlights?.length ?? 0}
         reader={reader}
