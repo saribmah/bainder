@@ -58,7 +58,6 @@ describe("Highlight feature", () => {
       expect(created.sectionKey).toBe("epub:section:2");
       expect(created.position).toEqual({ offsetStart: 100, offsetEnd: 145 });
       expect(created.color).toBe("yellow");
-      expect(created.note).toBeNull();
       expect(created.createdAt).toBe(created.updatedAt);
 
       const all = await Highlight.list(userA, { documentId: doc.id });
@@ -78,7 +77,7 @@ describe("Highlight feature", () => {
     });
   });
 
-  it("creates a highlight with a note and updates color + note", async () => {
+  it("updates a highlight's color", async () => {
     await runtime.runAs(userA, async () => {
       const doc = await seedDocument(userA);
 
@@ -88,16 +87,10 @@ describe("Highlight feature", () => {
         position: { offsetStart: 0, offsetEnd: 12 },
         textSnippet: "First words.",
         color: "pink",
-        note: "Opening thought.",
       });
-      expect(created.note).toBe("Opening thought.");
 
-      const updatedColor = await Highlight.update(userA, created.id, { color: "blue" });
-      expect(updatedColor.color).toBe("blue");
-      expect(updatedColor.note).toBe("Opening thought.");
-
-      const cleared = await Highlight.update(userA, created.id, { note: null });
-      expect(cleared.note).toBeNull();
+      const updated = await Highlight.update(userA, created.id, { color: "blue" });
+      expect(updated.color).toBe("blue");
     });
   });
 

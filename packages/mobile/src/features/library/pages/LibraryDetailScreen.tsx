@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button, Chip, Icons, Skeleton, color } from "@bainder/ui";
-import type { Document, DocumentManifest, Highlight } from "@bainder/sdk";
+import type { Document, DocumentManifest, Note } from "@bainder/sdk";
 import { useSdk } from "../../../sdk/sdk.provider";
 import { KIND_LABEL } from "../constants";
 import { DocumentShelfChips } from "../components/DocumentShelfChips";
@@ -29,7 +29,7 @@ export function LibraryDetailScreen() {
   const { uploadDocument } = useLibraryDocuments();
   const [doc, setDoc] = useState<Document | null>(null);
   const [manifest, setManifest] = useState<DocumentManifest | null>(null);
-  const [highlights, setHighlights] = useState<Highlight[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [createShelfOpen, setCreateShelfOpen] = useState(false);
   const {
@@ -47,9 +47,9 @@ export function LibraryDetailScreen() {
     Promise.all([
       client.document.get({ id }),
       client.document.getManifest({ id }),
-      client.highlight.list({ documentId: id }),
+      client.note.list({ documentId: id }),
     ])
-      .then(([docRes, manifestRes, highlightRes]) => {
+      .then(([docRes, manifestRes, noteRes]) => {
         if (cancelled) return;
         if (!docRes.data) {
           setError("Document not found");
@@ -57,7 +57,7 @@ export function LibraryDetailScreen() {
         }
         setDoc(docRes.data);
         setManifest(manifestRes.data ?? null);
-        setHighlights(highlightRes.data?.items ?? []);
+        setNotes(noteRes.data?.items ?? []);
       })
       .catch((err: unknown) => {
         if (!cancelled) setError(String(err));
@@ -69,10 +69,6 @@ export function LibraryDetailScreen() {
 
   const currentOrder = sectionOrderFromKey(doc?.progress?.sectionKey) ?? 0;
   const pct = doc ? progressPercent(doc) : 0;
-  const notes = useMemo(
-    () => highlights.filter((highlight) => highlight.note?.trim()),
-    [highlights],
-  );
   const openReader = useCallback(() => {
     if (doc) router.push(`/read/${doc.id}`);
   }, [doc, router]);

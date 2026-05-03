@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { IconButton, Icons, Sheet, useTheme } from "@bainder/ui";
-import type { DocumentSectionSummary, Highlight } from "@bainder/sdk";
+import type { DocumentSectionSummary, Highlight, Note } from "@bainder/sdk";
 import { useSdk } from "../../sdk";
 
 export type NotesSheetProps = {
@@ -43,7 +43,8 @@ export function NotesSheet({
 }: NotesSheetProps) {
   const { client } = useSdk();
   const { theme } = useTheme();
-  const [items, setItems] = useState<Highlight[] | null>(null);
+  const [items, setItems] = useState<Note[] | null>(null);
+  const [highlightsById, setHighlightsById] = useState<Map<string, Highlight>>(new Map());
   const [error, setError] = useState<string | null>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
 
@@ -58,11 +59,13 @@ export function NotesSheet({
   useEffect(() => {
     let cancelled = false;
     setError(null);
-    client.highlight
-      .list({ documentId })
-      .then((res) => {
+    Promise.all([client.note.list({ documentId }), client.highlight.list({ documentId })])
+      .then(([notes, highlights]) => {
         if (cancelled) return;
-        setItems(res.data?.items ?? []);
+        setItems(notes.data?.items ?? []);
+        const map = new Map<string, Highlight>();
+        for (const h of highlights.data?.items ?? []) map.set(h.id, h);
+        setHighlightsById(map);
       })
       .catch((err: unknown) => {
         if (!cancelled) {
@@ -151,15 +154,17 @@ export function NotesSheet({
             {items === null && <li className={`t-body-s mt-4 ${mutedColor}`}>Loading…</li>}
             {items && items.length === 0 && !error && (
               <li className={`t-body-s mt-4 ${mutedColor}`}>
-                Highlight a passage to start your notebook.
+                Highlight a passage or jot a thought to start your notebook.
               </li>
             )}
-            {items?.map((h) => {
-              const info = sectionInfoByKey.get(h.sectionKey);
-              const positionLabel = labelFor(info);
+            {items?.map((n) => {
+              const highlight = n.highlightId ? highlightsById.get(n.highlightId) : undefined;
+              const sectionKey = n.sectionKey ?? highlight?.sectionKey ?? null;
+              const info = sectionKey ? sectionInfoByKey.get(sectionKey) : undefined;
+              const positionLabel = labelFor(info, n);
               const isCurrent = info?.order === currentOrder;
               return (
-                <li key={h.id} className="mb-2 last:mb-0">
+                <li key={n.id} className="mb-2 last:mb-0">
                   <button
                     type="button"
                     onClick={() => {
@@ -173,25 +178,28 @@ export function NotesSheet({
                       <span
                         aria-hidden
                         className="h-2 w-2 shrink-0 rounded-full"
-                        style={{ background: `var(--hl-${h.color})` }}
+                        style={{
+                          background: highlight ? `var(--hl-${highlight.color})` : "currentColor",
+                          opacity: highlight ? 1 : 0.4,
+                        }}
                       />
                       <span className={`t-body-s ${mutedColor}`}>
-                        {positionLabel} · {formatRelativeTime(h.createdAt)}
+                        {positionLabel} · {formatRelativeTime(n.createdAt)}
                       </span>
                     </div>
-                    <p
-                      className={`mt-2 line-clamp-3 italic ${bodyColor}`}
-                      style={{ fontFamily: "var(--font-reading)", fontSize: 13, lineHeight: 1.5 }}
-                    >
-                      "{h.textSnippet}"
-                    </p>
-                    {h.note && (
+                    {highlight && (
                       <p
-                        className={`t-body-s mt-2 line-clamp-4 rounded-md p-2 ${noteBg} ${bodyColor}`}
+                        className={`mt-2 line-clamp-3 italic ${bodyColor}`}
+                        style={{ fontFamily: "var(--font-reading)", fontSize: 13, lineHeight: 1.5 }}
                       >
-                        {h.note}
+                        "{highlight.textSnippet}"
                       </p>
                     )}
+                    <p
+                      className={`t-body-m mt-2 line-clamp-4 rounded-md p-2 ${noteBg} ${bodyColor}`}
+                    >
+                      {n.body}
+                    </p>
                   </button>
                 </li>
               );
@@ -203,7 +211,9 @@ export function NotesSheet({
   );
 }
 
-const labelFor = (info: { order: number; title: string } | undefined): string => {
-  if (!info) return "Section";
-  return `Ch. ${info.order + 1} · ${info.title}`;
+const labelFor = (info: { order: number; title: string } | undefined, note: Note): string => {
+  if (info) return `Ch. ${info.order + 1} · ${info.title}`;
+  if (note.highlightId) return "Highlight";
+  if (note.sectionKey) return "Section";
+  return "Document";
 };

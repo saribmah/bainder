@@ -123,7 +123,16 @@ export type Highlight = {
   position: HighlightPosition;
   textSnippet: string;
   color: "pink" | "yellow" | "green" | "blue" | "purple";
-  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type Note = {
+  id: string;
+  documentId: string;
+  sectionKey: string | null;
+  highlightId: string | null;
+  body: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -727,7 +736,6 @@ export type HighlightCreateData = {
     position: HighlightPosition;
     textSnippet: string;
     color: "pink" | "yellow" | "green" | "blue" | "purple";
-    note?: string;
   };
   path?: never;
   query?: never;
@@ -789,8 +797,7 @@ export type HighlightDeleteResponse = HighlightDeleteResponses[keyof HighlightDe
 
 export type HighlightUpdateData = {
   body: {
-    color?: "pink" | "yellow" | "green" | "blue" | "purple";
-    note?: string | null;
+    color: "pink" | "yellow" | "green" | "blue" | "purple";
   };
   path: {
     id: string;
@@ -822,6 +829,173 @@ export type HighlightUpdateResponses = {
 };
 
 export type HighlightUpdateResponse = HighlightUpdateResponses[keyof HighlightUpdateResponses];
+
+export type NoteListData = {
+  body?: never;
+  path?: never;
+  query: {
+    documentId: string;
+    sectionKey?: string;
+    highlightId?: string;
+    unanchored?: boolean;
+  };
+  url: "/notes";
+};
+
+export type NoteListErrors = {
+  /**
+   * Invalid query
+   */
+  400: unknown;
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * Document not found
+   */
+  404: unknown;
+};
+
+export type NoteListResponses = {
+  /**
+   * Notes
+   */
+  200: {
+    items: Array<Note>;
+  };
+};
+
+export type NoteListResponse = NoteListResponses[keyof NoteListResponses];
+
+export type NoteCreateData = {
+  body: {
+    documentId: string;
+    sectionKey?: string;
+    highlightId?: string;
+    body: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/notes";
+};
+
+export type NoteCreateErrors = {
+  /**
+   * Invalid input
+   */
+  400: unknown;
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * Document or highlight not found
+   */
+  404: unknown;
+};
+
+export type NoteCreateResponses = {
+  /**
+   * Created
+   */
+  201: Note;
+};
+
+export type NoteCreateResponse = NoteCreateResponses[keyof NoteCreateResponses];
+
+export type NoteDeleteData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/notes/{id}";
+};
+
+export type NoteDeleteErrors = {
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * Note not found
+   */
+  404: unknown;
+};
+
+export type NoteDeleteResponses = {
+  /**
+   * Deleted
+   */
+  204: void;
+};
+
+export type NoteDeleteResponse = NoteDeleteResponses[keyof NoteDeleteResponses];
+
+export type NoteGetData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/notes/{id}";
+};
+
+export type NoteGetErrors = {
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * Note not found
+   */
+  404: unknown;
+};
+
+export type NoteGetResponses = {
+  /**
+   * Note
+   */
+  200: Note;
+};
+
+export type NoteGetResponse = NoteGetResponses[keyof NoteGetResponses];
+
+export type NoteUpdateData = {
+  body: {
+    body: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/notes/{id}";
+};
+
+export type NoteUpdateErrors = {
+  /**
+   * Invalid input
+   */
+  400: unknown;
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * Note not found
+   */
+  404: unknown;
+};
+
+export type NoteUpdateResponses = {
+  /**
+   * Updated
+   */
+  200: Note;
+};
+
+export type NoteUpdateResponse = NoteUpdateResponses[keyof NoteUpdateResponses];
 
 export type ShelfListData = {
   body?: never;

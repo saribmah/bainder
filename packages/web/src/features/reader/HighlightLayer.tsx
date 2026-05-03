@@ -52,12 +52,12 @@ export function HighlightLayer({
           highlightId={layer.focused.id}
           containerRef={containerRef}
           color={layer.focused.color}
-          note={layer.focused.note}
+          note={layer.getNoteForHighlight(layer.focused.id)?.body ?? null}
           textSnippet={layer.focused.textSnippet}
           contentKey={contentKey}
           onClose={() => layer.setFocusedId(null)}
           onChangeColor={(color) => {
-            void layer.update(layer.focused!.id, { color });
+            void layer.updateColor(layer.focused!.id, color);
           }}
           onEditNote={() => setNoteDraft({ kind: "edit", id: layer.focused!.id })}
           onDelete={() => {
@@ -68,7 +68,11 @@ export function HighlightLayer({
 
       {noteDraft && (
         <NoteSheet
-          initialNote={noteDraft.kind === "edit" ? (layer.focused?.note ?? "") : ""}
+          initialNote={
+            noteDraft.kind === "edit" && layer.focused
+              ? (layer.getNoteForHighlight(layer.focused.id)?.body ?? "")
+              : ""
+          }
           quote={
             noteDraft.kind === "edit"
               ? (layer.focused?.textSnippet ?? "")
@@ -80,9 +84,7 @@ export function HighlightLayer({
             if (noteDraft.kind === "new") {
               await layer.create("yellow", trimmed.length > 0 ? trimmed : undefined);
             } else {
-              await layer.update(noteDraft.id, {
-                note: trimmed.length > 0 ? trimmed : null,
-              });
+              await layer.setNoteForHighlight(noteDraft.id, trimmed.length > 0 ? trimmed : null);
             }
             setNoteDraft(null);
           }}

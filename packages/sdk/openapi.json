@@ -597,16 +597,6 @@
               "purple"
             ]
           },
-          "note": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
           "createdAt": {
             "type": "string"
           },
@@ -621,7 +611,55 @@
           "position",
           "textSnippet",
           "color",
-          "note",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "Note": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "documentId": {
+            "type": "string"
+          },
+          "sectionKey": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "highlightId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "body": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "documentId",
+          "sectionKey",
+          "highlightId",
+          "body",
           "createdAt",
           "updatedAt"
         ]
@@ -1493,8 +1531,8 @@
     "/highlights": {
       "post": {
         "operationId": "highlight.create",
-        "summary": "Create a highlight or note on a document",
-        "description": "Creates a colour highlight (and optional note) anchored to a document section via `sectionKey` (from the manifest). `position.offsetStart` / `offsetEnd` are character positions into the section's canonical `.txt` payload.",
+        "summary": "Create a highlight on a document",
+        "description": "Creates a colour highlight anchored to a document section via `sectionKey` (from the manifest). `position.offsetStart` / `offsetEnd` are character positions into the section's canonical `.txt` payload. To attach a free-form note to the highlight, follow up with `note.create` using the returned `id` as `highlightId`.",
         "responses": {
           "201": {
             "description": "Created",
@@ -1549,10 +1587,6 @@
                       "blue",
                       "purple"
                     ]
-                  },
-                  "note": {
-                    "type": "string",
-                    "maxLength": 10000
                   }
                 },
                 "required": [
@@ -1626,7 +1660,7 @@
     "/highlights/{id}": {
       "patch": {
         "operationId": "highlight.update",
-        "summary": "Update a highlight's color or note",
+        "summary": "Update a highlight's color",
         "responses": {
           "200": {
             "description": "Updated",
@@ -1664,19 +1698,11 @@
                       "blue",
                       "purple"
                     ]
-                  },
-                  "note": {
-                    "anyOf": [
-                      {
-                        "type": "string",
-                        "maxLength": 10000
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
                   }
-                }
+                },
+                "required": [
+                  "color"
+                ]
               }
             }
           }
@@ -1704,6 +1730,253 @@
           },
           "404": {
             "description": "Highlight not found"
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ]
+      }
+    },
+    "/notes": {
+      "post": {
+        "operationId": "note.create",
+        "summary": "Create a note on a document",
+        "description": "Creates a free-form note. With neither `sectionKey` nor `highlightId` set, the note is document-level. With `sectionKey` set, it pins to a section. With `highlightId` set, it comments on a highlight (and the highlight's section is mirrored onto the note automatically).",
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Note"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "404": {
+            "description": "Document or highlight not found"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "documentId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "sectionKey": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "highlightId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "body": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 10000
+                  }
+                },
+                "required": [
+                  "documentId",
+                  "body"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "note.list",
+        "summary": "List notes for a document",
+        "description": "Returns notes owned by the caller for the given `documentId`, ordered by creation time. Optional filters: `sectionKey` scopes to a section; `highlightId` scopes to comments on a single highlight; `unanchored=true` returns only document-level notes (no section, no highlight).",
+        "parameters": [
+          {
+            "name": "documentId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sectionKey",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "highlightId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "unanchored",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Note"
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "404": {
+            "description": "Document not found"
+          }
+        }
+      }
+    },
+    "/notes/{id}": {
+      "get": {
+        "operationId": "note.get",
+        "summary": "Get a single note",
+        "responses": {
+          "200": {
+            "description": "Note",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Note"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "404": {
+            "description": "Note not found"
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "note.update",
+        "summary": "Update a note's body",
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Note"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "404": {
+            "description": "Note not found"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "body": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 10000
+                  }
+                },
+                "required": [
+                  "body"
+                ]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "note.delete",
+        "summary": "Delete a note",
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "404": {
+            "description": "Note not found"
           }
         },
         "parameters": [

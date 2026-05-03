@@ -2,8 +2,10 @@ import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { user } from "./auth";
 import { document } from "./document";
 
-// User annotations on a document. A row represents either a colour-only
-// highlight or a highlight with an attached note (free-form `note` text).
+// Text-anchored colour overlays a user paints onto a document. A highlight
+// only carries selection + colour. Free-form thoughts the user writes about
+// the highlight (or about the document overall) live in the sibling `note`
+// table, which optionally points back at a highlight via `highlight_id`.
 //
 // Position is encoded type-agnostically:
 // - `section_key` identifies the section within the document (e.g.
@@ -31,7 +33,6 @@ export const highlight = sqliteTable(
     position: text("position", { mode: "json" }).$type<HighlightPosition>().notNull(),
     textSnippet: text("text_snippet").notNull(),
     color: text("color").notNull(),
-    note: text("note"),
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
   },

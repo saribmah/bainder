@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { Document, Highlight } from "@bainder/sdk";
 import { useSdk } from "../../../sdk";
 
@@ -45,10 +45,5 @@ export function useLibraryHighlights(documents: ReadonlyArray<Document> | null) 
     };
   }, [client, documents]);
 
-  const noteItems = useMemo(
-    () => items?.filter((highlight) => highlight.note?.trim()) ?? null,
-    [items],
-  );
-
-  return { highlights: items, notes: noteItems, error };
+  return { highlights: items, error };
 }

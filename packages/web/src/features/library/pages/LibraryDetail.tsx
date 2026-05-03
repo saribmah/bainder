@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button, Chip, Icons, Skeleton } from "@bainder/ui";
-import type { Document, DocumentManifest, Highlight } from "@bainder/sdk";
+import type { Document, DocumentManifest, Highlight, Note } from "@bainder/sdk";
 import { useProfileName } from "../../profile";
 import { KIND_LABEL, HIGHLIGHT_COLOR } from "../constants";
 import { DocumentShelfChips } from "../components/DocumentShelfChips";
@@ -38,6 +38,7 @@ export function LibraryDetail() {
   const [doc, setDoc] = useState<Document | null>(null);
   const [manifest, setManifest] = useState<DocumentManifest | null>(null);
   const [highlights, setHighlights] = useState<Highlight[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [createShelfOpen, setCreateShelfOpen] = useState(false);
 
@@ -48,8 +49,9 @@ export function LibraryDetail() {
       client.document.get({ id }),
       client.document.getManifest({ id }),
       client.highlight.list({ documentId: id }),
+      client.note.list({ documentId: id }),
     ])
-      .then(([docRes, manifestRes, highlightRes]) => {
+      .then(([docRes, manifestRes, highlightRes, noteRes]) => {
         if (cancelled) return;
         if (!docRes.data) {
           setError("Document not found");
@@ -58,6 +60,7 @@ export function LibraryDetail() {
         setDoc(docRes.data);
         setManifest(manifestRes.data ?? null);
         setHighlights(highlightRes.data?.items ?? []);
+        setNotes(noteRes.data?.items ?? []);
         setError(null);
       })
       .catch((err: unknown) => {
@@ -69,10 +72,11 @@ export function LibraryDetail() {
   }, [client, id]);
 
   const currentOrder = sectionOrderFromKey(doc?.progress?.sectionKey) ?? 0;
-  const notes = useMemo(
-    () => highlights.filter((highlight) => highlight.note?.trim()),
-    [highlights],
-  );
+  const highlightsById = useMemo(() => {
+    const map = new Map<string, Highlight>();
+    for (const h of highlights) map.set(h.id, h);
+    return map;
+  }, [highlights]);
   const pct = doc ? progressPercent(doc) : 0;
 
   if (error) {
@@ -198,7 +202,7 @@ export function LibraryDetail() {
                   }}
                   onCreate={() => setCreateShelfOpen(true)}
                 />
-                <RecentNotes notes={notes} />
+                <RecentNotes notes={notes} highlightsById={highlightsById} />
               </div>
             </div>
           </section>
@@ -303,7 +307,13 @@ function Contents({
   );
 }
 
-function RecentNotes({ notes }: { notes: Highlight[] }) {
+function RecentNotes({
+  notes,
+  highlightsById,
+}: {
+  notes: Note[];
+  highlightsById: Map<string, Highlight>;
+}) {
   return (
     <aside className="border-paper-200 xl:border-l xl:pl-7">
       <div className="mb-2 flex items-baseline justify-between gap-4">
@@ -312,33 +322,34 @@ function RecentNotes({ notes }: { notes: Highlight[] }) {
       </div>
       {notes.length === 0 ? (
         <p className="t-body-m border-t border-paper-200 py-4 text-paper-600">
-          Highlights with notes will collect here as you read.
+          Notes you write while reading will collect here.
         </p>
       ) : (
-        notes.slice(0, 5).map((note) => (
-          <div key={note.id} className="flex flex-col gap-1.5 border-b border-paper-200 py-3">
-            <div className="flex items-center gap-2">
-              <span
-                className="h-2 w-2 rounded-full"
-                style={{ background: HIGHLIGHT_COLOR[note.color] }}
-              />
-              <span className="t-body-s text-[11px] text-paper-500">
-                {new Date(note.createdAt).toLocaleDateString()}
-              </span>
-            </div>
-            <blockquote
-              className="m-0 border-l-2 pl-3 font-reading text-[13px] leading-6 text-paper-900"
-              style={{ borderColor: HIGHLIGHT_COLOR[note.color] }}
-            >
-              "{note.textSnippet}"
-            </blockquote>
-            {note.note && (
+        notes.slice(0, 5).map((note) => {
+          const highlight = note.highlightId ? highlightsById.get(note.highlightId) : undefined;
+          const accent = highlight ? HIGHLIGHT_COLOR[highlight.color] : "var(--paper-300)";
+          return (
+            <div key={note.id} className="flex flex-col gap-1.5 border-b border-paper-200 py-3">
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full" style={{ background: accent }} />
+                <span className="t-body-s text-[11px] text-paper-500">
+                  {new Date(note.createdAt).toLocaleDateString()}
+                </span>
+              </div>
+              {highlight && (
+                <blockquote
+                  className="m-0 border-l-2 pl-3 font-reading text-[13px] leading-6 text-paper-900"
+                  style={{ borderColor: accent }}
+                >
+                  "{highlight.textSnippet}"
+                </blockquote>
+              )}
               <p className="t-body-s pl-3 text-paper-700">
-                <span className="italic">{note.note}</span>
+                <span className="italic">{note.body}</span>
               </p>
-            )}
-          </div>
-        ))
+            </div>
+          );
+        })
       )}
     </aside>
   );

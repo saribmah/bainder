@@ -154,7 +154,6 @@ function HighlightItem({ item }: { item: LibraryHighlight }) {
       >
         "{item.textSnippet}"
       </blockquote>
-      {item.note && <p className="t-body-m pl-4 text-paper-700">{item.note}</p>}
     </article>
   );
 }

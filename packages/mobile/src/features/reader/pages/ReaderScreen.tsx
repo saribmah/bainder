@@ -349,15 +349,18 @@ function ReaderBody({
     return () => onTocChange(null);
   }, [manifest, order, onTocChange]);
 
-  // Publish notes context. The refresh token is the highlights array length
-  // plus a hash of the latest update timestamp so NotesSheet reloads after CRUD.
+  // Publish notes context. The refresh token includes both highlight and
+  // note update timestamps so NotesSheet reloads after either kind of CRUD.
   const refreshToken = useMemo(() => {
-    let token = highlightLayer.highlights.length;
+    let token = highlightLayer.highlights.length + highlightLayer.notesByHighlightId.size;
     for (const h of highlightLayer.highlights) {
       token += new Date(h.updatedAt).getTime();
     }
+    for (const n of highlightLayer.notesByHighlightId.values()) {
+      token += new Date(n.updatedAt).getTime();
+    }
     return token;
-  }, [highlightLayer.highlights]);
+  }, [highlightLayer.highlights, highlightLayer.notesByHighlightId]);
 
   useEffect(() => {
     if (!manifest) {
@@ -394,10 +397,12 @@ function ReaderBody({
         fontSize={readerFontSize}
         contentKey={currentSection.sectionKey}
         highlights={highlightLayer.highlights}
+        notesByHighlightId={highlightLayer.notesByHighlightId}
         authedFetch={authedFetch}
         assetCache={assetCacheRef.current}
         onCreateHighlight={highlightLayer.create}
-        onUpdateHighlight={highlightLayer.update}
+        onUpdateColor={highlightLayer.updateColor}
+        onSetNote={highlightLayer.setNoteForHighlight}
         onRemoveHighlight={highlightLayer.remove}
       />
       <ChapterNav

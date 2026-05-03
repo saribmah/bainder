@@ -6,6 +6,7 @@ import { createAuth } from "../user/auth";
 import documentRouter from "./routes/document";
 import exampleRouter from "./routes/example";
 import highlightRouter from "./routes/highlight";
+import noteRouter from "./routes/note";
 import profileRouter from "./routes/profile";
 import shelfRouter from "./routes/shelf";
 import testModeRouter from "./routes/test-mode";
@@ -21,6 +22,7 @@ server.on(["GET", "POST"], "/auth/*", (c) => createAuth(c.env).handler(c.req.raw
 server.route("/example", exampleRouter);
 server.route("/documents", documentRouter);
 server.route("/highlights", highlightRouter);
+server.route("/notes", noteRouter);
 server.route("/shelves", shelfRouter);
 server.route("/user", userRouter);
 server.route("/profile", profileRouter);
