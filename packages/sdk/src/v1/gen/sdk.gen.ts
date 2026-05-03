@@ -29,6 +29,8 @@ import type {
   DocumentGetStatusResponses,
   DocumentListErrors,
   DocumentListResponses,
+  DocumentListShelvesErrors,
+  DocumentListShelvesResponses,
   DocumentUpdateErrors,
   DocumentUpdateResponses,
   ExampleCreateErrors,
@@ -55,6 +57,24 @@ import type {
   ProgressPosition,
   ProgressUpsertErrors,
   ProgressUpsertResponses,
+  ShelfAddDocumentErrors,
+  ShelfAddDocumentResponses,
+  ShelfCreateErrors,
+  ShelfCreateResponses,
+  ShelfDeleteErrors,
+  ShelfDeleteResponses,
+  ShelfGetErrors,
+  ShelfGetResponses,
+  ShelfListDocumentsErrors,
+  ShelfListDocumentsResponses,
+  ShelfListErrors,
+  ShelfListResponses,
+  ShelfRemoveDocumentErrors,
+  ShelfRemoveDocumentResponses,
+  ShelfReorderDocumentErrors,
+  ShelfReorderDocumentResponses,
+  ShelfUpdateErrors,
+  ShelfUpdateResponses,
   TestModeSignInInput,
   UserMeErrors,
   UserMeResponses,
@@ -374,6 +394,29 @@ export class Document extends HeyApiClient {
   }
 
   /**
+   * List custom shelves containing this document
+   *
+   * Reverse lookup for the book-detail UI. Smart shelf membership is omitted — derive it from the document's own `progress` field.
+   */
+  public listShelves<ThrowOnError extends boolean = false>(
+    parameters: {
+      id: string;
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams([parameters], [{ args: [{ in: "path", key: "id" }] }]);
+    return (options?.client ?? this.client).get<
+      DocumentListShelvesResponses,
+      DocumentListShelvesErrors,
+      ThrowOnError
+    >({
+      url: "/documents/{id}/shelves",
+      ...options,
+      ...params,
+    });
+  }
+
+  /**
    * Get the document manifest (type-agnostic index)
    *
    * Returns the canonical manifest for the document — discriminated by `kind`, with format-specific metadata in the matching arm and a uniform `sections[]` for navigation.
@@ -651,6 +694,274 @@ export class Highlight extends HeyApiClient {
   }
 }
 
+export class Shelf extends HeyApiClient {
+  /**
+   * List shelves
+   *
+   * Returns smart shelves (Currently reading, Finished) followed by user-created shelves. Each item carries an `itemCount` so a sidebar can render counts in one round-trip.
+   */
+  public list<ThrowOnError extends boolean = false>(options?: Options<never, ThrowOnError>) {
+    return (options?.client ?? this.client).get<ShelfListResponses, ShelfListErrors, ThrowOnError>({
+      url: "/shelves",
+      ...options,
+    });
+  }
+
+  /**
+   * Create a custom shelf
+   *
+   * Creates a user-owned shelf. Names must be unique per user, case-insensitive — `design` and `Design` collide.
+   */
+  public create<ThrowOnError extends boolean = false>(
+    parameters: {
+      name: string;
+      description?: string;
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "body", key: "name" },
+            { in: "body", key: "description" },
+          ],
+        },
+      ],
+    );
+    return (options?.client ?? this.client).post<
+      ShelfCreateResponses,
+      ShelfCreateErrors,
+      ThrowOnError
+    >({
+      url: "/shelves",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    });
+  }
+
+  /**
+   * Delete a custom shelf
+   *
+   * Cascades shelf membership rows. Smart shelves cannot be deleted.
+   */
+  public delete<ThrowOnError extends boolean = false>(
+    parameters: {
+      id: string;
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams([parameters], [{ args: [{ in: "path", key: "id" }] }]);
+    return (options?.client ?? this.client).delete<
+      ShelfDeleteResponses,
+      ShelfDeleteErrors,
+      ThrowOnError
+    >({
+      url: "/shelves/{id}",
+      ...options,
+      ...params,
+    });
+  }
+
+  /**
+   * Get a shelf
+   *
+   * Accepts both custom shelf UUIDs and smart shelf identifiers (`smart:reading`, `smart:finished`).
+   */
+  public get<ThrowOnError extends boolean = false>(
+    parameters: {
+      id: string;
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams([parameters], [{ args: [{ in: "path", key: "id" }] }]);
+    return (options?.client ?? this.client).get<ShelfGetResponses, ShelfGetErrors, ThrowOnError>({
+      url: "/shelves/{id}",
+      ...options,
+      ...params,
+    });
+  }
+
+  /**
+   * Update a custom shelf
+   *
+   * Renames, edits the description, or repositions a custom shelf. `position` is a fractional sort key — clients pick a midpoint between neighbours; the server stores it verbatim. Smart shelves cannot be modified.
+   */
+  public update<ThrowOnError extends boolean = false>(
+    parameters: {
+      id: string;
+      name?: string;
+      description?: string | null;
+      position?: number | null;
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "id" },
+            { in: "body", key: "name" },
+            { in: "body", key: "description" },
+            { in: "body", key: "position" },
+          ],
+        },
+      ],
+    );
+    return (options?.client ?? this.client).patch<
+      ShelfUpdateResponses,
+      ShelfUpdateErrors,
+      ThrowOnError
+    >({
+      url: "/shelves/{id}",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    });
+  }
+
+  /**
+   * List documents on a shelf
+   *
+   * Returns the documents on the shelf in their stored order. For custom shelves: position ASC NULLS LAST then addedAt ASC. For smart shelves: progress.updatedAt DESC.
+   */
+  public listDocuments<ThrowOnError extends boolean = false>(
+    parameters: {
+      id: string;
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams([parameters], [{ args: [{ in: "path", key: "id" }] }]);
+    return (options?.client ?? this.client).get<
+      ShelfListDocumentsResponses,
+      ShelfListDocumentsErrors,
+      ThrowOnError
+    >({
+      url: "/shelves/{id}/documents",
+      ...options,
+      ...params,
+    });
+  }
+
+  /**
+   * Remove a document from a shelf
+   */
+  public removeDocument<ThrowOnError extends boolean = false>(
+    parameters: {
+      id: string;
+      documentId: string;
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "id" },
+            { in: "path", key: "documentId" },
+          ],
+        },
+      ],
+    );
+    return (options?.client ?? this.client).delete<
+      ShelfRemoveDocumentResponses,
+      ShelfRemoveDocumentErrors,
+      ThrowOnError
+    >({
+      url: "/shelves/{id}/documents/{documentId}",
+      ...options,
+      ...params,
+    });
+  }
+
+  /**
+   * Reorder a document within a shelf
+   *
+   * Sets the document's `position` within the shelf. Clients pick a midpoint between neighbours; pass `null` to drop back to addedAt-based ordering.
+   */
+  public reorderDocument<ThrowOnError extends boolean = false>(
+    parameters: {
+      id: string;
+      documentId: string;
+      position: number | null;
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "id" },
+            { in: "path", key: "documentId" },
+            { in: "body", key: "position" },
+          ],
+        },
+      ],
+    );
+    return (options?.client ?? this.client).patch<
+      ShelfReorderDocumentResponses,
+      ShelfReorderDocumentErrors,
+      ThrowOnError
+    >({
+      url: "/shelves/{id}/documents/{documentId}",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    });
+  }
+
+  /**
+   * Add a document to a shelf
+   *
+   * Idempotent. Re-adding a document already on the shelf is a no-op and preserves the original addedAt and position. Smart shelves cannot be written to.
+   */
+  public addDocument<ThrowOnError extends boolean = false>(
+    parameters: {
+      id: string;
+      documentId: string;
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "id" },
+            { in: "path", key: "documentId" },
+          ],
+        },
+      ],
+    );
+    return (options?.client ?? this.client).put<
+      ShelfAddDocumentResponses,
+      ShelfAddDocumentErrors,
+      ThrowOnError
+    >({
+      url: "/shelves/{id}/documents/{documentId}",
+      ...options,
+      ...params,
+    });
+  }
+}
+
 export class User extends HeyApiClient {
   /**
    * Get the authenticated user
@@ -801,6 +1112,11 @@ export class ApiClient extends HeyApiClient {
   private _highlight?: Highlight;
   get highlight(): Highlight {
     return (this._highlight ??= new Highlight({ client: this.client }));
+  }
+
+  private _shelf?: Shelf;
+  get shelf(): Shelf {
+    return (this._shelf ??= new Shelf({ client: this.client }));
   }
 
   private _user?: User;

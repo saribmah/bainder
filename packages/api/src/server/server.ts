@@ -6,6 +6,7 @@ import { createAuth } from "../user/auth";
 import documentRouter from "./routes/document";
 import exampleRouter from "./routes/example";
 import highlightRouter from "./routes/highlight";
+import shelfRouter from "./routes/shelf";
 import testModeRouter from "./routes/test-mode";
 import userRouter from "./routes/user";
 
@@ -19,6 +20,7 @@ server.on(["GET", "POST"], "/auth/*", (c) => createAuth(c.env).handler(c.req.raw
 server.route("/example", exampleRouter);
 server.route("/documents", documentRouter);
 server.route("/highlights", highlightRouter);
+server.route("/shelves", shelfRouter);
 server.route("/user", userRouter);
 // Test-mode endpoints are always mounted but each handler 404s unless
 // `TEST_MODE=true` is set on the env (only the local `dev:test` script does).

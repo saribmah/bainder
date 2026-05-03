@@ -5,6 +5,7 @@ import { Document } from "../../document/document";
 import { Instance } from "../../instance";
 import { requireAuth } from "../../middleware/auth";
 import { Progress } from "../../progress/progress";
+import { Shelf } from "../../shelf/shelf";
 import { createErrorMapper } from "../error-mapper";
 
 const documentRouter = new Hono<AppEnv>();
@@ -311,6 +312,37 @@ documentRouter.post(
     try {
       const entity = await Progress.upsert(Instance.userId, id, body);
       return c.json(entity);
+    } catch (error) {
+      const mapped = mapError(error);
+      if (!mapped) throw error;
+      return c.json(mapped.payload, mapped.status);
+    }
+  },
+);
+
+documentRouter.get(
+  "/:id/shelves",
+  describeRoute({
+    summary: "List custom shelves containing this document",
+    description:
+      "Reverse lookup for the book-detail UI. Smart shelf membership is omitted — derive it from the document's own `progress` field.",
+    operationId: "document.listShelves",
+    responses: {
+      200: {
+        description: "Custom shelves containing the document",
+        content: { "application/json": { schema: resolver(Shelf.CustomListResponse) } },
+      },
+      401: { description: "Not authenticated" },
+      404: { description: "Document not found" },
+    },
+  }),
+  requireAuth,
+  async (c) => {
+    const id = c.req.param("id");
+    const mapError = createErrorMapper([{ error: Document.NotFoundError, status: 404 }]);
+    try {
+      const items = await Shelf.listForDocument(Instance.userId, id);
+      return c.json({ items });
     } catch (error) {
       const mapped = mapError(error);
       if (!mapped) throw error;
