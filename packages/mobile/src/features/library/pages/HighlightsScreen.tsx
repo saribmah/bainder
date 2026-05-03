@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ChipButton, Icons, Skeleton, color } from "@bainder/ui";
+import { ChipButton, Icons, Skeleton, Wordmark, color } from "@bainder/ui";
 import type { Highlight } from "@bainder/sdk";
 import { HIGHLIGHT_COLOR, HIGHLIGHT_LABEL } from "../constants";
-import { LibraryBottomTabs } from "../components/LibraryBottomTabs";
+import { BottomTabs } from "../../shell";
 import { useLibraryDocuments } from "../hooks/useLibraryDocuments";
 import { useLibraryHighlights, type LibraryHighlight } from "../hooks/useLibraryHighlights";
 import { libraryStyles as styles } from "../library.styles";
@@ -52,7 +52,7 @@ export function HighlightsScreen() {
         ]}
       >
         <View style={styles.header}>
-          <Text style={styles.wordmark}>bainder</Text>
+          <Wordmark size="sm" />
           <View style={styles.iconButton}>
             <Icons.Search size={16} color={color.paper[800]} />
           </View>
@@ -94,7 +94,7 @@ export function HighlightsScreen() {
         )}
       </ScrollView>
 
-      <LibraryBottomTabs active="highlights" bottom={insets.bottom} onUpload={uploadDocument} />
+      <BottomTabs active="highlights" bottom={insets.bottom} onUpload={uploadDocument} />
     </View>
   );
 }

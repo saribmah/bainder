@@ -6,7 +6,7 @@ import { useProfileName } from "../../profile";
 import { KIND_LABEL, HIGHLIGHT_COLOR } from "../constants";
 import { DocumentShelfChips } from "../components/DocumentShelfChips";
 import { LibraryCover } from "../components/LibraryCover";
-import { LibraryRail } from "../components/LibraryRail";
+import { AppSidebar } from "../components/AppSidebar";
 import { CreateShelfDialog } from "../components/ShelfDialogs";
 import { useLibraryDocuments } from "../hooks/useLibraryDocuments";
 import { useLibraryShelves } from "../hooks/useLibraryShelves";
@@ -94,7 +94,7 @@ export function LibraryDetail() {
 
   return (
     <main className="flex h-dvh min-h-screen overflow-hidden bg-paper-50 text-paper-900">
-      <LibraryRail
+      <AppSidebar
         totalCount={counts.all}
         highlightsCount={highlights.length}
         reader={reader}

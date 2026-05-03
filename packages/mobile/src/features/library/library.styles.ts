@@ -17,14 +17,6 @@ export const libraryStyles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  wordmark: {
-    fontFamily: font.nativeFamily.display,
-    fontSize: 16,
-    fontWeight: "600",
-    letterSpacing: 0.96,
-    textTransform: "uppercase",
-    color: color.paper[900],
-  },
   actions: {
     flexDirection: "row",
     gap: 8,

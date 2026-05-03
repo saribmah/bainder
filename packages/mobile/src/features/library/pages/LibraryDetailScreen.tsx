@@ -7,7 +7,7 @@ import type { Document, DocumentManifest, Note } from "@bainder/sdk";
 import { useSdk } from "../../../sdk/sdk.provider";
 import { KIND_LABEL } from "../constants";
 import { DocumentShelfChips } from "../components/DocumentShelfChips";
-import { LibraryBottomTabs } from "../components/LibraryBottomTabs";
+import { BottomTabs } from "../../shell";
 import { LibraryCover } from "../components/LibraryCover";
 import { CreateShelfSheet } from "../components/ShelfSheets";
 import { useLibraryDocuments } from "../hooks/useLibraryDocuments";
@@ -180,7 +180,7 @@ export function LibraryDetailScreen() {
           </>
         )}
       </ScrollView>
-      <LibraryBottomTabs active="library" bottom={insets.bottom} onUpload={uploadDocument} />
+      <BottomTabs active="library" bottom={insets.bottom} onUpload={uploadDocument} />
       <CreateShelfSheet
         visible={createShelfOpen}
         onClose={() => setCreateShelfOpen(false)}

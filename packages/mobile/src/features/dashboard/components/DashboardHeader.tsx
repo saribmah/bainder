@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from "react-native";
+import { useRouter } from "expo-router";
 import { Icons, Input, Wordmark, color } from "@bainder/ui";
-import { signOutProfile } from "../../profile";
 import { dashboardStyles as styles } from "../dashboard.styles";
 import { formatDayLabel } from "../utils/date";
 
@@ -17,6 +17,7 @@ export function DashboardHeader({
   onQuery: (value: string) => void;
   onToggleSearch: () => void;
 }) {
+  const router = useRouter();
   return (
     <View>
       <View style={styles.nav}>
@@ -25,7 +26,11 @@ export function DashboardHeader({
           <Pressable accessibilityRole="button" onPress={onToggleSearch} style={styles.iconButton}>
             <Icons.Search size={16} color={color.paper[800]} />
           </Pressable>
-          <Pressable accessibilityRole="button" onPress={signOutProfile} style={styles.iconButton}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push("/settings")}
+            style={styles.iconButton}
+          >
             <Icons.User size={16} color={color.paper[800]} />
           </Pressable>
         </View>

@@ -3,10 +3,10 @@ import { useWindowDimensions } from "react-native";
 import { FlatList, Pressable, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ChipButton, Icons, Input, Toast, color } from "@bainder/ui";
+import { ChipButton, Icons, Input, Toast, Wordmark, color } from "@bainder/ui";
 import type { Document } from "@bainder/sdk";
 import { FILTER_LABEL, type LibraryFilter } from "../constants";
-import { LibraryBottomTabs } from "../components/LibraryBottomTabs";
+import { BottomTabs } from "../../shell";
 import { LibraryCover } from "../components/LibraryCover";
 import { ShelfCard } from "../components/ShelfArtwork";
 import { AddToShelfSheet, CreateShelfSheet } from "../components/ShelfSheets";
@@ -74,7 +74,7 @@ export function LibraryScreen() {
         ListHeaderComponent={
           <>
             <View style={styles.header}>
-              <Text style={styles.wordmark}>bainder</Text>
+              <Wordmark size="sm" />
               <View style={styles.actions}>
                 <Pressable
                   accessibilityRole="button"
@@ -181,7 +181,7 @@ export function LibraryScreen() {
         )}
       />
 
-      <LibraryBottomTabs active="library" bottom={insets.bottom} onUpload={uploadDocument} />
+      <BottomTabs active="library" bottom={insets.bottom} onUpload={uploadDocument} />
 
       {toast && (
         <View style={{ position: "absolute", left: 24, right: 24, bottom: insets.bottom + 78 }}>

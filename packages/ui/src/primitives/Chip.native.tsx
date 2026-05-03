@@ -56,11 +56,7 @@ export function Chip({ variant = "filled", iconStart, iconEnd, children, style }
       ]}
     >
       {tintIcon(iconStart, v.fg)}
-      {typeof children === "string" ? (
-        <Text style={[styles.label, { color: v.fg }]}>{children}</Text>
-      ) : (
-        children
-      )}
+      {renderChipChildren(children, v.fg)}
       {tintIcon(iconEnd, v.fg)}
     </View>
   );
@@ -96,14 +92,23 @@ export function ChipButton({
       {...rest}
     >
       {tintIcon(iconStart, v.fg)}
-      {typeof children === "string" ? (
-        <Text style={[styles.label, { color: v.fg }]}>{children}</Text>
-      ) : (
-        children
-      )}
+      {renderChipChildren(children, v.fg)}
       {tintIcon(iconEnd, v.fg)}
     </Pressable>
   );
+}
+
+function renderChipChildren(children: ReactNode, color: string): ReactNode {
+  if (children === null || children === undefined || children === false) return null;
+  const isTextLike = (node: ReactNode): node is string | number =>
+    typeof node === "string" || typeof node === "number";
+  if (isTextLike(children)) {
+    return <Text style={[styles.label, { color }]}>{children}</Text>;
+  }
+  if (Array.isArray(children) && children.every((node) => isTextLike(node))) {
+    return <Text style={[styles.label, { color }]}>{children}</Text>;
+  }
+  return children;
 }
 
 const styles = StyleSheet.create({

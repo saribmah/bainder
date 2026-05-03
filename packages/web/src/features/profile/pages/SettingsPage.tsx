@@ -3,7 +3,8 @@ import { Button, Chip, ChipButton, Icons } from "@bainder/ui";
 import { ProfileHighlightColor, ProfileTheme } from "@bainder/sdk";
 import { useLibraryDocuments } from "../../library/hooks/useLibraryDocuments";
 import { useLibraryHighlights } from "../../library/hooks/useLibraryHighlights";
-import { LibraryRail } from "../../library/components/LibraryRail";
+import { AppSidebar } from "../../library/components/AppSidebar";
+import { useLibraryShelves } from "../../library/hooks/useLibraryShelves";
 import { signOutProfile } from "../actions";
 import { useProfile } from "../hooks/useProfile";
 import { useProfileName } from "../hooks/useProfileName";
@@ -27,6 +28,7 @@ export function SettingsPage() {
   const reader = useProfileName();
   const { documents, counts, uploading, uploadDocument } = useLibraryDocuments();
   const { highlights } = useLibraryHighlights(documents);
+  const { shelves } = useLibraryShelves(documents);
   const { user } = useUserProfile();
   const { profile, update } = useProfile();
 
@@ -41,12 +43,13 @@ export function SettingsPage() {
 
   return (
     <main className="flex h-dvh min-h-screen overflow-hidden bg-paper-50 text-paper-900">
-      <LibraryRail
+      <AppSidebar
         totalCount={counts.all}
         highlightsCount={highlights?.length ?? 0}
         reader={reader}
         uploading={uploading}
         onUpload={uploadDocument}
+        shelves={shelves}
       />
 
       <section className="min-w-0 flex-1 overflow-y-auto px-6 py-8 lg:px-16">
@@ -62,7 +65,6 @@ export function SettingsPage() {
                 {email || "Reader profile"} · {counts.all} imports
               </div>
             </div>
-            <Button variant="secondary">Edit profile</Button>
           </div>
 
           <div>

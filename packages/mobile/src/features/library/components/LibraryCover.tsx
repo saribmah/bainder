@@ -18,14 +18,22 @@ export function LibraryCover({
   width: number;
   height: number;
 }) {
-  const { baseUrl } = useSdk();
+  const { baseUrl, authHeaders } = useSdk();
   const coverSrc =
     doc.kind === "epub" && doc.status === "processed" && doc.coverImage
       ? `${baseUrl}/documents/${doc.id}/${doc.coverImage}`
       : null;
 
   if (coverSrc) {
-    return <BookCover width={width} height={height} src={coverSrc} alt={doc.title} />;
+    return (
+      <BookCover
+        width={width}
+        height={height}
+        src={coverSrc}
+        headers={authHeaders()}
+        alt={doc.title}
+      />
+    );
   }
 
   const palette = COVER_PALETTES[hashString(doc.id) % COVER_PALETTES.length] ?? COVER_PALETTES[0];

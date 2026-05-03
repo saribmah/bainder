@@ -1,16 +1,15 @@
-import { Pressable, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import { Icons, color } from "@bainder/ui";
-import { libraryStyles as styles } from "../library.styles";
+import { Icons, color, font, radius } from "@bainder/ui";
 
-type ActiveTab = "home" | "library" | "highlights" | "settings";
+export type BottomTabKey = "home" | "library" | "highlights" | "settings";
 
-export function LibraryBottomTabs({
+export function BottomTabs({
   active,
   bottom,
   onUpload,
 }: {
-  active: ActiveTab;
+  active: BottomTabKey;
   bottom: number;
   onUpload: () => void;
 }) {
@@ -64,3 +63,40 @@ export function LibraryBottomTabs({
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  tabs: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flexDirection: "row",
+    justifyContent: "space-around",
+    borderTopWidth: 1,
+    borderTopColor: color.paper[200],
+    backgroundColor: color.paper[50],
+    paddingTop: 12,
+  },
+  tabItem: {
+    minWidth: 54,
+    alignItems: "center",
+    gap: 4,
+  },
+  primaryTab: {
+    width: 36,
+    height: 36,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: radius.pill,
+    backgroundColor: color.paper[900],
+  },
+  tabLabel: {
+    fontFamily: font.nativeFamily.ui,
+    fontSize: 10,
+    color: color.paper[500],
+  },
+  tabLabelActive: {
+    color: color.paper[900],
+    fontWeight: "600",
+  },
+});

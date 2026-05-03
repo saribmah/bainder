@@ -161,36 +161,6 @@ export const dashboardStyles = StyleSheet.create({
     lineHeight: 18,
     color: color.paper[600],
   },
-  collections: {
-    gap: 10,
-    paddingTop: 8,
-    paddingRight: 24,
-  },
-  collectionCard: {
-    width: 132,
-    borderRadius: radius.lg,
-    backgroundColor: color.paper[100],
-    padding: 14,
-  },
-  collectionDot: {
-    width: 8,
-    height: 8,
-    borderRadius: radius.pill,
-    marginBottom: 8,
-  },
-  collectionName: {
-    fontFamily: font.nativeFamily.ui,
-    fontSize: 13,
-    fontWeight: "500",
-    lineHeight: 16,
-    color: color.paper[900],
-  },
-  collectionCount: {
-    marginTop: 4,
-    fontFamily: font.nativeFamily.ui,
-    fontSize: 11,
-    color: color.paper[500],
-  },
   recentGrid: {
     marginTop: 10,
     flexDirection: "row",

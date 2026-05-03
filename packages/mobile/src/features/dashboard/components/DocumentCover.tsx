@@ -12,7 +12,7 @@ export function DocumentCover({
   width: number;
   height: number;
 }) {
-  const { baseUrl } = useSdk();
+  const { baseUrl, authHeaders } = useSdk();
   // `coverImage` is set on the document row by the processing pipeline once
   // the manifest is written, so the dashboard renders the cover without
   // fetching the manifest per item.
@@ -26,6 +26,7 @@ export function DocumentCover({
       width={width}
       height={height}
       src={coverSrc ?? undefined}
+      headers={coverSrc ? authHeaders() : undefined}
       backgroundColor={KIND_BG[doc.kind]}
       alt=""
     />

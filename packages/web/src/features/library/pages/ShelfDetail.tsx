@@ -5,7 +5,7 @@ import type { Document, Shelf, ShelfCustom } from "@bainder/sdk";
 import { useProfileName } from "../../profile";
 import { LibraryActionsMenu } from "../components/LibraryActionsMenu";
 import { LibraryCover } from "../components/LibraryCover";
-import { LibraryRail } from "../components/LibraryRail";
+import { AppSidebar } from "../components/AppSidebar";
 import { AddBooksDialog, CreateShelfDialog, EditShelfDialog } from "../components/ShelfDialogs";
 import { SpineFan } from "../components/ShelfArtwork";
 import { useLibraryDocuments } from "../hooks/useLibraryDocuments";
@@ -103,7 +103,7 @@ export function ShelfDetail() {
 
   return (
     <main className="flex h-dvh min-h-screen overflow-hidden bg-paper-50 text-paper-900">
-      <LibraryRail
+      <AppSidebar
         totalCount={counts.all}
         highlightsCount={highlights?.length ?? 0}
         reader={reader}

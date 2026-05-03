@@ -2,7 +2,7 @@ import { Text, View } from "react-native";
 import { Card } from "@bainder/ui";
 import type { Document } from "@bainder/sdk";
 import { dashboardStyles as styles } from "../dashboard.styles";
-import { CollectionRail, DocumentRow, RecentCard } from "./DocumentCards";
+import { DocumentRow, RecentCard } from "./DocumentCards";
 import { QuickAdd } from "./QuickAdd";
 import { SectionHeader } from "./SectionHeader";
 
@@ -58,11 +58,6 @@ export function DashboardContent({
             </Card>
           )}
         </View>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Your collections</Text>
-        <CollectionRail recentCount={recent.length} pendingCount={pending.length} />
       </View>
 
       <View style={styles.section}>

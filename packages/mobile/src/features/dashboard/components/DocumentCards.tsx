@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { Card, IconButton, Icons, color } from "@bainder/ui";
 import type { Document } from "@bainder/sdk";
 import { KIND_LABEL } from "../constants";
@@ -68,36 +68,6 @@ export function RecentCard({
           <Icons.MoreVertical size={14} color={color.paper[600]} />
         </IconButton>
       </View>
-    </View>
-  );
-}
-
-export function CollectionRail({
-  recentCount,
-  pendingCount,
-}: {
-  recentCount: number;
-  pendingCount: number;
-}) {
-  return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.collections}
-    >
-      <CollectionCard name="Processed" count={recentCount} dot={color.highlight.green} />
-      <CollectionCard name="In progress" count={pendingCount} dot={color.highlight.yellow} />
-      <CollectionCard name="Book notes" count={0} dot={color.highlight.pink} />
-    </ScrollView>
-  );
-}
-
-function CollectionCard({ name, count, dot }: { name: string; count: number; dot: string }) {
-  return (
-    <View style={styles.collectionCard}>
-      <View style={[styles.collectionDot, { backgroundColor: dot }]} />
-      <Text style={styles.collectionName}>{name}</Text>
-      <Text style={styles.collectionCount}>{count} items</Text>
     </View>
   );
 }
