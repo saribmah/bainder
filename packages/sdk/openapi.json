@@ -261,6 +261,62 @@
           "updatedAt"
         ]
       },
+      "ShelfCustom": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "custom"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "itemCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "position": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "name",
+          "description",
+          "itemCount",
+          "position",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
       "DocumentSectionSummary": {
         "type": "object",
         "properties": {
@@ -568,6 +624,50 @@
           "note",
           "createdAt",
           "updatedAt"
+        ]
+      },
+      "ShelfSmart": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "smart"
+          },
+          "id": {
+            "type": "string"
+          },
+          "smartType": {
+            "type": "string",
+            "enum": [
+              "reading",
+              "finished"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "itemCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "smartType",
+          "name",
+          "itemCount"
+        ]
+      },
+      "Shelf": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ShelfSmart"
+          },
+          {
+            "$ref": "#/components/schemas/ShelfCustom"
+          }
         ]
       },
       "User": {
@@ -1140,6 +1240,52 @@
         ]
       }
     },
+    "/documents/{id}/shelves": {
+      "get": {
+        "operationId": "document.listShelves",
+        "summary": "List custom shelves containing this document",
+        "description": "Reverse lookup for the book-detail UI. Smart shelf membership is omitted — derive it from the document's own `progress` field.",
+        "responses": {
+          "200": {
+            "description": "Custom shelves containing the document",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ShelfCustom"
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "404": {
+            "description": "Document not found"
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ]
+      }
+    },
     "/documents/{id}/manifest": {
       "get": {
         "operationId": "document.getManifest",
@@ -1498,6 +1644,416 @@
             },
             "in": "path",
             "name": "id",
+            "required": true
+          }
+        ]
+      }
+    },
+    "/shelves": {
+      "get": {
+        "operationId": "shelf.list",
+        "summary": "List shelves",
+        "description": "Returns smart shelves (Currently reading, Finished) followed by user-created shelves. Each item carries an `itemCount` so a sidebar can render counts in one round-trip.",
+        "responses": {
+          "200": {
+            "description": "Shelves owned by the caller, smart shelves first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Shelf"
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated"
+          }
+        }
+      },
+      "post": {
+        "operationId": "shelf.create",
+        "summary": "Create a custom shelf",
+        "description": "Creates a user-owned shelf. Names must be unique per user, case-insensitive — `design` and `Design` collide.",
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShelfCustom"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "409": {
+            "description": "A shelf with this name already exists"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 280
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/shelves/{id}": {
+      "get": {
+        "operationId": "shelf.get",
+        "summary": "Get a shelf",
+        "description": "Accepts both custom shelf UUIDs and smart shelf identifiers (`smart:reading`, `smart:finished`).",
+        "responses": {
+          "200": {
+            "description": "Shelf",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Shelf"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "shelf.update",
+        "summary": "Update a custom shelf",
+        "description": "Renames, edits the description, or repositions a custom shelf. `position` is a fractional sort key — clients pick a midpoint between neighbours; the server stores it verbatim. Smart shelves cannot be modified.",
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShelfCustom"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "Name already taken or shelf is smart"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "description": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 280
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "position": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "shelf.delete",
+        "summary": "Delete a custom shelf",
+        "description": "Cascades shelf membership rows. Smart shelves cannot be deleted.",
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "Shelf is smart and cannot be deleted"
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ]
+      }
+    },
+    "/shelves/{id}/documents": {
+      "get": {
+        "operationId": "shelf.listDocuments",
+        "summary": "List documents on a shelf",
+        "description": "Returns the documents on the shelf in their stored order. For custom shelves: position ASC NULLS LAST then addedAt ASC. For smart shelves: progress.updatedAt DESC.",
+        "responses": {
+          "200": {
+            "description": "Documents on the shelf",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Document"
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "404": {
+            "description": "Shelf not found"
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ]
+      }
+    },
+    "/shelves/{id}/documents/{documentId}": {
+      "put": {
+        "operationId": "shelf.addDocument",
+        "summary": "Add a document to a shelf",
+        "description": "Idempotent. Re-adding a document already on the shelf is a no-op and preserves the original addedAt and position. Smart shelves cannot be written to.",
+        "responses": {
+          "204": {
+            "description": "Added (or already present)"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "404": {
+            "description": "Shelf or document not found"
+          },
+          "409": {
+            "description": "Shelf is smart"
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "documentId",
+            "required": true
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "shelf.removeDocument",
+        "summary": "Remove a document from a shelf",
+        "responses": {
+          "204": {
+            "description": "Removed"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "404": {
+            "description": "Shelf not found, or document is not on the shelf"
+          },
+          "409": {
+            "description": "Shelf is smart"
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "documentId",
+            "required": true
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "shelf.reorderDocument",
+        "summary": "Reorder a document within a shelf",
+        "description": "Sets the document's `position` within the shelf. Clients pick a midpoint between neighbours; pass `null` to drop back to addedAt-based ordering.",
+        "responses": {
+          "204": {
+            "description": "Reordered"
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "404": {
+            "description": "Shelf not found, or document is not on the shelf"
+          },
+          "409": {
+            "description": "Shelf is smart"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "position": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "position"
+                ]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "documentId",
             "required": true
           }
         ]

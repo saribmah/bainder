@@ -53,6 +53,17 @@ export type Progress = {
   updatedAt: string;
 };
 
+export type ShelfCustom = {
+  kind: "custom";
+  id: string;
+  name: string;
+  description: string | null;
+  itemCount: number;
+  position: number | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type DocumentSectionSummary = {
   sectionKey: string;
   order: number;
@@ -116,6 +127,16 @@ export type Highlight = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type ShelfSmart = {
+  kind: "smart";
+  id: string;
+  smartType: "reading" | "finished";
+  name: string;
+  itemCount: number;
+};
+
+export type Shelf = ShelfSmart | ShelfCustom;
 
 export type User = {
   id: string;
@@ -491,6 +512,38 @@ export type ProgressUpsertResponses = {
 
 export type ProgressUpsertResponse = ProgressUpsertResponses[keyof ProgressUpsertResponses];
 
+export type DocumentListShelvesData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/documents/{id}/shelves";
+};
+
+export type DocumentListShelvesErrors = {
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * Document not found
+   */
+  404: unknown;
+};
+
+export type DocumentListShelvesResponses = {
+  /**
+   * Custom shelves containing the document
+   */
+  200: {
+    items: Array<ShelfCustom>;
+  };
+};
+
+export type DocumentListShelvesResponse =
+  DocumentListShelvesResponses[keyof DocumentListShelvesResponses];
+
 export type DocumentGetManifestData = {
   body?: never;
   path: {
@@ -741,6 +794,310 @@ export type HighlightUpdateResponses = {
 };
 
 export type HighlightUpdateResponse = HighlightUpdateResponses[keyof HighlightUpdateResponses];
+
+export type ShelfListData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/shelves";
+};
+
+export type ShelfListErrors = {
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+};
+
+export type ShelfListResponses = {
+  /**
+   * Shelves owned by the caller, smart shelves first
+   */
+  200: {
+    items: Array<Shelf>;
+  };
+};
+
+export type ShelfListResponse = ShelfListResponses[keyof ShelfListResponses];
+
+export type ShelfCreateData = {
+  body: {
+    name: string;
+    description?: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/shelves";
+};
+
+export type ShelfCreateErrors = {
+  /**
+   * Invalid input
+   */
+  400: unknown;
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * A shelf with this name already exists
+   */
+  409: unknown;
+};
+
+export type ShelfCreateResponses = {
+  /**
+   * Created
+   */
+  201: ShelfCustom;
+};
+
+export type ShelfCreateResponse = ShelfCreateResponses[keyof ShelfCreateResponses];
+
+export type ShelfDeleteData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/shelves/{id}";
+};
+
+export type ShelfDeleteErrors = {
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * Not found
+   */
+  404: unknown;
+  /**
+   * Shelf is smart and cannot be deleted
+   */
+  409: unknown;
+};
+
+export type ShelfDeleteResponses = {
+  /**
+   * Deleted
+   */
+  204: void;
+};
+
+export type ShelfDeleteResponse = ShelfDeleteResponses[keyof ShelfDeleteResponses];
+
+export type ShelfGetData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/shelves/{id}";
+};
+
+export type ShelfGetErrors = {
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * Not found
+   */
+  404: unknown;
+};
+
+export type ShelfGetResponses = {
+  /**
+   * Shelf
+   */
+  200: Shelf;
+};
+
+export type ShelfGetResponse = ShelfGetResponses[keyof ShelfGetResponses];
+
+export type ShelfUpdateData = {
+  body: {
+    name?: string;
+    description?: string | null;
+    position?: number | null;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/shelves/{id}";
+};
+
+export type ShelfUpdateErrors = {
+  /**
+   * Invalid input
+   */
+  400: unknown;
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * Not found
+   */
+  404: unknown;
+  /**
+   * Name already taken or shelf is smart
+   */
+  409: unknown;
+};
+
+export type ShelfUpdateResponses = {
+  /**
+   * Updated
+   */
+  200: ShelfCustom;
+};
+
+export type ShelfUpdateResponse = ShelfUpdateResponses[keyof ShelfUpdateResponses];
+
+export type ShelfListDocumentsData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/shelves/{id}/documents";
+};
+
+export type ShelfListDocumentsErrors = {
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * Shelf not found
+   */
+  404: unknown;
+};
+
+export type ShelfListDocumentsResponses = {
+  /**
+   * Documents on the shelf
+   */
+  200: {
+    items: Array<Document>;
+  };
+};
+
+export type ShelfListDocumentsResponse =
+  ShelfListDocumentsResponses[keyof ShelfListDocumentsResponses];
+
+export type ShelfRemoveDocumentData = {
+  body?: never;
+  path: {
+    id: string;
+    documentId: string;
+  };
+  query?: never;
+  url: "/shelves/{id}/documents/{documentId}";
+};
+
+export type ShelfRemoveDocumentErrors = {
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * Shelf not found, or document is not on the shelf
+   */
+  404: unknown;
+  /**
+   * Shelf is smart
+   */
+  409: unknown;
+};
+
+export type ShelfRemoveDocumentResponses = {
+  /**
+   * Removed
+   */
+  204: void;
+};
+
+export type ShelfRemoveDocumentResponse =
+  ShelfRemoveDocumentResponses[keyof ShelfRemoveDocumentResponses];
+
+export type ShelfReorderDocumentData = {
+  body: {
+    position: number | null;
+  };
+  path: {
+    id: string;
+    documentId: string;
+  };
+  query?: never;
+  url: "/shelves/{id}/documents/{documentId}";
+};
+
+export type ShelfReorderDocumentErrors = {
+  /**
+   * Invalid input
+   */
+  400: unknown;
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * Shelf not found, or document is not on the shelf
+   */
+  404: unknown;
+  /**
+   * Shelf is smart
+   */
+  409: unknown;
+};
+
+export type ShelfReorderDocumentResponses = {
+  /**
+   * Reordered
+   */
+  204: void;
+};
+
+export type ShelfReorderDocumentResponse =
+  ShelfReorderDocumentResponses[keyof ShelfReorderDocumentResponses];
+
+export type ShelfAddDocumentData = {
+  body?: never;
+  path: {
+    id: string;
+    documentId: string;
+  };
+  query?: never;
+  url: "/shelves/{id}/documents/{documentId}";
+};
+
+export type ShelfAddDocumentErrors = {
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * Shelf or document not found
+   */
+  404: unknown;
+  /**
+   * Shelf is smart
+   */
+  409: unknown;
+};
+
+export type ShelfAddDocumentResponses = {
+  /**
+   * Added (or already present)
+   */
+  204: void;
+};
+
+export type ShelfAddDocumentResponse = ShelfAddDocumentResponses[keyof ShelfAddDocumentResponses];
 
 export type UserMeData = {
   body?: never;
