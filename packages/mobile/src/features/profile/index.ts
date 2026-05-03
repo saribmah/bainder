@@ -1,5 +1,5 @@
 export { signOutProfile } from "./actions";
 export { useProfileName } from "./hooks/useProfileName";
-export { useProfile } from "./hooks/useProfile";
+export { ProfileProvider, useProfile } from "./ProfileProvider";
 export { useUserProfile } from "./hooks/useUserProfile";
 export { SettingsScreen } from "./pages/SettingsScreen";

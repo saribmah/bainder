@@ -1,5 +1,6 @@
 import { useEffect, useState, type RefObject } from "react";
 import { Button, IconButton, Icons, SelectionToolbar, Sheet, useTheme } from "@bainder/ui";
+import { useProfile } from "../profile";
 import { useHighlightLayer, type HighlightColor } from "./useHighlightLayer";
 
 const TOOLBAR_OFFSET_Y = 12;
@@ -29,6 +30,8 @@ export function HighlightLayer({
     contentKey,
     enabled: sectionKey !== null,
   });
+  const { profile } = useProfile();
+  const defaultColor: HighlightColor = profile?.defaultHighlightColor ?? "pink";
 
   const [noteDraft, setNoteDraft] = useState<{
     id: string;
@@ -43,7 +46,7 @@ export function HighlightLayer({
   };
 
   const handleHighlightSelection = () => {
-    void layer.create("pink");
+    void layer.create(defaultColor);
   };
 
   const handleAskSelection = () => {
@@ -56,7 +59,7 @@ export function HighlightLayer({
   const handleAddNoteFromSelection = () => {
     const activeSelection = layer.selection;
     if (!activeSelection) return;
-    void layer.create("pink").then((created) => {
+    void layer.create(defaultColor).then((created) => {
       if (!created) return;
       setNoteDraft({
         id: created.id,

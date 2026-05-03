@@ -23,19 +23,31 @@ import {
   useTheme,
   type Theme,
 } from "@bainder/ui";
-import type {
-  Document,
-  DocumentManifest,
-  DocumentSectionSummary,
-  EpubTocItem,
-  Highlight,
-  Note,
+import {
+  ProfileTheme,
+  type Document,
+  type DocumentManifest,
+  type DocumentSectionSummary,
+  type EpubTocItem,
+  type Highlight,
+  type Note,
 } from "@bainder/sdk";
 import { useSdk } from "../../sdk";
+import { useProfile } from "../profile";
 import { HighlightLayer } from "./HighlightLayer";
 import { ReaderHighlightsProvider, useReaderHighlights } from "./highlightsRefresh";
 import { NotesSheet } from "./NotesSheet";
 import { TocSheet } from "./TocSheet";
+
+const profileThemeToUi = (theme: ProfileTheme | undefined): Theme =>
+  theme === ProfileTheme.Night ? "dark" : theme === ProfileTheme.Sepia ? "sepia" : "light";
+
+const uiThemeToProfile = (theme: Theme): ProfileTheme =>
+  theme === "dark"
+    ? ProfileTheme.Night
+    : theme === "sepia"
+      ? ProfileTheme.Sepia
+      : ProfileTheme.Light;
 
 export function Reader() {
   const { id } = useParams<{ id: string }>();
@@ -109,13 +121,24 @@ export function Reader() {
     );
   }
 
+  return <ReaderThemed doc={doc} onClose={handleClose} />;
+}
+
+function ReaderThemed({ doc, onClose }: { doc: Document; onClose: () => void }) {
+  const { profile, update } = useProfile();
+  const theme = profileThemeToUi(profile?.readingTheme);
   return (
-    <ThemeProvider defaultTheme="light">
+    <ThemeProvider
+      theme={theme}
+      onThemeChange={(next) => {
+        void update({ readingTheme: uiThemeToProfile(next) });
+      }}
+    >
       <ReaderPositionProvider>
         <ReaderMetaProvider>
           <ReaderTocProvider>
             <ReaderHighlightsProvider>
-              <ReaderShell doc={doc} onClose={handleClose}>
+              <ReaderShell doc={doc} onClose={onClose}>
                 <ReaderBody doc={doc} />
               </ReaderShell>
             </ReaderHighlightsProvider>

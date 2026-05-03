@@ -6,7 +6,7 @@ import { useLibraryHighlights } from "../../library/hooks/useLibraryHighlights";
 import { AppSidebar } from "../../library/components/AppSidebar";
 import { useLibraryShelves } from "../../library/hooks/useLibraryShelves";
 import { signOutProfile } from "../actions";
-import { useProfile } from "../hooks/useProfile";
+import { useProfile } from "../ProfileProvider";
 import { useProfileName } from "../hooks/useProfileName";
 import { useUserProfile } from "../hooks/useUserProfile";
 
