@@ -1,16 +1,20 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChipButton, Icons, Input, Skeleton, Toast } from "@bainder/ui";
-import type { Document } from "@bainder/sdk";
+import type { Document, Shelf, ShelfCustom } from "@bainder/sdk";
 import { useProfileName } from "../../profile";
 import { FILTER_LABEL, type LibraryFilter } from "../constants";
 import { LibraryActionsMenu } from "../components/LibraryActionsMenu";
 import { LibraryCover } from "../components/LibraryCover";
 import { DeleteDialog, RenameDialog } from "../components/LibraryDialogs";
 import { LibraryRail } from "../components/LibraryRail";
+import { CreateShelfDialog } from "../components/ShelfDialogs";
+import { ShelfCard } from "../components/ShelfArtwork";
 import { useLibraryDocuments } from "../hooks/useLibraryDocuments";
 import { useLibraryHighlights } from "../hooks/useLibraryHighlights";
+import { useLibraryShelves } from "../hooks/useLibraryShelves";
 import { progressPercent, sourceLabel, statusLabel } from "../utils/document";
+import { CUSTOM_SHELF_LIMIT, shelfPath } from "../utils/shelf";
 
 const filters: LibraryFilter[] = ["all", "books", "pdfs", "articles"];
 
@@ -19,6 +23,8 @@ export function Library() {
   const navigate = useNavigate();
   const [renameTarget, setRenameTarget] = useState<Document | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Document | null>(null);
+  const [createShelfOpen, setCreateShelfOpen] = useState(false);
+  const [createShelfDocument, setCreateShelfDocument] = useState<Document | null>(null);
   const {
     documents,
     filteredDocuments,
@@ -35,12 +41,32 @@ export function Library() {
     deleteDocument,
   } = useLibraryDocuments();
   const { highlights } = useLibraryHighlights(documents);
+  const {
+    shelves,
+    customShelves,
+    memberships,
+    error: shelfError,
+    toast: shelfToast,
+    workingShelfId,
+    createShelf,
+    addDocumentToShelf,
+    toggleDocumentShelf,
+  } = useLibraryShelves(documents);
 
   const visible = filteredDocuments ?? [];
+  const shelfCount = shelves?.length ?? customShelves.length;
   const headingMeta = useMemo(
-    () => `Your library · ${counts.all} ${counts.all === 1 ? "item" : "items"}`,
-    [counts.all],
+    () =>
+      `Your library · ${counts.all} ${counts.all === 1 ? "item" : "items"} · ${shelfCount} ${
+        shelfCount === 1 ? "shelf" : "shelves"
+      }`,
+    [counts.all, shelfCount],
   );
+
+  const openCreateShelf = (doc: Document | null = null) => {
+    setCreateShelfDocument(doc);
+    setCreateShelfOpen(true);
+  };
 
   return (
     <main className="flex h-dvh min-h-screen overflow-hidden bg-paper-50 text-paper-900">
@@ -50,6 +76,8 @@ export function Library() {
         reader={reader}
         uploading={uploading}
         onUpload={uploadDocument}
+        shelves={shelves}
+        onCreateShelf={() => openCreateShelf()}
       />
 
       <section className="min-w-0 flex-1 overflow-hidden px-6 py-8 lg:px-12">
@@ -69,6 +97,13 @@ export function Library() {
               wrapClassName="w-full lg:w-[320px]"
             />
           </div>
+
+          <ShelfStrip
+            shelves={shelves ?? []}
+            shelvesLoaded={shelves !== null}
+            onCreateShelf={() => openCreateShelf()}
+            onOpenShelf={(shelf) => navigate(shelfPath(shelf))}
+          />
 
           <div className="mt-6 flex items-center gap-2 overflow-x-auto pb-1">
             {filters.map((item) => (
@@ -91,6 +126,9 @@ export function Library() {
           {error && (
             <p className="t-body-s mt-4 rounded-md bg-wine-50 px-4 py-3 text-error">{error}</p>
           )}
+          {shelfError && (
+            <p className="t-body-s mt-4 rounded-md bg-wine-50 px-4 py-3 text-error">{shelfError}</p>
+          )}
 
           <div className="mt-6 min-h-0 flex-1 overflow-y-auto pb-8">
             {documents === null ? (
@@ -103,11 +141,19 @@ export function Library() {
                   <LibraryCard
                     key={doc.id}
                     doc={doc}
+                    shelfCount={memberships[doc.id]?.length ?? 0}
+                    customShelves={customShelves}
+                    selectedShelves={memberships[doc.id] ?? []}
+                    workingShelfId={workingShelfId}
                     onOpen={() => {
                       if (doc.status === "processed") navigate(`/library/${doc.id}`);
                     }}
                     onRename={() => setRenameTarget(doc)}
                     onDelete={() => setDeleteTarget(doc)}
+                    onToggleShelf={(shelf, selected) => {
+                      void toggleDocumentShelf(shelf, doc.id, selected);
+                    }}
+                    onCreateShelf={() => openCreateShelf(doc)}
                   />
                 ))}
               </div>
@@ -136,25 +182,107 @@ export function Library() {
           }}
         />
       )}
-      {toast && (
+      {createShelfOpen && (
+        <CreateShelfDialog
+          onCancel={() => {
+            setCreateShelfOpen(false);
+            setCreateShelfDocument(null);
+          }}
+          onCreate={async (draft) => {
+            const shelf = await createShelf(draft);
+            if (shelf && createShelfDocument) {
+              await addDocumentToShelf(shelf, createShelfDocument.id);
+            }
+            if (shelf) {
+              setCreateShelfOpen(false);
+              setCreateShelfDocument(null);
+            }
+          }}
+        />
+      )}
+      {(toast || shelfToast) && (
         <div className="fixed bottom-8 left-1/2 z-40 -translate-x-1/2">
-          <Toast iconStart={<Icons.Check size={18} color="var(--success)" />}>{toast}</Toast>
+          <Toast iconStart={<Icons.Check size={18} color="var(--success)" />}>
+            {shelfToast ?? toast}
+          </Toast>
         </div>
       )}
     </main>
   );
 }
 
+function ShelfStrip({
+  shelves,
+  shelvesLoaded,
+  onCreateShelf,
+  onOpenShelf,
+}: {
+  shelves: ReadonlyArray<Shelf>;
+  shelvesLoaded: boolean;
+  onCreateShelf: () => void;
+  onOpenShelf: (shelf: Shelf) => void;
+}) {
+  const visibleShelves = shelves.slice(0, CUSTOM_SHELF_LIMIT + 2);
+
+  return (
+    <section className="mt-6">
+      <div className="mb-3 flex items-baseline justify-between">
+        <span className="t-label-s text-paper-500">Shelves</span>
+        <button
+          type="button"
+          className="bd-btn bd-btn-pill bd-btn-ghost bd-btn-sm text-paper-700"
+          onClick={onCreateShelf}
+        >
+          <Icons.Plus size={13} color="currentColor" />
+          New shelf
+        </button>
+      </div>
+      <div className="flex gap-3 overflow-x-auto pb-1">
+        {!shelvesLoaded &&
+          Array.from({ length: 3 }).map((_, index) => (
+            <Skeleton key={index} width={220} height={150} className="shrink-0 rounded-[14px]" />
+          ))}
+        {shelvesLoaded &&
+          visibleShelves.map((shelf) => (
+            <ShelfCard key={shelf.id} shelf={shelf} onClick={() => onOpenShelf(shelf)} />
+          ))}
+        {shelvesLoaded && (
+          <button
+            type="button"
+            onClick={onCreateShelf}
+            className="flex min-w-[180px] shrink-0 flex-col items-center justify-center gap-2 rounded-[14px] border border-dashed border-paper-300 bg-paper-50 text-paper-500 hover:bg-paper-100"
+          >
+            <Icons.Plus size={18} color="currentColor" />
+            <span className="t-label-m">New shelf</span>
+          </button>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function LibraryCard({
   doc,
+  shelfCount,
+  customShelves,
+  selectedShelves,
+  workingShelfId,
   onOpen,
   onRename,
   onDelete,
+  onToggleShelf,
+  onCreateShelf,
 }: {
   doc: Document;
+  shelfCount: number;
+  customShelves: ReadonlyArray<ShelfCustom>;
+  selectedShelves: ReadonlyArray<ShelfCustom>;
+  workingShelfId: string | null;
   onOpen: () => void;
   onRename: () => void;
   onDelete: () => void;
+  onToggleShelf: (shelf: ShelfCustom, selected: boolean) => void;
+  onCreateShelf: () => void;
 }) {
   const pct = progressPercent(doc);
   const finished = doc.status === "processed" && pct >= 100;
@@ -166,9 +294,15 @@ function LibraryCard({
         type="button"
         onClick={onOpen}
         disabled={doc.status !== "processed"}
-        className="w-full border-0 bg-transparent p-0 text-left disabled:cursor-default"
+        className="relative w-full border-0 bg-transparent p-0 text-left disabled:cursor-default"
       >
         <LibraryCover doc={doc} />
+        {shelfCount > 0 && (
+          <span className="absolute right-1.5 top-1.5 flex items-center gap-1 rounded-full bg-paper-900/80 px-2 py-1 font-mono text-[9px] text-paper-50">
+            <Icons.Bookmark size={9} color="currentColor" />
+            {shelfCount}
+          </span>
+        )}
       </button>
       <div className="mt-2 flex items-start gap-1">
         <div className="min-w-0 flex-1">
@@ -188,7 +322,15 @@ function LibraryCard({
             </div>
           )}
         </div>
-        <LibraryActionsMenu onRename={onRename} onDelete={onDelete} />
+        <LibraryActionsMenu
+          onRename={onRename}
+          onDelete={onDelete}
+          shelves={customShelves}
+          selectedShelfIds={new Set(selectedShelves.map((shelf) => shelf.id))}
+          workingShelfId={workingShelfId}
+          onToggleShelf={onToggleShelf}
+          onCreateShelf={onCreateShelf}
+        />
       </div>
     </div>
   );

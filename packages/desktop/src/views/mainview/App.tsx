@@ -2,7 +2,7 @@ import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
 import { RequireAuth, SignIn, SignUp } from "./features/auth";
 import { Dashboard } from "./features/dashboard";
 import { Landing } from "./features/landing";
-import { Highlights, Library, LibraryDetail } from "./features/library";
+import { Highlights, Library, LibraryDetail, ShelfDetail } from "./features/library";
 import { SettingsPage } from "./features/profile";
 import { Reader } from "./features/reader";
 
@@ -18,6 +18,7 @@ export function App() {
         <Route element={<RequireAuth />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/library" element={<Library />} />
+          <Route path="/library/shelves/:id" element={<ShelfDetail />} />
           <Route path="/library/:id" element={<LibraryDetail />} />
           <Route path="/highlights" element={<Highlights />} />
           <Route path="/settings" element={<SettingsPage />} />

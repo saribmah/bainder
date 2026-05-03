@@ -65,6 +65,42 @@ export const libraryStyles = StyleSheet.create({
   searchWrap: {
     paddingBottom: 12,
   },
+  shelvesBlock: {
+    paddingVertical: 12,
+  },
+  shelvesHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingBottom: 10,
+  },
+  shelvesRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  shelfNewText: {
+    fontFamily: font.nativeFamily.ui,
+    fontSize: 12,
+    fontWeight: "600",
+    color: color.wine[700],
+  },
+  newShelfCard: {
+    width: 110,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    borderWidth: 1.5,
+    borderStyle: "dashed",
+    borderColor: color.paper[300],
+    borderRadius: 14,
+    backgroundColor: color.paper[100],
+  },
+  newShelfText: {
+    fontFamily: font.nativeFamily.ui,
+    fontSize: 11,
+    fontWeight: "600",
+    color: color.paper[500],
+  },
   grid: {
     paddingBottom: 120,
   },
@@ -94,6 +130,23 @@ export const libraryStyles = StyleSheet.create({
   },
   coverPress: {
     width: "100%",
+  },
+  shelfBadge: {
+    position: "absolute",
+    top: 5,
+    right: 5,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    borderRadius: radius.pill,
+    backgroundColor: "rgba(20,15,10,0.78)",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  shelfBadgeText: {
+    fontFamily: font.nativeFamily.mono,
+    fontSize: 8,
+    color: color.paper[50],
   },
   coverBrand: {
     marginTop: 4,
@@ -240,6 +293,14 @@ export const libraryStyles = StyleSheet.create({
     gap: 8,
     paddingBottom: 12,
   },
+  detailShelves: {
+    gap: 8,
+    borderRadius: 18,
+    backgroundColor: color.paper[100],
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 12,
+  },
   tabStrip: {
     flexDirection: "row",
     gap: 6,
@@ -280,6 +341,45 @@ export const libraryStyles = StyleSheet.create({
     fontFamily: font.nativeFamily.ui,
     fontSize: 11,
     color: color.paper[500],
+  },
+  shelfHero: {
+    alignItems: "center",
+    gap: 12,
+    paddingTop: 8,
+    paddingBottom: 18,
+  },
+  shelfHeroBody: {
+    alignItems: "center",
+  },
+  shelfTitle: {
+    marginTop: 4,
+    textAlign: "center",
+    fontFamily: font.nativeFamily.display,
+    fontSize: 26,
+    fontWeight: "400",
+    lineHeight: 30,
+    color: color.paper[900],
+  },
+  shelfDescription: {
+    maxWidth: 280,
+    marginTop: 6,
+    textAlign: "center",
+    fontFamily: font.nativeFamily.ui,
+    fontSize: 13,
+    fontStyle: "italic",
+    lineHeight: 18,
+    color: color.paper[700],
+  },
+  shelfHeroActions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  shelfGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 14,
+    alignItems: "flex-start",
+    paddingTop: 8,
   },
   highlightItem: {
     gap: 8,
