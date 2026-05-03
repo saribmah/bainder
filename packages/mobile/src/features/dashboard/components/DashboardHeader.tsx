@@ -28,7 +28,7 @@ export function DashboardHeader({
           </Pressable>
           <Pressable
             accessibilityRole="button"
-            onPress={() => router.push("/settings")}
+            onPress={() => router.navigate("/settings")}
             style={styles.iconButton}
           >
             <Icons.User size={16} color={color.paper[800]} />

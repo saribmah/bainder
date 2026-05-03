@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -7,10 +7,8 @@ import type { Document, DocumentManifest, Note } from "@bainder/sdk";
 import { useSdk } from "../../../sdk/sdk.provider";
 import { KIND_LABEL } from "../constants";
 import { DocumentShelfChips } from "../components/DocumentShelfChips";
-import { BottomTabs } from "../../shell";
 import { LibraryCover } from "../components/LibraryCover";
 import { CreateShelfSheet } from "../components/ShelfSheets";
-import { useLibraryDocuments } from "../hooks/useLibraryDocuments";
 import { useLibraryShelves } from "../hooks/useLibraryShelves";
 import { libraryStyles as styles } from "../library.styles";
 import {
@@ -26,12 +24,12 @@ export function LibraryDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { client } = useSdk();
-  const { uploadDocument } = useLibraryDocuments();
   const [doc, setDoc] = useState<Document | null>(null);
   const [manifest, setManifest] = useState<DocumentManifest | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [createShelfOpen, setCreateShelfOpen] = useState(false);
+  const docList = useMemo(() => (doc ? [doc] : null), [doc]);
   const {
     customShelves,
     memberships,
@@ -39,7 +37,7 @@ export function LibraryDetailScreen() {
     createShelf,
     addDocumentToShelf,
     toggleDocumentShelf,
-  } = useLibraryShelves(doc ? [doc] : null);
+  } = useLibraryShelves(docList);
 
   useEffect(() => {
     if (!id) return;
@@ -86,7 +84,7 @@ export function LibraryDetailScreen() {
           <Pressable
             accessibilityRole="button"
             style={styles.iconButton}
-            onPress={() => router.push("/library")}
+            onPress={() => (router.canGoBack() ? router.back() : router.replace("/library"))}
           >
             <Icons.Back size={16} color={color.paper[800]} />
           </Pressable>
@@ -119,7 +117,7 @@ export function LibraryDetailScreen() {
 
             <View style={styles.buttonRow}>
               <Button fullWidth style={{ flex: 1 }} onPress={openReader}>
-                Continue · {pct}%
+                {`Continue · ${pct}%`}
               </Button>
               <Pressable accessibilityRole="button" style={styles.iconButton} onPress={openReader}>
                 <Icons.Sparkles size={16} color={color.wine[700]} />
@@ -180,7 +178,6 @@ export function LibraryDetailScreen() {
           </>
         )}
       </ScrollView>
-      <BottomTabs active="library" bottom={insets.bottom} onUpload={uploadDocument} />
       <CreateShelfSheet
         visible={createShelfOpen}
         onClose={() => setCreateShelfOpen(false)}

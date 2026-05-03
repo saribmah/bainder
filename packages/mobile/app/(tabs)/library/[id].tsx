@@ -1,4 +1,4 @@
-import { LibraryDetailScreen } from "../../src/features/library";
+import { LibraryDetailScreen } from "../../../src/features/library";
 
 export default function LibraryDetailRoute() {
   return <LibraryDetailScreen />;

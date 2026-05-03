@@ -4,7 +4,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChipButton, Icons, Skeleton, Wordmark, color } from "@bainder/ui";
 import type { Highlight } from "@bainder/sdk";
 import { HIGHLIGHT_COLOR, HIGHLIGHT_LABEL } from "../constants";
-import { BottomTabs } from "../../shell";
 import { useLibraryDocuments } from "../hooks/useLibraryDocuments";
 import { useLibraryHighlights, type LibraryHighlight } from "../hooks/useLibraryHighlights";
 import { libraryStyles as styles } from "../library.styles";
@@ -15,7 +14,7 @@ const colorFilters: ColorFilter[] = ["all", "pink", "yellow", "blue", "green", "
 
 export function HighlightsScreen() {
   const insets = useSafeAreaInsets();
-  const { documents, uploadDocument } = useLibraryDocuments();
+  const { documents } = useLibraryDocuments();
   const { highlights, error } = useLibraryHighlights(documents);
   const [filter, setFilter] = useState<ColorFilter>("all");
 
@@ -93,8 +92,6 @@ export function HighlightsScreen() {
           visible.map((item) => <HighlightItem key={item.id} item={item} />)
         )}
       </ScrollView>
-
-      <BottomTabs active="highlights" bottom={insets.bottom} onUpload={uploadDocument} />
     </View>
   );
 }

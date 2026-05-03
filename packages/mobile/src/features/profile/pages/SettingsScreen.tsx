@@ -3,7 +3,6 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Chip, ChipButton, Icons, Wordmark, color } from "@bainder/ui";
 import { ProfileHighlightColor, ProfileTheme } from "@bainder/sdk";
-import { BottomTabs } from "../../shell";
 import { useLibraryDocuments } from "../../library/hooks/useLibraryDocuments";
 import { libraryStyles } from "../../library/library.styles";
 import { signOutProfile } from "../actions";
@@ -29,7 +28,7 @@ const highlightColors: ProfileHighlightColor[] = [
 export function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const reader = useProfileName();
-  const { counts, uploadDocument } = useLibraryDocuments();
+  const { counts } = useLibraryDocuments();
   const { user } = useUserProfile();
   const { profile, update } = useProfile();
 
@@ -164,8 +163,6 @@ export function SettingsScreen() {
           </Row>
         </Group>
       </ScrollView>
-
-      <BottomTabs active="settings" bottom={insets.bottom} onUpload={uploadDocument} />
     </View>
   );
 }

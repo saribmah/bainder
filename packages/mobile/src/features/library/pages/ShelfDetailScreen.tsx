@@ -5,7 +5,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button, ChipButton, Icons, Skeleton, Toast, color } from "@bainder/ui";
 import type { Document, Shelf } from "@bainder/sdk";
 import { useSdk } from "../../../sdk/sdk.provider";
-import { BottomTabs } from "../../shell";
 import { LibraryCover } from "../components/LibraryCover";
 import { AddBooksSheet, CreateShelfSheet, EditShelfSheet } from "../components/ShelfSheets";
 import { SpineFan } from "../components/ShelfArtwork";
@@ -26,7 +25,7 @@ export function ShelfDetailScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const { client } = useSdk();
-  const { documents, uploadDocument } = useLibraryDocuments();
+  const { documents } = useLibraryDocuments();
   const { shelves, toast, createShelf, updateShelf, deleteShelf, addDocumentToShelf } =
     useLibraryShelves(documents);
   const [shelf, setShelf] = useState<Shelf | null>(null);
@@ -102,7 +101,7 @@ export function ShelfDetailScreen() {
           <Pressable
             accessibilityRole="button"
             style={styles.iconButton}
-            onPress={() => router.push("/library")}
+            onPress={() => (router.canGoBack() ? router.back() : router.replace("/library"))}
           >
             <Icons.Back size={16} color={color.paper[800]} />
           </Pressable>
@@ -164,7 +163,6 @@ export function ShelfDetailScreen() {
           </>
         )}
       </ScrollView>
-      <BottomTabs active="library" bottom={insets.bottom} onUpload={uploadDocument} />
       {toast && (
         <View style={{ position: "absolute", left: 24, right: 24, bottom: insets.bottom + 78 }}>
           <Toast iconStart={<Icons.Check size={18} color={color.status.success} />}>{toast}</Toast>
@@ -199,7 +197,10 @@ export function ShelfDetailScreen() {
         onDelete={async () => {
           if (!customShelf) return;
           const deleted = await deleteShelf(customShelf);
-          if (deleted) router.push("/library");
+          if (deleted) {
+            if (router.canGoBack()) router.back();
+            else router.replace("/library");
+          }
         }}
       />
       <AddBooksSheet

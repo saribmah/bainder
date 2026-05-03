@@ -69,6 +69,7 @@
         "@bainder/ui": "workspace:*",
         "@better-auth/expo": "^1.6.9",
         "@expo/metro-runtime": "~6.1.2",
+        "@react-navigation/bottom-tabs": "^7.15.11",
         "better-auth": "^1.6.9",
         "expo": "~54.0.33",
         "expo-constants": "~18.0.9",
