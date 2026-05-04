@@ -264,6 +264,23 @@ function ReaderShell({
     setFontScale((curr) => (curr === "standard" ? "large" : "standard"));
   }, []);
 
+  const jumpToReaderTarget = useCallback(
+    (order: number, highlightId?: string | null) => {
+      const next = new URLSearchParams(searchParams);
+      next.set("chapter", String(order));
+      next.delete("note");
+      if (highlightId) {
+        next.set("highlight", highlightId);
+        next.set("target", String(Date.now()));
+      } else {
+        next.delete("highlight");
+        next.delete("target");
+      }
+      setSearchParams(next);
+    },
+    [searchParams, setSearchParams],
+  );
+
   return (
     <ReaderAskContext.Provider value={openAsk}>
       <main
@@ -357,7 +374,7 @@ function ReaderShell({
               sections={toc?.sections}
               currentOrder={currentOrder}
               refreshToken={refresh?.refreshToken ?? 0}
-              onJumpToOrder={(order) => setSearchParams({ chapter: String(order) })}
+              onJumpToTarget={jumpToReaderTarget}
             />
           </aside>
         </div>
@@ -413,8 +430,8 @@ function ReaderShell({
             sections={toc?.sections}
             currentOrder={currentOrder}
             refreshToken={refresh?.refreshToken ?? 0}
-            onJumpToOrder={(order) => {
-              setSearchParams({ chapter: String(order) });
+            onJumpToTarget={(order, highlightId) => {
+              jumpToReaderTarget(order, highlightId);
               setNotesOpen(false);
             }}
             onClose={() => setNotesOpen(false)}
@@ -457,6 +474,8 @@ function ReaderBody({ doc }: { doc: Document }) {
   const orderParam = searchParams.get("chapter");
   const order = orderParam !== null ? Math.max(0, Number(orderParam)) : Math.max(0, initialOrder);
   const documentId = doc.id;
+  const targetHighlightId = searchParams.get("highlight");
+  const targetRequestId = searchParams.get("target");
 
   useEffect(() => {
     if (orderParam === null) {
@@ -620,6 +639,8 @@ function ReaderBody({ doc }: { doc: Document }) {
         documentId={documentId}
         sectionKey={currentSection.sectionKey}
         contentKey={currentSection.sectionKey}
+        targetHighlightId={targetHighlightId}
+        targetRequestId={targetRequestId}
         onAskSelection={(quote) => openAsk({ quote, prompt: "What does this passage mean?" })}
       />
 
@@ -881,13 +902,13 @@ function NotesRail({
   sections,
   currentOrder,
   refreshToken,
-  onJumpToOrder,
+  onJumpToTarget,
 }: {
   documentId: string;
   sections?: ReadonlyArray<DocumentSectionSummary>;
   currentOrder?: number;
   refreshToken: number;
-  onJumpToOrder: (order: number) => void;
+  onJumpToTarget: (order: number, highlightId?: string | null) => void;
 }) {
   const { client } = useSdk();
   const [items, setItems] = useState<ReadonlyArray<Note> | null>(null);
@@ -947,6 +968,7 @@ function NotesRail({
           const info = sectionKey ? sectionInfoByKey.get(sectionKey) : undefined;
           const isCurrent = info?.order === currentOrder;
           const label = labelFor(info);
+          const targetHighlightId = highlight?.id ?? null;
           return (
             <button
               key={n.id}
@@ -957,7 +979,7 @@ function NotesRail({
                 boxShadow: isCurrent ? "inset 0 0 0 1px var(--bd-border-strong)" : undefined,
               }}
               onClick={() => {
-                if (info) onJumpToOrder(info.order);
+                if (info) onJumpToTarget(info.order, targetHighlightId);
               }}
             >
               <div className="flex items-center gap-2">

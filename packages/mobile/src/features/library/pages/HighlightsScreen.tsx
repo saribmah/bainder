@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
+import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   ChipButton,
@@ -16,11 +17,18 @@ import { useLibraryHighlights, type LibraryHighlight } from "../hooks/useLibrary
 import { buildLibraryStyles, type LibraryStyles } from "../library.styles";
 
 type ColorFilter = Highlight["color"] | "all";
+type ReaderHighlightParams = {
+  id: string;
+  chapter?: string;
+  highlight: string;
+  target: string;
+};
 
 const colorFilters: ColorFilter[] = ["all", "pink", "yellow", "blue", "green", "purple"];
 
 export function HighlightsScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const styles = useThemedStyles(buildLibraryStyles);
   const palette = useThemeColors();
   const { documents } = useLibraryDocuments();
@@ -98,16 +106,33 @@ export function HighlightsScreen() {
             <Text style={styles.emptyText}>Marked passages will collect here.</Text>
           </View>
         ) : (
-          visible.map((item) => <HighlightItem key={item.id} item={item} styles={styles} />)
+          visible.map((item) => (
+            <HighlightItem
+              key={item.id}
+              item={item}
+              styles={styles}
+              onOpen={() =>
+                router.push({ pathname: "/read/[id]", params: readerHighlightParams(item) })
+              }
+            />
+          ))
         )}
       </ScrollView>
     </View>
   );
 }
 
-function HighlightItem({ item, styles }: { item: LibraryHighlight; styles: LibraryStyles }) {
+function HighlightItem({
+  item,
+  styles,
+  onOpen,
+}: {
+  item: LibraryHighlight;
+  styles: LibraryStyles;
+  onOpen: () => void;
+}) {
   return (
-    <View style={styles.highlightItem}>
+    <Pressable accessibilityRole="button" style={styles.highlightItem} onPress={onOpen}>
       <View style={styles.highlightMeta}>
         <View style={[styles.highlightDot, { backgroundColor: HIGHLIGHT_COLOR[item.color] }]} />
         <Text style={styles.highlightSource} numberOfLines={1}>
@@ -118,8 +143,23 @@ function HighlightItem({ item, styles }: { item: LibraryHighlight; styles: Libra
       <Text style={[styles.quote, { borderLeftColor: HIGHLIGHT_COLOR[item.color] }]}>
         "{item.textSnippet}"
       </Text>
-    </View>
+    </Pressable>
   );
+}
+
+function readerHighlightParams(item: LibraryHighlight): ReaderHighlightParams {
+  const order = sectionOrderFromKey(item.sectionKey);
+  return {
+    id: item.document.id,
+    ...(order !== null ? { chapter: String(order) } : {}),
+    highlight: item.id,
+    target: "1",
+  };
+}
+
+function sectionOrderFromKey(sectionKey: string): number | null {
+  const match = /:(\d+)$/.exec(sectionKey);
+  return match ? Number(match[1]) : null;
 }
 
 function HighlightsSkeleton({ styles }: { styles: LibraryStyles }) {

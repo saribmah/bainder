@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { ChipButton, Icons, Skeleton } from "@bainder/ui";
+import { useNavigate } from "react-router-dom";
+import { ChipButton, Skeleton } from "@bainder/ui";
 import type { Highlight } from "@bainder/sdk";
 import { useProfileName } from "../../profile";
 import { HIGHLIGHT_COLOR, HIGHLIGHT_LABEL } from "../constants";
@@ -13,6 +14,7 @@ type ColorFilter = Highlight["color"] | "all";
 const colorFilters: ColorFilter[] = ["all", "pink", "yellow", "blue", "green", "purple"];
 
 export function Highlights() {
+  const navigate = useNavigate();
   const reader = useProfileName();
   const { documents, counts, uploading, uploadDocument } = useLibraryDocuments();
   const { highlights, error } = useLibraryHighlights(documents);
@@ -106,7 +108,13 @@ export function Highlights() {
                   No highlights in this view yet.
                 </p>
               ) : (
-                visible.map((item) => <HighlightItem key={item.id} item={item} />)
+                visible.map((item) => (
+                  <HighlightItem
+                    key={item.id}
+                    item={item}
+                    onOpen={() => navigate(readerHighlightPath(item))}
+                  />
+                ))
               )}
             </div>
           </div>
@@ -138,27 +146,49 @@ export function Highlights() {
   );
 }
 
-function HighlightItem({ item }: { item: LibraryHighlight }) {
+function HighlightItem({ item, onOpen }: { item: LibraryHighlight; onOpen: () => void }) {
   return (
-    <article className="flex flex-col gap-2 border-b border-bd-border py-4">
-      <div className="flex items-center gap-2">
-        <span
-          className="h-2.5 w-2.5 rounded-full"
-          style={{ background: HIGHLIGHT_COLOR[item.color] }}
-        />
-        <span className="t-label-m min-w-0 flex-1 truncate text-bd-fg">{item.document.title}</span>
-        <span className="t-body-s text-[11px] text-bd-fg-muted">
-          {new Date(item.createdAt).toLocaleDateString()}
-        </span>
-      </div>
-      <blockquote
-        className="m-0 border-l-[3px] pl-3 font-reading text-base leading-7 text-bd-fg"
-        style={{ borderColor: HIGHLIGHT_COLOR[item.color] }}
+    <article className="border-b border-bd-border py-4">
+      <button
+        type="button"
+        className="flex w-full flex-col gap-2 border-0 bg-transparent p-0 text-left"
+        onClick={onOpen}
       >
-        "{item.textSnippet}"
-      </blockquote>
+        <div className="flex items-center gap-2">
+          <span
+            className="h-2.5 w-2.5 rounded-full"
+            style={{ background: HIGHLIGHT_COLOR[item.color] }}
+          />
+          <span className="t-label-m min-w-0 flex-1 truncate text-bd-fg">
+            {item.document.title}
+          </span>
+          <span className="t-body-s text-[11px] text-bd-fg-muted">
+            {new Date(item.createdAt).toLocaleDateString()}
+          </span>
+        </div>
+        <blockquote
+          className="m-0 border-l-[3px] pl-3 font-reading text-base leading-7 text-bd-fg"
+          style={{ borderColor: HIGHLIGHT_COLOR[item.color] }}
+        >
+          "{item.textSnippet}"
+        </blockquote>
+      </button>
     </article>
   );
+}
+
+function readerHighlightPath(item: LibraryHighlight): string {
+  const order = sectionOrderFromKey(item.sectionKey);
+  const params = new URLSearchParams();
+  if (order !== null) params.set("chapter", String(order));
+  params.set("highlight", item.id);
+  params.set("target", "1");
+  return `/read/${item.document.id}?${params.toString()}`;
+}
+
+function sectionOrderFromKey(sectionKey: string): number | null {
+  const match = /:(\d+)$/.exec(sectionKey);
+  return match ? Number(match[1]) : null;
 }
 
 function HighlightsSkeleton() {

@@ -43,12 +43,16 @@ export function useHighlightLayer({
   sectionKey,
   contentKey,
   enabled,
+  targetHighlightId,
+  targetRequestId,
 }: {
   containerRef: RefObject<HTMLElement | null>;
   documentId: string;
   sectionKey: string | null;
   contentKey: string;
   enabled: boolean;
+  targetHighlightId?: string | null;
+  targetRequestId?: string | null;
 }) {
   const { client } = useSdk();
   const refresh = useReaderHighlights();
@@ -163,15 +167,28 @@ export function useHighlightLayer({
     for (const h of ordered) {
       const range = charOffsetsToRange(container, h.position.offsetStart, h.position.offsetEnd);
       if (!range) continue;
-      wrapRangeWithMarks(range, {
+      const marks = wrapRangeWithMarks(range, {
         className: colorClass(h.color),
         attributes: {
           "data-highlight-id": h.id,
-          ...(notesByHighlightId.has(h.id) ? { "data-highlight-has-note": "true" } : null),
         },
       });
+      if (notesByHighlightId.has(h.id)) {
+        marks[marks.length - 1]?.setAttribute("data-highlight-has-note", "true");
+      }
     }
   }, [highlights, notesByHighlightId, contentKey, containerRef, enabled]);
+
+  useEffect(() => {
+    if (!enabled || !targetHighlightId) return;
+    const container = containerRef.current;
+    const mark = container?.querySelector<HTMLElement>(
+      `mark[data-highlight-id="${targetHighlightId}"]`,
+    );
+    if (!mark) return;
+    mark.scrollIntoView({ block: "center", behavior: "smooth" });
+    setFocusedId(targetHighlightId);
+  }, [containerRef, contentKey, enabled, highlights, targetHighlightId, targetRequestId]);
 
   // ---- Click delegation for opening an existing highlight ------------------
   useEffect(() => {

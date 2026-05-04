@@ -28,7 +28,7 @@ type NotesContext = {
   sections?: ReadonlyArray<DocumentSectionSummary>;
   currentOrder?: number;
   refreshToken: number;
-  onJumpToOrder?: (order: number) => void;
+  onJumpToTarget?: (order: number, highlightId?: string | null) => void;
 };
 
 type TocContext = {
@@ -109,6 +109,7 @@ function ReaderShell({ doc, onClose }: { doc: Document; onClose: () => void }) {
   const insets = useSafeAreaInsets();
   const { theme, cycleTheme } = useTheme();
   const palette = useThemeColors();
+  const scrollRef = useRef<ScrollView>(null);
   const [position, setPosition] = useState<string | null>(null);
   const [tocState, setTocState] = useState<TocContext | null>(null);
   const [notesState, setNotesState] = useState<NotesContext | null>(null);
@@ -145,6 +146,7 @@ function ReaderShell({ doc, onClose }: { doc: Document; onClose: () => void }) {
       </View>
 
       <ScrollView
+        ref={scrollRef}
         style={shellStyles.body}
         contentContainerStyle={[shellStyles.bodyContent, { paddingBottom: insets.bottom + 120 }]}
       >
@@ -156,6 +158,9 @@ function ReaderShell({ doc, onClose }: { doc: Document; onClose: () => void }) {
           onTocChange={setTocState}
           onNotesChange={setNotesState}
           fontScale={fontScale}
+          onScrollToOffset={(offset) => {
+            scrollRef.current?.scrollTo({ y: Math.max(0, offset - 120), animated: true });
+          }}
           onAskSelection={(quote) => {
             setAiQuote(quote);
             setAiPrompt("What does this passage mean?");
@@ -232,8 +237,8 @@ function ReaderShell({ doc, onClose }: { doc: Document; onClose: () => void }) {
           sections={notesState.sections}
           currentOrder={notesState.currentOrder}
           refreshToken={notesState.refreshToken}
-          onJumpToOrder={(order) => {
-            notesState.onJumpToOrder?.(order);
+          onJumpToTarget={(order, highlightId) => {
+            notesState.onJumpToTarget?.(order, highlightId);
             setNotesOpen(false);
           }}
         />
@@ -260,6 +265,7 @@ function ReaderBody({
   onTocChange,
   onNotesChange,
   fontScale,
+  onScrollToOffset,
   onAskSelection,
 }: {
   doc: Document;
@@ -269,14 +275,44 @@ function ReaderBody({
   onTocChange: (s: TocContext | null) => void;
   onNotesChange: (s: NotesContext | null) => void;
   fontScale: ReaderFontScale;
+  onScrollToOffset: (offset: number) => void;
   onAskSelection: (quote: string) => void;
 }) {
+  const params = useLocalSearchParams<{
+    chapter?: string;
+    highlight?: string;
+    target?: string;
+  }>();
   const { client, baseUrl, authedFetch } = useSdk();
   const documentId = doc.id;
+  const initialOrderParam = params.chapter !== undefined ? Number(params.chapter) : null;
   const initialOrder = doc.progress?.sectionKey
     ? (parseSectionOrder(doc.progress.sectionKey) ?? 0)
     : 0;
-  const [order, setOrder] = useState(Math.max(0, initialOrder));
+  const [order, setOrder] = useState(Math.max(0, initialOrderParam ?? initialOrder));
+  const [target, setTarget] = useState<{
+    highlightId: string | null;
+    requestId: string;
+  } | null>(
+    params.highlight
+      ? {
+          highlightId: params.highlight,
+          requestId: params.target ?? "initial",
+        }
+      : null,
+  );
+
+  useEffect(() => {
+    if (params.chapter !== undefined) {
+      setOrder(Math.max(0, Number(params.chapter)));
+    }
+    if (params.highlight) {
+      setTarget({
+        highlightId: params.highlight,
+        requestId: params.target ?? String(Date.now()),
+      });
+    }
+  }, [params.chapter, params.highlight, params.target]);
   const [manifest, setManifest] = useState<DocumentManifest | null>(null);
   const [chapterHtml, setChapterHtml] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -389,7 +425,13 @@ function ReaderBody({
       sections: manifest.sections,
       currentOrder: order,
       refreshToken,
-      onJumpToOrder: (next) => setOrder(next),
+      onJumpToTarget: (next, highlightId) => {
+        setTarget({
+          highlightId: highlightId ?? null,
+          requestId: String(Date.now()),
+        });
+        setOrder(next);
+      },
     });
     return () => onNotesChange(null);
   }, [manifest, order, refreshToken, onNotesChange]);
@@ -422,6 +464,9 @@ function ReaderBody({
         onUpdateColor={highlightLayer.updateColor}
         onSetNote={highlightLayer.setNoteForHighlight}
         onRemoveHighlight={highlightLayer.remove}
+        targetHighlightId={target?.highlightId}
+        targetRequestId={target?.requestId}
+        onTargetHighlight={onScrollToOffset}
         onAskSelection={onAskSelection}
       />
       <ChapterNav

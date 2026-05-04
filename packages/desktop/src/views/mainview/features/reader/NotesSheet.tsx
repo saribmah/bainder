@@ -8,7 +8,7 @@ export type NotesSheetProps = {
   sections?: ReadonlyArray<DocumentSectionSummary>;
   currentOrder?: number;
   refreshToken: number;
-  onJumpToOrder?: (order: number) => void;
+  onJumpToTarget?: (order: number, highlightId?: string | null) => void;
   onClose: () => void;
 };
 
@@ -38,7 +38,7 @@ export function NotesSheet({
   sections,
   currentOrder,
   refreshToken,
-  onJumpToOrder,
+  onJumpToTarget,
   onClose,
 }: NotesSheetProps) {
   const { client } = useSdk();
@@ -159,12 +159,13 @@ export function NotesSheet({
               const info = sectionKey ? sectionInfoByKey.get(sectionKey) : undefined;
               const positionLabel = labelFor(info, n);
               const isCurrent = info?.order === currentOrder;
+              const targetHighlightId = highlight?.id ?? null;
               return (
                 <li key={n.id} className="mb-2 last:mb-0">
                   <button
                     type="button"
                     onClick={() => {
-                      if (info) onJumpToOrder?.(info.order);
+                      if (info) onJumpToTarget?.(info.order, targetHighlightId);
                     }}
                     className={`block w-full rounded-xl p-3 text-left transition-colors ${cardBg} ${
                       isCurrent ? activeRing : ""
