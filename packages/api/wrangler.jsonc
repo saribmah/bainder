@@ -58,8 +58,8 @@
 		"production": {
 			"workers_dev": false,
 			"routes": [
-				{ "pattern": "baindar.com", "custom_domain": true },
-				{ "pattern": "api.baindar.com", "custom_domain": true }
+				{ "pattern": "bainder.com", "custom_domain": true },
+				{ "pattern": "api.bainder.com", "custom_domain": true }
 			],
 			"assets": {
 				// Serves the built web frontend as static assets at the root domain.
@@ -78,7 +78,7 @@
 				"WORKER_URL": "https://api.bainder.com",
 				"BETTER_AUTH_URL": "https://api.bainder.com",
 				"TRUSTED_ORIGINS": "https://bainder.com,bainder-desktop://",
-				"EMAIL_FROM": "no-reply@baindar.com",
+				"EMAIL_FROM": "no-reply@bainder.com",
 				// Production keeps TEST_MODE off. The flag is part of the env
 				// shape so `Config.isTestMode()` type-checks against both envs.
 				"TEST_MODE": "false"
