@@ -34,15 +34,13 @@
     "tsgo:version": "tsgo --version",
     "prepare": "husky"
   },
-  "workspaces": {
-    "packages": [
-      "packages/api",
-      "packages/desktop",
-      "packages/mobile",
-      "packages/sdk",
-      "packages/testing",
-      "packages/ui",
-      "packages/web"
-    ]
-  }
+  "workspaces": [
+    "packages/api",
+    "packages/desktop",
+    "packages/mobile",
+    "packages/sdk",
+    "packages/testing",
+    "packages/ui",
+    "packages/web"
+  ]
 }
