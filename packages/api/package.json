@@ -8,7 +8,7 @@
     "dev": "wrangler dev --env dev",
     "dev:test": "wrangler dev --env dev --var TEST_MODE:true",
     "build": "bunx --bun tsgo",
-    "deploy": "wrangler deploy --env production",
+    "deploy": "bun run --filter @baindar/web build && wrangler deploy --env production",
     "openapi:generate": "bun run ./scripts/generate-openapi.ts",
     "db:generate": "bunx --bun drizzle-kit generate",
     "db:migrate:local": "bunx --bun wrangler d1 migrations apply baindar-dev --local --env dev",
