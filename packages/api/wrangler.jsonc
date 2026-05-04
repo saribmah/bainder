@@ -87,7 +87,7 @@
 				{
 					"binding": "DB",
 					"database_name": "baindar",
-					"database_id": "11bcf7c3-b115-4f7e-991b-a2449f6bef6f",
+					"database_id": "487eb50a-46f9-4f36-a37a-88c47b1a6908",
 					"migrations_dir": "migrations"
 				}
 			],
