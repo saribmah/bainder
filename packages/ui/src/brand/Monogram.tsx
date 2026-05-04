@@ -20,7 +20,7 @@ export function Monogram({
   size = "md",
   backgroundColor = "var(--bd-action)",
   color = "var(--bd-action-fg)",
-  label = "Bainder",
+  label = "Baindar",
   className,
   style,
   ...rest

@@ -106,7 +106,7 @@ function SelectionActionsToolbar({
   onPickColor,
   copyLabel = "Copy text",
   highlightLabel = "Highlight",
-  askLabel = "Ask Bainder",
+  askLabel = "Ask Baindar",
   noteLabel = "Add note",
   ...toolbarRest
 }: ActionSelectionToolbarProps & { className?: string }) {

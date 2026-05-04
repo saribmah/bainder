@@ -1,7 +1,7 @@
 {
-  "name": "@bainder/ui",
+  "name": "@baindar/ui",
   "version": "0.0.0",
-  "description": "Bainder design system — tokens, primitives, and reader components for web and React Native",
+  "description": "Baindar design system — tokens, primitives, and reader components for web and React Native",
   "private": true,
   "type": "module",
   "exports": {

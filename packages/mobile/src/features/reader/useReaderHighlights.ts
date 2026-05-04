@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import type { ApiClient, Highlight, Note } from "@bainder/sdk";
-import type { HighlightColor } from "@bainder/ui";
+import type { ApiClient, Highlight, Note } from "@baindar/sdk";
+import type { HighlightColor } from "@baindar/ui";
 
 // Highlights and notes live in separate stores: a highlight is the colour
 // overlay, a note is free-form text optionally pinned to a highlight via

@@ -8,8 +8,8 @@ export const authClient = createAuthClient({
   baseURL: AUTH_URL,
   plugins: [
     expoClient({
-      scheme: "bainder",
-      storagePrefix: "bainder",
+      scheme: "baindar",
+      storagePrefix: "baindar",
       storage: SecureStore,
     }),
     emailOTPClient(),

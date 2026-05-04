@@ -2,7 +2,7 @@
 
 exports[`Button primary lg pill (default) 1`] = `"<button type="button" class="bd-btn bd-btn-primary bd-btn-lg bd-btn-pill">Get Started</button>"`;
 
-exports[`Button wine md with icon start 1`] = `"<button type="button" class="bd-btn bd-btn-wine bd-btn-md bd-btn-pill"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5 13.8 11.3 12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path><path d="M19 16l.7 1.8L21.5 18.5l-1.8.7L19 21l-.7-1.8L16.5 18.5l1.8-.7z"></path></svg>Ask Bainder</button>"`;
+exports[`Button wine md with icon start 1`] = `"<button type="button" class="bd-btn bd-btn-wine bd-btn-md bd-btn-pill"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5 13.8 11.3 12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path><path d="M19 16l.7 1.8L21.5 18.5l-1.8.7L19 21l-.7-1.8L16.5 18.5l1.8-.7z"></path></svg>Ask Baindar</button>"`;
 
 exports[`Button secondary rounded sm 1`] = `"<button type="button" class="bd-btn bd-btn-secondary bd-btn-sm bd-btn-rounded">Add Books Manually</button>"`;
 

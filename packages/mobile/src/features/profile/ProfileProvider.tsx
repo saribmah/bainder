@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { Profile, ProfileUpdateData } from "@bainder/sdk";
+import type { Profile, ProfileUpdateData } from "@baindar/sdk";
 import { authClient } from "../auth";
 import { useSdk } from "../../sdk/sdk.provider";
 

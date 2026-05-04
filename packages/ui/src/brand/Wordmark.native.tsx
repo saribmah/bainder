@@ -35,7 +35,7 @@ export function Wordmark({ size = "md", color, style, ...rest }: WordmarkProps) 
       ]}
       {...rest}
     >
-      bainder
+      baindar
     </Text>
   );
 }

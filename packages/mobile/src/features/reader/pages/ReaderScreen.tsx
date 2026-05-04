@@ -16,8 +16,8 @@ import {
   useThemeColors,
   type Theme,
   type ThemeColors,
-} from "@bainder/ui";
-import type { Document, DocumentManifest, DocumentSectionSummary, EpubTocItem } from "@bainder/sdk";
+} from "@baindar/ui";
+import type { Document, DocumentManifest, DocumentSectionSummary, EpubTocItem } from "@baindar/sdk";
 import { useSdk } from "../../../sdk/sdk.provider.tsx";
 import { EpubHtmlBody } from "../EpubHtmlBody.tsx";
 import type { AssetCache } from "../inlineAssets.ts";
@@ -186,7 +186,7 @@ function ReaderShell({ doc, onClose }: { doc: Document; onClose: () => void }) {
             <Icons.BookOpen size={20} color={palette.text} />
           </FloatingToolbarButton>
           <FloatingToolbarButton
-            aria-label="Ask Bainder"
+            aria-label="Ask Baindar"
             onPress={() => {
               setAiQuote(null);
               setAiPrompt("");
@@ -624,7 +624,7 @@ function ReaderAiSheet({
       <View style={aiStyles.header}>
         <View style={aiStyles.brandRow}>
           <Icons.Sparkles size={18} color={palette.accent} />
-          <Text style={[aiStyles.brand, { color: palette.accent }]}>Bainder</Text>
+          <Text style={[aiStyles.brand, { color: palette.accent }]}>Baindar</Text>
         </View>
         <Text style={[aiStyles.chapter, { color: palette.fgMuted }]}>{chapterLabel}</Text>
       </View>

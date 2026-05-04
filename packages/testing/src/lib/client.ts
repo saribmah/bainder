@@ -1,8 +1,8 @@
-import { type ApiClient, type ApiClientConfig, createApiClient } from "@bainder/sdk";
+import { type ApiClient, type ApiClientConfig, createApiClient } from "@baindar/sdk";
 
-// Common base URL for every helper. Override with BAINDER_API_URL when
+// Common base URL for every helper. Override with BAINDAR_API_URL when
 // pointing at a non-default host (e.g. a deployed preview).
-export const apiBaseUrl = (): string => process.env["BAINDER_API_URL"] ?? "http://localhost:8787";
+export const apiBaseUrl = (): string => process.env["BAINDAR_API_URL"] ?? "http://localhost:8787";
 
 // Build an SDK client. When a session token is provided, every call carries
 // `Authorization: Bearer <token>` — the bearer plugin in createAuth maps it

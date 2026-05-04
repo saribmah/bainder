@@ -1,5 +1,5 @@
-import { Card } from "@bainder/ui";
-import type { Document } from "@bainder/sdk";
+import { Card } from "@baindar/ui";
+import type { Document } from "@baindar/sdk";
 import { ContinueCard, ProgressCard, RecentDocumentCard } from "./DocumentCards";
 import { QuickAdd } from "./UploadControls";
 import { SectionHeading } from "./SectionHeading";
@@ -57,7 +57,7 @@ export function DashboardContent({
           ) : (
             <Card className="px-5 py-6 xl:col-span-3">
               <p className="t-body-m text-bd-fg-subtle">
-                Open a document and Bainder will keep your place here.
+                Open a document and Baindar will keep your place here.
               </p>
             </Card>
           )}

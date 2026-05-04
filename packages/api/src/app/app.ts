@@ -6,9 +6,9 @@ import { withBase } from "./with-base";
 
 export const openApiDocumentation = {
   info: {
-    title: "bainder API",
+    title: "baindar API",
     version: "0.0.0",
-    description: "bainder API OpenAPI schema",
+    description: "baindar API OpenAPI schema",
   },
   components: {
     securitySchemes: {

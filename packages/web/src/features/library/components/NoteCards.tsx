@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
-import { Button, Icons } from "@bainder/ui";
-import type { Document, Highlight, Note } from "@bainder/sdk";
+import { Button, Icons } from "@baindar/ui";
+import type { Document, Highlight, Note } from "@baindar/sdk";
 import { HIGHLIGHT_COLOR } from "../constants";
 
 export type NoteFilter = "all" | "attached" | "standalone";
@@ -133,7 +133,7 @@ export function NoteCard({
               style={noteActionStyle("ask")}
               onClick={onAsk}
             >
-              Ask Bainder
+              Ask Baindar
             </button>
           )}
         </div>

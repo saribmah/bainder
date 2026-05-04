@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { IconButton, Icons } from "@bainder/ui";
-import type { ShelfCustom } from "@bainder/sdk";
+import { IconButton, Icons } from "@baindar/ui";
+import type { ShelfCustom } from "@baindar/sdk";
 
 export function LibraryActionsMenu({
   onRename,

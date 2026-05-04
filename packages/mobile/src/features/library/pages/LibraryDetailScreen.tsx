@@ -14,8 +14,8 @@ import {
   useThemeColors,
   useThemedStyles,
   type ThemeColors,
-} from "@bainder/ui";
-import type { Document, DocumentManifest, Highlight, Note } from "@bainder/sdk";
+} from "@baindar/ui";
+import type { Document, DocumentManifest, Highlight, Note } from "@baindar/sdk";
 import { useSdk } from "../../../sdk/sdk.provider";
 import { HIGHLIGHT_COLOR, KIND_LABEL } from "../constants";
 import { DocumentShelfChips } from "../components/DocumentShelfChips";

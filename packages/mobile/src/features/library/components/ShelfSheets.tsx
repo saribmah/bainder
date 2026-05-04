@@ -10,8 +10,8 @@ import {
   useThemeColors,
   useThemedStyles,
   type ThemeColors,
-} from "@bainder/ui";
-import type { Document, ShelfCustom } from "@bainder/sdk";
+} from "@baindar/ui";
+import type { Document, ShelfCustom } from "@baindar/sdk";
 import { LibraryCover } from "./LibraryCover";
 import { SpineFan } from "./ShelfArtwork";
 import { sourceLabel, statusLabel } from "../utils/document";

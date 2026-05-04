@@ -8,7 +8,7 @@ import {
   useThemeColors,
   useThemedStyles,
   type ThemeColors,
-} from "@bainder/ui";
+} from "@baindar/ui";
 
 export type BottomTabKey = "home" | "library" | "notes" | "settings";
 

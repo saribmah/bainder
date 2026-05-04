@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import { Button, Input, Wordmark } from "@bainder/ui";
+import { Button, Input, Wordmark } from "@baindar/ui";
 import { authClient } from "../auth.client";
 import { AuthVisual } from "./AuthVisual";
 import { LoadingShell } from "./LoadingShell";
@@ -16,7 +16,7 @@ const authCopy = {
     title: "Welcome back,\nreader.",
     lead: "We'll send a one-time code to your inbox. No passwords to remember.",
     submit: "Send sign-in code",
-    switchLead: "New to Bainder?",
+    switchLead: "New to Baindar?",
     switchAction: "Create an account",
     switchTo: "/signup",
   },
@@ -117,7 +117,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                 autoComplete="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                placeholder="reader@bainder.app"
+                placeholder="reader@baindar.app"
                 className="border-bd-border-strong bg-bd-bg"
               />
               <Button type="submit" size="lg" disabled={busy || !email.includes("@")}>

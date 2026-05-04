@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from "react";
 import { HashRouter, Navigate, Outlet, Route, Routes } from "react-router-dom";
-import { ThemeProvider } from "@bainder/ui";
+import { ThemeProvider } from "@baindar/ui";
 import { RequireAuth, SignIn, SignUp } from "./features/auth";
 import { Dashboard } from "./features/dashboard";
 import { Landing } from "./features/landing";

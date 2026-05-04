@@ -2,10 +2,10 @@
 export {};
 
 // Skip-when-unreachable wrapper for `bun test`. Lets `bun run test` from the
-// repo root stay green in CI even though the @bainder/testing suite needs a
+// repo root stay green in CI even though the @baindar/testing suite needs a
 // live backend (started via `bun run --filter '*/api' dev:test`).
 
-const baseUrl = process.env.BAINDER_API_URL ?? "http://localhost:8787";
+const baseUrl = process.env.BAINDAR_API_URL ?? "http://localhost:8787";
 
 type Reachability = "ok" | "no-server" | "no-test-mode";
 
@@ -28,14 +28,14 @@ const probe = async (): Promise<Reachability> => {
 const status = await probe();
 if (status === "no-server") {
   console.log(
-    `[@bainder/testing] backend not reachable at ${baseUrl} — skipping. ` +
+    `[@baindar/testing] backend not reachable at ${baseUrl} — skipping. ` +
       "Start it with `bun run --filter '*/api' dev:test` to run these tests.",
   );
   process.exit(0);
 }
 if (status === "no-test-mode") {
   console.log(
-    `[@bainder/testing] backend at ${baseUrl} is up but TEST_MODE is off — skipping. ` +
+    `[@baindar/testing] backend at ${baseUrl} is up but TEST_MODE is off — skipping. ` +
       "Restart with `bun run --filter '*/api' dev:test` to run these tests.",
   );
   process.exit(0);
@@ -44,7 +44,7 @@ if (status === "no-test-mode") {
 const proc = Bun.spawn({
   cmd: ["bun", "test"],
   stdio: ["inherit", "inherit", "inherit"],
-  env: { ...process.env, BAINDER_API_URL: baseUrl },
+  env: { ...process.env, BAINDAR_API_URL: baseUrl },
 });
 const code = await proc.exited;
 process.exit(code);

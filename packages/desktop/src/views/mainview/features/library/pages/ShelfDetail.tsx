@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Button, ChipButton, Icons, Skeleton, Toast } from "@bainder/ui";
-import type { Document, Shelf, ShelfCustom } from "@bainder/sdk";
+import { Button, ChipButton, Icons, Skeleton, Toast } from "@baindar/ui";
+import type { Document, Shelf, ShelfCustom } from "@baindar/sdk";
 import { useProfileName } from "../../profile";
 import { LibraryActionsMenu } from "../components/LibraryActionsMenu";
 import { LibraryCover } from "../components/LibraryCover";

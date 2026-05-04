@@ -21,7 +21,7 @@ import {
   Wordmark,
   useTheme,
   type Theme,
-} from "@bainder/ui";
+} from "@baindar/ui";
 import type {
   Document,
   DocumentManifest,
@@ -29,7 +29,7 @@ import type {
   EpubTocItem,
   Highlight,
   Note,
-} from "@bainder/sdk";
+} from "@baindar/sdk";
 import { useSdk } from "../../sdk";
 import { HighlightLayer } from "./HighlightLayer";
 import { ReaderHighlightsProvider, useReaderHighlights } from "./highlightsRefresh";
@@ -379,7 +379,7 @@ function ReaderShell({
           </aside>
         </div>
 
-        <AskBainderBar draft={askDraft} onDraftChange={setAskDraft} onSubmit={handleAskSubmit} />
+        <AskBaindarBar draft={askDraft} onDraftChange={setAskDraft} onSubmit={handleAskSubmit} />
 
         <div className="fixed bottom-5 left-1/2 z-10 -translate-x-1/2 md:hidden">
           <FloatingToolbar>
@@ -391,7 +391,7 @@ function ReaderShell({
                 <Icons.BookOpen size={20} />
               </FloatingToolbarButton>
             )}
-            <FloatingToolbarButton aria-label="Ask Bainder" onClick={() => openAsk()}>
+            <FloatingToolbarButton aria-label="Ask Baindar" onClick={() => openAsk()}>
               <Icons.Sparkles size={20} />
             </FloatingToolbarButton>
             <FloatingToolbarButton
@@ -765,7 +765,7 @@ function RailSkeleton({ label }: { label: string }) {
   );
 }
 
-function AskBainderBar({
+function AskBaindarBar({
   draft,
   onDraftChange,
   onSubmit,
@@ -782,7 +782,7 @@ function AskBainderBar({
     >
       <Icons.Sparkles size={18} color="var(--bd-accent)" />
       <span className="t-label-l shrink-0" style={{ color: "var(--bd-accent)" }}>
-        Ask Bainder
+        Ask Baindar
       </span>
       <input
         className="t-body-m h-10 min-w-0 flex-1 rounded-full border-0 px-4 outline-none"
@@ -831,7 +831,7 @@ function ReaderAiSheet({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Ask Bainder"
+      aria-label="Ask Baindar"
       className="fixed inset-0 z-30 flex flex-col justify-end"
       style={{ background: backdropBg }}
       onClick={(event) => {
@@ -851,7 +851,7 @@ function ReaderAiSheet({
         <div className="flex items-center gap-2">
           <Icons.Sparkles size={18} color="var(--bd-accent)" />
           <span className="t-label-l" style={{ color: "var(--bd-accent)" }}>
-            Bainder
+            Baindar
           </span>
           <span className="t-body-s ml-auto truncate" style={{ color: "var(--bd-fg-muted)" }}>
             {chapterLabel} · {title}

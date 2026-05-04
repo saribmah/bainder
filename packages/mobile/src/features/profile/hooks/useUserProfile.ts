@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { User, UserUpdateData } from "@bainder/sdk";
+import type { User, UserUpdateData } from "@baindar/sdk";
 import { useSdk } from "../../../sdk/sdk.provider";
 
 type UserPatch = NonNullable<UserUpdateData["body"]>;

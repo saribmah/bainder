@@ -30,7 +30,7 @@ export function Monogram({
   size = "md",
   backgroundColor,
   color,
-  label = "Bainder",
+  label = "Baindar",
   style,
   textStyle,
   ...rest

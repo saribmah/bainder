@@ -1,4 +1,4 @@
-import { Skeleton } from "@bainder/ui";
+import { Skeleton } from "@baindar/ui";
 
 export function DashboardLoading() {
   return (

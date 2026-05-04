@@ -1,6 +1,6 @@
 import { Text, View } from "react-native";
-import { BookCover, useThemedStyles } from "@bainder/ui";
-import type { Document } from "@bainder/sdk";
+import { BookCover, useThemedStyles } from "@baindar/ui";
+import type { Document } from "@baindar/sdk";
 import { useSdk } from "../../../sdk/sdk.provider";
 import { COVER_PALETTES } from "../constants";
 import { buildLibraryStyles } from "../library.styles";
@@ -43,7 +43,7 @@ export function LibraryCover({
     <View style={[styles.coverFallback, { width, height, backgroundColor: palette.background }]}>
       <View>
         <View style={[styles.coverRule, { backgroundColor: palette.accent }]} />
-        <Text style={[styles.coverBrand, { color: palette.ink }]}>Bainder</Text>
+        <Text style={[styles.coverBrand, { color: palette.ink }]}>Baindar</Text>
       </View>
       <Text style={[styles.coverTitle, { color: palette.ink }]} numberOfLines={4}>
         {doc.title}

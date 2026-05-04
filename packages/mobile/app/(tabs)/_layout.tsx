@@ -1,7 +1,7 @@
 import { Tabs } from "expo-router";
 import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Icons, Toast, color } from "@bainder/ui";
+import { Icons, Toast, color } from "@baindar/ui";
 import { BottomTabs } from "../../src/features/shell";
 import { useLibraryDocuments } from "../../src/features/library/hooks/useLibraryDocuments";
 

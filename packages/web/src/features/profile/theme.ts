@@ -1,5 +1,5 @@
-import { ProfileTheme } from "@bainder/sdk";
-import type { Theme } from "@bainder/ui";
+import { ProfileTheme } from "@baindar/sdk";
+import type { Theme } from "@baindar/ui";
 
 export const profileThemeToUi = (theme: ProfileTheme | undefined): Theme =>
   theme === ProfileTheme.Night ? "dark" : theme === ProfileTheme.Sepia ? "sepia" : "light";

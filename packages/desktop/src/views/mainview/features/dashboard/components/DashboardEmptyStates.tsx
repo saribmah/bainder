@@ -1,4 +1,4 @@
-import { Card, Icons } from "@bainder/ui";
+import { Card, Icons } from "@baindar/ui";
 import { FaintBook } from "./FaintBook";
 import { ImportHint } from "./ImportHint";
 import { UploadDropSurface } from "./UploadControls";

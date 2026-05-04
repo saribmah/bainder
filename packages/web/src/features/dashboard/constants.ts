@@ -1,4 +1,4 @@
-import type { Document } from "@bainder/sdk";
+import type { Document } from "@baindar/sdk";
 
 export const ACCEPT_ATTR = ".epub,application/epub+zip";
 

@@ -9,8 +9,8 @@ import {
   Wordmark,
   useThemeColors,
   useThemedStyles,
-} from "@bainder/ui";
-import type { Highlight } from "@bainder/sdk";
+} from "@baindar/ui";
+import type { Highlight } from "@baindar/sdk";
 import { HIGHLIGHT_COLOR, HIGHLIGHT_LABEL } from "../constants";
 import { useLibraryDocuments } from "../hooks/useLibraryDocuments";
 import { useLibraryHighlights, type LibraryHighlight } from "../hooks/useLibraryHighlights";

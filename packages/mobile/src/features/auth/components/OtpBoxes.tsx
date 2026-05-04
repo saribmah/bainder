@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { Pressable, Text, TextInput, View, type TextInput as TextInputType } from "react-native";
-import { useThemedStyles } from "@bainder/ui";
+import { useThemedStyles } from "@baindar/ui";
 import { buildAuthStyles } from "../auth.styles";
 
 export function OtpBoxes({

@@ -1,5 +1,5 @@
 import { Pressable, Text, View } from "react-native";
-import { Card, Icons, color, useThemeColors, useThemedStyles } from "@bainder/ui";
+import { Card, Icons, color, useThemeColors, useThemedStyles } from "@baindar/ui";
 import { buildDashboardStyles } from "../dashboard.styles";
 
 export function DropDashboard({

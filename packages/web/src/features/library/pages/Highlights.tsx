@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChipButton, Skeleton } from "@bainder/ui";
-import type { Highlight } from "@bainder/sdk";
+import { ChipButton, Skeleton } from "@baindar/ui";
+import type { Highlight } from "@baindar/sdk";
 import { useProfileName } from "../../profile";
 import { HIGHLIGHT_COLOR, HIGHLIGHT_LABEL } from "../constants";
 import { AppSidebar } from "../components/AppSidebar";

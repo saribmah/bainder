@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Redirect, useRouter } from "expo-router";
 import { ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Button, Input, Monogram, useThemeColors, useThemedStyles } from "@bainder/ui";
+import { Button, Input, Monogram, useThemeColors, useThemedStyles } from "@baindar/ui";
 import { buildAuthStyles } from "./auth.styles";
 import { authClient } from "./auth.client";
 import { BackButton } from "./components/BackButton";
@@ -19,7 +19,7 @@ const authCopy = {
     title: "Welcome back,\nreader.",
     lead: "We'll send a one-time code to your inbox. No passwords.",
     submit: "Send sign-in code",
-    switchLead: "New to Bainder?",
+    switchLead: "New to Baindar?",
     switchAction: "Create account",
     switchTo: "/signup",
   },
@@ -133,7 +133,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
         <View>
           <Text style={styles.label}>EMAIL</Text>
           <Input
-            placeholder="reader@bainder.app"
+            placeholder="reader@baindar.app"
             autoCapitalize="none"
             autoCorrect={false}
             keyboardType="email-address"

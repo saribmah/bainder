@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Icons, Toast } from "@bainder/ui";
-import type { Document } from "@bainder/sdk";
+import { Icons, Toast } from "@baindar/ui";
+import type { Document } from "@baindar/sdk";
 import { useProfileName } from "../../profile";
 import { AppSidebar } from "../../library/components/AppSidebar";
 import { useLibraryHighlights } from "../../library/hooks/useLibraryHighlights";

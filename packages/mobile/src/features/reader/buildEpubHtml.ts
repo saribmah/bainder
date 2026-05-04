@@ -1,4 +1,4 @@
-import { color } from "@bainder/ui";
+import { color } from "@baindar/ui";
 
 // Hex tokens are reused so the RN side and the WebView style stay in sync.
 const HL = color.highlight;

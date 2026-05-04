@@ -1,7 +1,7 @@
 # Add a document format (recipe)
 
 Use this recipe when the user says "add PDF support", "re-add image
-support", "add support for .docx", etc. Bainder is currently EPUB-only by
+support", "add support for .docx", etc. Baindar is currently EPUB-only by
 design; formats are reintroduced one at a time so each addition lands
 tested and contained.
 
@@ -166,7 +166,7 @@ For each new Workflow class you need three small wirings:
    ```jsonc
    {
      "binding": "<FMT>_PROCESSOR",
-     "name": "bainder-<fmt>-processor",       // and -dev for the dev env
+     "name": "baindar-<fmt>-processor",       // and -dev for the dev env
      "class_name": "<Fmt>Workflow"
    }
    ```

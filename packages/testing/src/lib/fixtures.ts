@@ -12,7 +12,7 @@ const opf = `<?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="bookid">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
     <dc:identifier id="bookid">urn:uuid:test-1</dc:identifier>
-    <dc:title>Bainder Test Book</dc:title>
+    <dc:title>Baindar Test Book</dc:title>
     <dc:language>en</dc:language>
     <dc:creator>Test Author</dc:creator>
     <dc:publisher>Test House</dc:publisher>

@@ -11,7 +11,7 @@ import {
   useThemeColors,
   useThemedStyles,
   type ThemeColors,
-} from "@bainder/ui";
+} from "@baindar/ui";
 
 export function LandingScreen() {
   const router = useRouter();
@@ -60,7 +60,7 @@ export function LandingScreen() {
         <View style={styles.answer}>
           <View style={styles.answerHeader}>
             <Icons.Sparkles size={12} color={palette.accent} />
-            <Text style={styles.answerLabel}>Bainder</Text>
+            <Text style={styles.answerLabel}>Baindar</Text>
           </View>
           <Text style={styles.answerBody}>
             An <Text style={styles.em}>affordance</Text> is what's possible. A{" "}

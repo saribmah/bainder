@@ -9,7 +9,7 @@ dist/
 build/
 lib/
 coverage/
-# Source helpers in @bainder/testing — `lib/` above is meant for compiled
+# Source helpers in @baindar/testing — `lib/` above is meant for compiled
 # output (e.g. packages/sdk/lib/), not this directory.
 !packages/testing/src/lib/
 
@@ -44,4 +44,4 @@ npm-debug.log*
 packages/api/openapi.generated.json
 packages/sdk/lib/
 
-bainder-designs
+baindar-designs

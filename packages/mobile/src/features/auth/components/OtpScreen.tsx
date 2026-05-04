@@ -1,5 +1,5 @@
 import { ScrollView, Text, View } from "react-native";
-import { Button, Icons, useThemeColors, useThemedStyles } from "@bainder/ui";
+import { Button, Icons, useThemeColors, useThemedStyles } from "@baindar/ui";
 import { buildAuthStyles } from "../auth.styles";
 import { BackButton } from "./BackButton";
 import { OtpBoxes } from "./OtpBoxes";

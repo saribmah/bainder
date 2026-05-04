@@ -3,7 +3,7 @@ import { Config } from "../config/config";
 import { NamedError } from "../utils/error";
 import { TestModeStorage } from "./storage";
 
-// Local-only test harness for the @bainder/testing package. Every operation
+// Local-only test harness for the @baindar/testing package. Every operation
 // gates on Config.isTestMode() and throws NotEnabledError otherwise — the
 // route layer maps that to 404 so production never advertises that these
 // endpoints exist.
@@ -59,7 +59,7 @@ export namespace TestMode {
     await TestModeStorage.wipeAll();
   };
 
-  // Non-destructive probe used by the @bainder/testing wrapper to decide
+  // Non-destructive probe used by the @baindar/testing wrapper to decide
   // whether the live backend is in test mode before running the suites.
   // Same NotEnabledError → 404 mapping as every other test-mode route, so
   // production never advertises it either.

@@ -1,5 +1,5 @@
 import { View } from "react-native";
-import { Skeleton, useThemedStyles } from "@bainder/ui";
+import { Skeleton, useThemedStyles } from "@baindar/ui";
 import { buildDashboardStyles } from "../dashboard.styles";
 
 export function DashboardLoading() {

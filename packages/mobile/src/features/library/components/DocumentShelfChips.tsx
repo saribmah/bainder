@@ -1,6 +1,6 @@
 import { ScrollView } from "react-native";
-import { ChipButton, Icons, useThemeColors } from "@bainder/ui";
-import type { ShelfCustom } from "@bainder/sdk";
+import { ChipButton, Icons, useThemeColors } from "@baindar/ui";
+import type { ShelfCustom } from "@baindar/sdk";
 
 export function DocumentShelfChips({
   shelves,

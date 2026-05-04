@@ -1,4 +1,4 @@
-import type { Document } from "@bainder/sdk";
+import type { Document } from "@baindar/sdk";
 
 export function ProgressLine({ doc }: { doc: Document }) {
   // `progressPercent` is in [0, 1]; clamp to the visual range so a 0%

@@ -27,7 +27,7 @@ export function BrandLockup({
   wordmarkColor,
   monogramBackgroundColor,
   monogramColor,
-  label = "Bainder",
+  label = "Baindar",
   className,
   style,
   ...rest

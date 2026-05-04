@@ -1,5 +1,5 @@
 import type { FormEvent } from "react";
-import { Button, Icons, Wordmark } from "@bainder/ui";
+import { Button, Icons, Wordmark } from "@baindar/ui";
 import { OtpBoxes } from "./OtpBoxes";
 
 export function OtpScreen({

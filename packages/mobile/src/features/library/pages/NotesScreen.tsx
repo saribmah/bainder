@@ -14,8 +14,8 @@ import {
   useThemeColors,
   useThemedStyles,
   type ThemeColors,
-} from "@bainder/ui";
-import type { Document, Highlight, Note } from "@bainder/sdk";
+} from "@baindar/ui";
+import type { Document, Highlight, Note } from "@baindar/sdk";
 import { useSdk } from "../../../sdk/sdk.provider";
 import { HIGHLIGHT_COLOR } from "../constants";
 import { useLibraryDocuments } from "../hooks/useLibraryDocuments";
@@ -266,7 +266,7 @@ function NoteItem({
         <Pressable accessibilityRole="button" onPress={onOpen}>
           <Text style={styles.noteAction}>{attached ? "Open in book" : "Attach to passage"}</Text>
         </Pressable>
-        <Text style={styles.noteAsk}>Ask Bainder</Text>
+        <Text style={styles.noteAsk}>Ask Baindar</Text>
       </View>
     </Pressable>
   );

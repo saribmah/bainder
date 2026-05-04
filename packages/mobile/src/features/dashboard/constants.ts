@@ -1,5 +1,5 @@
-import { color } from "@bainder/ui";
-import type { Document } from "@bainder/sdk";
+import { color } from "@baindar/ui";
+import type { Document } from "@baindar/sdk";
 
 export const KIND_LABEL: Record<Document["kind"], string> = {
   epub: "EPUB",

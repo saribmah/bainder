@@ -1,5 +1,5 @@
-import { Card, Chip } from "@bainder/ui";
-import type { Document } from "@bainder/sdk";
+import { Card, Chip } from "@baindar/ui";
+import type { Document } from "@baindar/sdk";
 import { KIND_LABEL } from "../constants";
 import { formatRelativeTime } from "../utils/date";
 import { getProgressLabel } from "../utils/document";

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { Button, Chip, ChipButton, Icons } from "@bainder/ui";
-import { ProfileHighlightColor, ProfileTheme } from "@bainder/sdk";
+import { Button, Chip, ChipButton, Icons } from "@baindar/ui";
+import { ProfileHighlightColor, ProfileTheme } from "@baindar/sdk";
 import { useLibraryDocuments } from "../../library/hooks/useLibraryDocuments";
 import { useLibraryHighlights } from "../../library/hooks/useLibraryHighlights";
 import { AppSidebar } from "../../library/components/AppSidebar";
@@ -111,7 +111,7 @@ export function SettingsPage() {
               </Row>
             </Section>
 
-            <Section label="AI · Bainder">
+            <Section label="AI · Baindar">
               <Row label="Cite the page in every answer" sub="Show page or section references">
                 <Toggle
                   checked={profile?.aiCitePages ?? false}
@@ -128,7 +128,7 @@ export function SettingsPage() {
               </Row>
               <Row
                 label="Use my highlights to personalize"
-                sub="Bainder learns what passages matter"
+                sub="Baindar learns what passages matter"
               >
                 <Toggle
                   checked={profile?.aiPersonalizeFromHighlights ?? false}

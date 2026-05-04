@@ -1,4 +1,4 @@
-import { Icons, Input } from "@bainder/ui";
+import { Icons, Input } from "@baindar/ui";
 import { formatDayLabel } from "../utils/date";
 
 export function DashboardHeader({

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Redirect, usePathname, useSegments } from "expo-router";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
-import { useThemeColors } from "@bainder/ui";
+import { useThemeColors } from "@baindar/ui";
 import { authClient } from "./auth.client.ts";
 
 export function AuthGate({ children }: { children: ReactNode }) {

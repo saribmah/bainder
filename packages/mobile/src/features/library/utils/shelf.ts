@@ -1,4 +1,4 @@
-import type { Shelf } from "@bainder/sdk";
+import type { Shelf } from "@baindar/sdk";
 import { COVER_PALETTES } from "../constants";
 
 export const CUSTOM_SHELF_LIMIT = 8;

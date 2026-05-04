@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Modal, Pressable, Text, View } from "react-native";
-import { Button, IconButton, Icons, Input, useThemeColors, useThemedStyles } from "@bainder/ui";
-import type { Document } from "@bainder/sdk";
+import { Button, IconButton, Icons, Input, useThemeColors, useThemedStyles } from "@baindar/ui";
+import type { Document } from "@baindar/sdk";
 import { buildDashboardStyles } from "../dashboard.styles";
 
 export function RenameDialog({

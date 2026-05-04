@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import { Icons, Input, Wordmark, useThemeColors, useThemedStyles } from "@bainder/ui";
+import { Icons, Input, Wordmark, useThemeColors, useThemedStyles } from "@baindar/ui";
 import { buildDashboardStyles } from "../dashboard.styles";
 import { formatDayLabel } from "../utils/date";
 

@@ -1,4 +1,4 @@
-# @bainder/api
+# @baindar/api
 
 Cloudflare Workers backend built on Hono + hono-openapi.
 

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { IconButton, Icons, Sheet, useTheme } from "@bainder/ui";
-import type { DocumentSectionSummary, Highlight, Note } from "@bainder/sdk";
+import { IconButton, Icons, Sheet, useTheme } from "@baindar/ui";
+import type { DocumentSectionSummary, Highlight, Note } from "@baindar/sdk";
 import { useSdk } from "../../sdk";
 
 export type NotesSheetProps = {

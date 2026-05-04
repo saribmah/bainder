@@ -12,8 +12,8 @@ import {
   color,
   useThemeColors,
   useThemedStyles,
-} from "@bainder/ui";
-import type { Document } from "@bainder/sdk";
+} from "@baindar/ui";
+import type { Document } from "@baindar/sdk";
 import { FILTER_LABEL, type LibraryFilter } from "../constants";
 import { LibraryCover } from "../components/LibraryCover";
 import { ShelfCard } from "../components/ShelfArtwork";

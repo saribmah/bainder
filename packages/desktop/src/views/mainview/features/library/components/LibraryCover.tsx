@@ -1,5 +1,5 @@
-import { BookCover } from "@bainder/ui";
-import type { Document } from "@bainder/sdk";
+import { BookCover } from "@baindar/ui";
+import type { Document } from "@baindar/sdk";
 import { useSdk } from "../../../sdk";
 import { COVER_PALETTES } from "../constants";
 import { sourceLabel } from "../utils/document";
@@ -57,7 +57,7 @@ export function LibraryCover({
     >
       <div className="flex flex-col gap-1">
         <span className="h-px" style={{ background: palette.accent, opacity: 0.5 }} />
-        <span className="font-mono text-[8px] uppercase tracking-[0.18em] opacity-70">Bainder</span>
+        <span className="font-mono text-[8px] uppercase tracking-[0.18em] opacity-70">Baindar</span>
       </div>
       <span className="break-words text-center font-display text-[clamp(12px,1vw,15px)] font-semibold uppercase leading-[1.05]">
         {doc.title}

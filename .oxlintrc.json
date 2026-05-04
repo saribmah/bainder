@@ -18,7 +18,7 @@
       "error",
       {
         "patterns": [
-          "@bainder/*/src/**"
+          "@baindar/*/src/**"
         ]
       }
     ]

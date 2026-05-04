@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChipButton, Icons, Input, Skeleton, Toast } from "@bainder/ui";
-import type { Document, Shelf, ShelfCustom } from "@bainder/sdk";
+import { ChipButton, Icons, Input, Skeleton, Toast } from "@baindar/ui";
+import type { Document, Shelf, ShelfCustom } from "@baindar/sdk";
 import { useProfileName } from "../../profile";
 import { FILTER_LABEL, type LibraryFilter } from "../constants";
 import { LibraryActionsMenu } from "../components/LibraryActionsMenu";
