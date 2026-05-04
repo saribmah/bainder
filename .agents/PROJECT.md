@@ -14,7 +14,7 @@ and maintained by the team thereafter.
 - **Scope**: `@bainder`
 - **Description**: AI-powered document binder that turns receipts, contracts, and PDFs into searchable, queryable memory.
 - **Worker name**: `bainder` (dev: `bainder-dev`)
-- **Production domain**: _not yet configured — falls back to `bainder.workers.dev`_
+- **Production domain**: `bainder.com` (API: `api.bainder.com`)
 - **Web frontend**: yes (`packages/web`)
 - **Initialized at**: 2026-04-26
 
