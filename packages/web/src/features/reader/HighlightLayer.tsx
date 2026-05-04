@@ -1,5 +1,5 @@
 import { useEffect, useState, type RefObject } from "react";
-import { Button, IconButton, Icons, SelectionToolbar, Sheet, useTheme } from "@bainder/ui";
+import { Button, IconButton, Icons, SelectionToolbar, useTheme } from "@bainder/ui";
 import { useProfile } from "../profile";
 import { useHighlightLayer, type HighlightColor } from "./useHighlightLayer";
 
@@ -13,6 +13,8 @@ export type HighlightLayerProps = {
   documentId: string;
   sectionKey: string | null;
   contentKey: string;
+  targetHighlightId?: string | null;
+  targetRequestId?: string | null;
   onAskSelection?: (quote: string) => void;
 };
 
@@ -21,6 +23,8 @@ export function HighlightLayer({
   documentId,
   sectionKey,
   contentKey,
+  targetHighlightId,
+  targetRequestId,
   onAskSelection,
 }: HighlightLayerProps) {
   const layer = useHighlightLayer({
@@ -29,6 +33,8 @@ export function HighlightLayer({
     sectionKey,
     contentKey,
     enabled: sectionKey !== null,
+    targetHighlightId,
+    targetRequestId,
   });
   const { profile } = useProfile();
   const defaultColor: HighlightColor = profile?.defaultHighlightColor ?? "pink";
@@ -45,8 +51,8 @@ export function HighlightLayer({
     void copyText(text).finally(layer.clearSelection);
   };
 
-  const handleHighlightSelection = () => {
-    void layer.create(defaultColor);
+  const handleHighlightSelection = (color: HighlightColor = defaultColor) => {
+    void layer.create(color);
   };
 
   const handleAskSelection = () => {
@@ -78,8 +84,10 @@ export function HighlightLayer({
           rect={layer.selection.rect}
           onCopy={handleCopySelection}
           onHighlight={handleHighlightSelection}
+          onPickColor={handleHighlightSelection}
           onAsk={handleAskSelection}
           onAddNote={handleAddNoteFromSelection}
+          activeColor={defaultColor}
         />
       )}
 
@@ -101,6 +109,13 @@ export function HighlightLayer({
               quote: layer.focused!.textSnippet,
             })
           }
+          onAsk={() => {
+            onAskSelection?.(layer.focused!.textSnippet);
+            layer.setFocusedId(null);
+          }}
+          onCopy={() => {
+            void copyText(layer.focused!.textSnippet);
+          }}
           onDelete={() => {
             void layer.remove(layer.focused!.id);
           }}
@@ -135,14 +150,18 @@ function SelectionToolbarPositioned({
   rect,
   onCopy,
   onHighlight,
+  onPickColor,
   onAsk,
   onAddNote,
+  activeColor,
 }: {
   rect: DOMRect;
   onCopy: () => void;
   onHighlight: () => void;
+  onPickColor: (color: HighlightColor) => void;
   onAsk: () => void;
   onAddNote: () => void;
+  activeColor: HighlightColor;
 }) {
   // Prefer above the selection; if there's no room, fall back to below.
   const above = rect.top - TOOLBAR_OFFSET_Y - TOOLBAR_HEIGHT_ESTIMATE >= 8;
@@ -165,8 +184,10 @@ function SelectionToolbarPositioned({
         variant="actions"
         onCopy={onCopy}
         onHighlight={onHighlight}
+        onPickColor={onPickColor}
         onAsk={onAsk}
         onAddNote={onAddNote}
+        activeColor={activeColor}
       />
     </div>
   );
@@ -182,6 +203,8 @@ function HighlightPopover({
   onClose,
   onChangeColor,
   onEditNote,
+  onAsk,
+  onCopy,
   onDelete,
 }: {
   highlightId: string;
@@ -193,10 +216,13 @@ function HighlightPopover({
   onClose: () => void;
   onChangeColor: (color: HighlightColor) => void;
   onEditNote: () => void;
+  onAsk: () => void;
+  onCopy: () => void;
   onDelete: () => void;
 }) {
   const { theme } = useTheme();
   const [rect, setRect] = useState<DOMRect | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   // Look up the mark in the live DOM. Re-run on contentKey so a chapter
   // switch (which invalidates DOM marks) drops the popover.
@@ -236,15 +262,89 @@ function HighlightPopover({
   }, [highlightId, onClose]);
 
   if (!rect) return null;
-  const top = rect.bottom + 8;
+  const top = rect.bottom + 12;
   const left = Math.max(8, Math.min(window.innerWidth - 8, rect.left + rect.width / 2));
-
-  const noteBg =
+  const highlightColor = `var(--hl-${color})`;
+  const surface =
     theme === "dark"
-      ? "bg-[oklch(15%_0.008_240)] text-night-50"
+      ? "var(--night-800)"
       : theme === "sepia"
-        ? "bg-sepia-100 text-sepia-900"
-        : "bg-bd-surface-raised text-bd-fg";
+        ? "var(--sepia-50)"
+        : "var(--paper-50)";
+  const border =
+    theme === "dark"
+      ? "oklch(30% 0.012 240)"
+      : theme === "sepia"
+        ? "var(--sepia-200)"
+        : "var(--paper-200)";
+  const raised =
+    theme === "dark"
+      ? "oklch(15% 0.008 240)"
+      : theme === "sepia"
+        ? "var(--sepia-100)"
+        : "var(--paper-100)";
+  const fg = theme === "dark" ? "var(--night-50)" : "var(--paper-900)";
+  const muted =
+    theme === "dark"
+      ? "var(--night-200)"
+      : theme === "sepia"
+        ? "var(--sepia-700)"
+        : "var(--paper-500)";
+
+  if (confirmDelete) {
+    return (
+      <div
+        data-highlight-popover
+        role="dialog"
+        aria-label="Delete highlight"
+        style={{
+          position: "fixed",
+          top,
+          left,
+          transform: "translateX(-50%)",
+          zIndex: 30,
+          width: "min(320px, calc(100vw - 16px))",
+        }}
+      >
+        <div
+          className="relative overflow-visible rounded-2xl border"
+          style={{
+            background: surface,
+            borderColor: border,
+            boxShadow: "0 24px 48px rgba(20,15,10,0.18), 0 4px 12px rgba(20,15,10,0.08)",
+          }}
+        >
+          <PopoverCaret background={surface} borderColor={border} />
+          <div className="flex flex-col gap-2 px-[18px] pb-2 pt-4">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[oklch(96%_0.040_25)]">
+              <Icons.Trash size={16} color="var(--error)" />
+            </div>
+            <div className="font-display text-lg font-medium leading-tight text-bd-fg">
+              Delete this highlight?
+            </div>
+            <p className="t-body-m m-0 text-[13px] leading-5 text-bd-fg-subtle">
+              {note
+                ? "The attached note will be deleted with it. This can't be undone."
+                : "This can't be undone."}
+            </p>
+          </div>
+          <div className="flex justify-end gap-2 px-3.5 pb-3.5 pt-2">
+            <Button variant="ghost" size="sm" onClick={() => setConfirmDelete(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              className="bg-error text-paper-50 hover:bg-error"
+              onClick={onDelete}
+            >
+              Delete
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -257,38 +357,111 @@ function HighlightPopover({
         left,
         transform: "translateX(-50%)",
         zIndex: 30,
-        width: "min(360px, calc(100vw - 16px))",
+        width: note ? "min(380px, calc(100vw - 16px))" : "min(340px, calc(100vw - 16px))",
       }}
     >
-      <Sheet showHandle={false}>
-        <div className="flex items-start gap-2">
-          <p className="t-body-s line-clamp-3 flex-1 italic opacity-80">"{textSnippet}"</p>
+      <div
+        className="relative overflow-visible rounded-2xl border"
+        style={{
+          background: surface,
+          borderColor: border,
+          boxShadow: "0 24px 48px rgba(20,15,10,0.18), 0 4px 12px rgba(20,15,10,0.08)",
+          color: fg,
+        }}
+      >
+        <PopoverCaret background={surface} borderColor={border} />
+        <div
+          className="flex items-center gap-2.5 border-b px-3.5 py-3"
+          style={{ borderColor: border }}
+        >
+          <span className="inline-flex items-center gap-1">
+            <span
+              aria-hidden
+              className="h-3 w-3 rounded-full border border-black/10"
+              style={{ background: highlightColor }}
+            />
+            {note && <Icons.Note size={11} color={muted} />}
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="t-label-m text-bd-fg">{note ? "Highlight + note" : "Highlight"}</div>
+            <div className="font-mono text-[11px]" style={{ color: muted }}>
+              Selected passage
+            </div>
+          </div>
           <IconButton aria-label="Close" size="sm" onClick={onClose}>
-            <Icons.Close size={14} />
+            <Icons.Close size={13} />
           </IconButton>
         </div>
 
-        {note && (
-          <p className={`t-body-m mt-2 rounded-md p-3 ${noteBg} whitespace-pre-wrap`}>{note}</p>
-        )}
+        <div className="flex flex-col gap-3 px-4 py-3.5">
+          <blockquote
+            className="m-0 border-l-2 pl-3 font-reading text-[13px] leading-6 italic text-bd-fg-subtle"
+            style={{ borderColor: highlightColor }}
+          >
+            "{textSnippet}"
+          </blockquote>
 
-        <div className="mt-3 flex items-center justify-between gap-3">
           <SelectionToolbar
             colors={["pink", "yellow", "green", "blue", "purple"]}
             onPickColor={onChangeColor}
             aria-label={`Change color (current: ${color})`}
           />
-          <div className="flex items-center gap-1">
-            <IconButton aria-label={note ? "Edit note" : "Add note"} size="sm" onClick={onEditNote}>
-              <Icons.Note size={16} />
-            </IconButton>
-            <IconButton aria-label="Delete highlight" size="sm" onClick={onDelete}>
-              <Icons.Close size={16} />
-            </IconButton>
-          </div>
+
+          {note && (
+            <div className="flex gap-2.5 rounded-xl px-3.5 py-3" style={{ background: raised }}>
+              <Icons.Note size={14} color={muted} />
+              <p className="m-0 flex-1 whitespace-pre-wrap font-reading text-sm leading-6 text-bd-fg">
+                {note}
+              </p>
+            </div>
+          )}
         </div>
-      </Sheet>
+
+        <div
+          className="flex items-center gap-1 border-t px-3 py-2.5"
+          style={{ borderColor: border }}
+        >
+          <Button
+            variant={note ? "ghost" : "secondary"}
+            size="sm"
+            iconStart={note ? <Icons.Pencil size={13} /> : <Icons.Note size={13} />}
+            onClick={onEditNote}
+          >
+            {note ? "Edit note" : "Add note"}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-bd-accent"
+            iconStart={<Icons.Sparkles size={13} />}
+            onClick={onAsk}
+          >
+            Ask
+          </Button>
+          <div className="min-w-3 flex-1" />
+          <IconButton aria-label="Copy highlight" size="sm" onClick={onCopy}>
+            <Icons.Copy size={15} />
+          </IconButton>
+          <IconButton
+            aria-label="Delete highlight"
+            size="sm"
+            onClick={() => setConfirmDelete(true)}
+          >
+            <Icons.Trash size={15} color="var(--error)" />
+          </IconButton>
+        </div>
+      </div>
     </div>
+  );
+}
+
+function PopoverCaret({ background, borderColor }: { background: string; borderColor: string }) {
+  return (
+    <span
+      aria-hidden
+      className="absolute left-8 top-[-6px] h-3 w-3 rotate-45 border-l border-t"
+      style={{ background, borderColor }}
+    />
   );
 }
 
@@ -367,6 +540,7 @@ function NotePopover({
       : theme === "sepia"
         ? "var(--sepia-700)"
         : "var(--paper-500)";
+  const fg = theme === "dark" ? "var(--night-50)" : "var(--paper-900)";
   const raised =
     theme === "dark"
       ? "oklch(15% 0.008 240)"
@@ -399,21 +573,19 @@ function NotePopover({
         }}
       >
         <div className="flex items-center gap-2">
-          <div className="flex rounded-full p-[3px]" style={{ background: raised }}>
-            <span
-              className="font-ui rounded-full px-3 py-1.5 text-[11px] font-semibold"
-              style={{ background: surface, boxShadow: "0 1px 2px rgba(0,0,0,0.06)" }}
-            >
-              On highlight
-            </span>
-            <span
-              className="font-ui px-3 py-1.5 text-[11px] font-semibold"
-              style={{ color: muted }}
-            >
-              Standalone
-            </span>
+          <span
+            aria-hidden
+            className="h-3 w-3 rounded-full border border-black/10"
+            style={{ background: "var(--hl-pink)" }}
+          />
+          <div className="min-w-0 flex-1">
+            <div className="t-label-m" style={{ color: fg }}>
+              Note on highlight
+            </div>
+            <div className="font-mono text-[11px]" style={{ color: muted }}>
+              Selected passage
+            </div>
           </div>
-          <div className="flex-1" />
           <IconButton aria-label="Close" size="sm" onClick={onCancel}>
             <Icons.Close size={12} />
           </IconButton>

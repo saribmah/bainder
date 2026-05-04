@@ -368,23 +368,34 @@
   background: var(--hl-pink);
   color: inherit;
   padding: 2px 0;
+  border-radius: 1px;
   box-shadow:
     2px 0 0 var(--hl-pink),
     -2px 0 0 var(--hl-pink);
   cursor: pointer;
+  position: relative;
 }
 .bd-highlight[data-highlight-id]:hover {
   filter: brightness(0.96);
 }
 .bd-highlight[data-highlight-has-note]::after {
   content: "";
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-left: calc(var(--space-1) - 1px);
-  vertical-align: super;
+  position: absolute;
+  top: -3px;
+  right: -10px;
+  z-index: 1;
+  width: 10px;
+  height: 10px;
   border-radius: 999px;
-  background: var(--bd-fg-subtle);
+  background: var(--paper-900);
+  border: 2px solid var(--bd-bg);
+  box-shadow: 0 1px 3px rgba(20, 15, 10, 0.2);
+  pointer-events: none;
+}
+[data-theme="dark"] .bd-highlight[data-highlight-has-note]::after {
+  background: var(--night-50);
+  border-color: var(--bd-bg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
 }
 .bd-highlight-yellow {
   background: var(--hl-yellow);

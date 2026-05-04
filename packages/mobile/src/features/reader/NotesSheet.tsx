@@ -12,7 +12,7 @@ export type NotesSheetProps = {
   sections?: ReadonlyArray<DocumentSectionSummary>;
   currentOrder?: number;
   refreshToken: number;
-  onJumpToOrder?: (order: number) => void;
+  onJumpToTarget?: (order: number, highlightId?: string | null) => void;
 };
 
 type RelativeUnit = "second" | "minute" | "hour" | "day" | "week" | "month" | "year";
@@ -51,7 +51,7 @@ export function NotesSheet({
   sections,
   currentOrder,
   refreshToken,
-  onJumpToOrder,
+  onJumpToTarget,
 }: NotesSheetProps) {
   const { client } = useSdk();
   const [items, setItems] = useState<Note[] | null>(null);
@@ -127,11 +127,12 @@ export function NotesSheet({
           const info = sectionKey ? sectionInfoByKey.get(sectionKey) : undefined;
           const positionLabel = labelFor(info, n);
           const isCurrent = info?.order === currentOrder;
+          const targetHighlightId = highlight?.id ?? null;
           return (
             <Pressable
               key={n.id}
               onPress={() => {
-                if (info) onJumpToOrder?.(info.order);
+                if (info) onJumpToTarget?.(info.order, targetHighlightId);
               }}
               style={({ pressed }) => [
                 styles.card,

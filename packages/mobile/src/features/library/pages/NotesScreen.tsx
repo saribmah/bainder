@@ -26,6 +26,13 @@ import { buildLibraryStyles } from "../library.styles";
 type NoteFilter = "all" | "attached" | "standalone";
 type EditorState = Note | "new" | null;
 type EnrichedNote = LibraryNote & { highlight?: Highlight };
+type ReaderNoteParams = {
+  id: string;
+  chapter?: string;
+  highlight?: string;
+  note: string;
+  target: string;
+};
 
 const filters: Array<{ value: NoteFilter; label: string }> = [
   { value: "all", label: "All" },
@@ -173,7 +180,7 @@ export function NotesScreen() {
               styles={styles}
               palette={palette}
               onPress={() => setEditor(note)}
-              onOpen={() => router.push(`/read/${note.document.id}`)}
+              onOpen={() => router.push({ pathname: "/read/[id]", params: readerNoteParams(note) })}
             />
           ))
         )}
@@ -191,6 +198,23 @@ export function NotesScreen() {
       />
     </View>
   );
+}
+
+function readerNoteParams(note: EnrichedNote): ReaderNoteParams {
+  const sectionKey = note.sectionKey ?? note.highlight?.sectionKey ?? null;
+  const order = sectionKey ? sectionOrderFromKey(sectionKey) : null;
+  return {
+    id: note.document.id,
+    ...(order !== null ? { chapter: String(order) } : {}),
+    ...(note.highlight ? { highlight: note.highlight.id } : {}),
+    note: note.id,
+    target: "1",
+  };
+}
+
+function sectionOrderFromKey(sectionKey: string): number | null {
+  const match = /:(\d+)$/.exec(sectionKey);
+  return match ? Number(match[1]) : null;
 }
 
 function NoteItem({

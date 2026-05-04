@@ -8,6 +8,7 @@ import {
   SelectionToolbar,
   Sheet,
   color,
+  radius,
   themeColors,
   type HighlightColor,
   type Theme,
@@ -31,10 +32,11 @@ type WebMessage =
   | { type: "height"; value: number }
   | { type: "selection"; cleared: true }
   | { type: "selection"; rect: Rect; charRange: { start: number; end: number }; text: string }
-  | { type: "tap-highlight"; id: string; rect: Rect };
+  | { type: "tap-highlight"; id: string; rect: Rect }
+  | { type: "target-highlight"; id: string; rect: Rect };
 
 const TOOLBAR_HEIGHT = 58;
-const TOOLBAR_WIDTH = 206;
+const TOOLBAR_WIDTH = 178;
 const TOOLBAR_MARGIN = 8;
 
 export type EpubHtmlBodyProps = {
@@ -51,6 +53,9 @@ export type EpubHtmlBodyProps = {
   onUpdateColor: ReaderHighlights["updateColor"];
   onSetNote: ReaderHighlights["setNoteForHighlight"];
   onRemoveHighlight: ReaderHighlights["remove"];
+  targetHighlightId?: string | null;
+  targetRequestId?: string | null;
+  onTargetHighlight?: (offsetY: number) => void;
   onAskSelection?: (quote: string) => void;
 };
 
@@ -68,6 +73,9 @@ export function EpubHtmlBody({
   onUpdateColor,
   onSetNote,
   onRemoveHighlight,
+  targetHighlightId,
+  targetRequestId,
+  onTargetHighlight,
   onAskSelection,
 }: EpubHtmlBodyProps) {
   const palette = themeColors(theme);
@@ -79,6 +87,7 @@ export function EpubHtmlBody({
   const [ready, setReady] = useState(false);
   const [selection, setSelection] = useState<SelectionState | null>(null);
   const [focused, setFocused] = useState<Highlight | null>(null);
+  const [layoutY, setLayoutY] = useState(0);
   const [noteDraft, setNoteDraft] = useState<
     { kind: "new"; selection: SelectionState } | { kind: "edit"; highlight: Highlight } | null
   >(null);
@@ -119,6 +128,15 @@ export function EpubHtmlBody({
     webRef.current?.injectJavaScript(`window.bd_setHighlights(${json}); true;`);
   }, [ready, highlights, notesByHighlightId, contentKey]);
 
+  useEffect(() => {
+    if (!ready || !targetHighlightId) return;
+    const id = JSON.stringify(targetHighlightId);
+    webRef.current?.injectJavaScript(`
+      window.bd_reportHighlightRect && window.bd_reportHighlightRect(${id});
+      true;
+    `);
+  }, [ready, targetHighlightId, targetRequestId, highlights, notesByHighlightId]);
+
   const clearWebSelection = useCallback(() => {
     webRef.current?.injectJavaScript(
       `window.bd_clearSelection && window.bd_clearSelection(); true;`,
@@ -158,8 +176,13 @@ export function EpubHtmlBody({
         }
         return;
       }
+      if (msg.type === "target-highlight") {
+        onTargetHighlight?.(layoutY + msg.rect.top);
+        const hit = highlights.find((h) => h.id === msg.id);
+        if (hit) setFocused(hit);
+      }
     },
-    [highlights],
+    [highlights, layoutY, onTargetHighlight],
   );
 
   const handleCopySelection = useCallback(() => {
@@ -276,7 +299,10 @@ export function EpubHtmlBody({
   const toolbarPos = selection ? toolbarPosition(selection.rect, height) : null;
 
   return (
-    <View style={{ position: "relative" }}>
+    <View
+      style={{ position: "relative" }}
+      onLayout={(event) => setLayoutY(event.nativeEvent.layout.y)}
+    >
       <WebView
         ref={webRef}
         originWhitelist={["*"]}
@@ -295,11 +321,15 @@ export function EpubHtmlBody({
         >
           <SelectionToolbar
             variant="actions"
+            activeColor={defaultColor}
             foregroundColor={palette.text}
             style={{ backgroundColor: floatingBgFor(theme), borderColor: palette.border }}
             onCopy={handleCopySelection}
             onHighlight={() => {
               void handleHighlightSelection(defaultColor);
+            }}
+            onPickColor={(nextColor) => {
+              void handleHighlightSelection(nextColor);
             }}
             onAsk={handleAskSelection}
             onAddNote={handleAddNote}
@@ -319,6 +349,10 @@ export function EpubHtmlBody({
             theme={theme}
             onChangeColor={handleChangeFocusedColor}
             onEditNote={handleEditFocusedNote}
+            onAsk={() => {
+              onAskSelection?.(focused.textSnippet);
+              setFocused(null);
+            }}
             onDelete={handleDeleteFocused}
             onClose={() => setFocused(null)}
           />
@@ -375,6 +409,7 @@ function FocusedHighlightCard({
   theme,
   onChangeColor,
   onEditNote,
+  onAsk,
   onDelete,
   onClose,
 }: {
@@ -383,6 +418,7 @@ function FocusedHighlightCard({
   theme: Theme;
   onChangeColor: (color: HighlightColor) => void;
   onEditNote: () => void;
+  onAsk: () => void;
   onDelete: () => void;
   onClose: () => void;
 }) {
@@ -391,7 +427,15 @@ function FocusedHighlightCard({
   return (
     <>
       <View style={styles.cardHeader}>
-        <Text style={[styles.cardLabel, { color: muted }]}>Highlight</Text>
+        <View style={styles.viewerTitleRow}>
+          <View
+            style={[styles.viewerSwatch, { backgroundColor: color.highlight[highlight.color] }]}
+          />
+          {noteBody && <Icons.Note size={12} color={muted} />}
+          <Text style={[styles.cardLabel, { color: palette.text }]}>
+            {noteBody ? "Highlight + note" : "Highlight"}
+          </Text>
+        </View>
         <IconButton aria-label="Close" size="sm" onPress={onClose}>
           <Icons.Close size={14} color={palette.text} />
         </IconButton>
@@ -406,18 +450,36 @@ function FocusedHighlightCard({
       )}
       <View style={styles.cardActionsRow}>
         <SelectionToolbar onPickColor={onChangeColor} />
-        <View style={{ flexDirection: "row", gap: 4 }}>
-          <IconButton
-            aria-label={noteBody ? "Edit note" : "Add note"}
-            size="sm"
-            onPress={onEditNote}
-          >
-            <Icons.Note size={16} color={palette.text} />
-          </IconButton>
-          <IconButton aria-label="Delete highlight" size="sm" onPress={onDelete}>
-            <Icons.Close size={16} color={palette.text} />
-          </IconButton>
-        </View>
+      </View>
+      <View style={styles.viewerFooter}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={noteBody ? "Edit note" : "Add note"}
+          onPress={onEditNote}
+          style={({ pressed }) => [styles.viewerPill, pressed && { opacity: 0.7 }]}
+        >
+          {noteBody ? (
+            <Icons.Pencil size={13} color={palette.text} />
+          ) : (
+            <Icons.Note size={13} color={palette.text} />
+          )}
+          <Text style={[styles.viewerPillText, { color: palette.text }]}>
+            {noteBody ? "Edit note" : "Add note"}
+          </Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Ask Bainder"
+          onPress={onAsk}
+          style={({ pressed }) => [styles.viewerPill, pressed && { opacity: 0.7 }]}
+        >
+          <Icons.Sparkles size={13} color={palette.accent} />
+          <Text style={[styles.viewerPillText, { color: palette.accent }]}>Ask</Text>
+        </Pressable>
+        <View style={{ flex: 1 }} />
+        <IconButton aria-label="Delete highlight" size="sm" onPress={onDelete}>
+          <Icons.Trash size={16} color={color.status.error} />
+        </IconButton>
       </View>
     </>
   );
@@ -446,14 +508,11 @@ function NoteEditor({
   return (
     <>
       <View style={styles.cardHeader}>
-        <View style={[styles.segment, { backgroundColor: noteBgFor(theme) }]}>
-          <View style={[styles.segmentActive, { backgroundColor: palette.bg }]}>
-            <Icons.Highlight size={12} color={palette.text} />
-            <Text style={[styles.segmentTextActive, { color: palette.text }]}>On passage</Text>
-          </View>
-          <View style={styles.segmentInactive}>
-            <Icons.Note size={12} color={muted} />
-            <Text style={[styles.segmentText, { color: muted }]}>Standalone</Text>
+        <View style={styles.viewerTitleRow}>
+          <View style={[styles.viewerSwatch, { backgroundColor: color.highlight.pink }]} />
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={[styles.cardLabel, { color: palette.text }]}>Note on highlight</Text>
+            <Text style={[styles.editorSubLabel, { color: muted }]}>Selected passage</Text>
           </View>
         </View>
         <IconButton aria-label="Close" size="sm" onPress={onCancel}>
@@ -540,53 +599,32 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
     gap: 8,
   },
+  viewerTitleRow: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+  },
+  viewerSwatch: {
+    width: 12,
+    height: 12,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: "rgba(20,15,10,0.1)",
+  },
   cardLabel: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "500",
-    textTransform: "uppercase",
-    letterSpacing: 0.6,
   },
   cardQuote: {
     fontSize: 15,
     fontStyle: "italic",
     lineHeight: 22,
   },
-  segment: {
-    flex: 1,
-    flexDirection: "row",
-    borderRadius: 999,
-    padding: 3,
-  },
-  segmentActive: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    shadowColor: "rgba(0,0,0,1)",
-    shadowOpacity: 0.06,
-    shadowRadius: 2,
-    shadowOffset: { width: 0, height: 1 },
-  },
-  segmentInactive: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  segmentTextActive: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  segmentText: {
-    fontSize: 12,
-    fontWeight: "600",
+  editorSubLabel: {
+    marginTop: 2,
+    fontSize: 11,
+    fontWeight: "500",
   },
   noteQuote: {
     borderLeftWidth: 2,
@@ -599,9 +637,25 @@ const styles = StyleSheet.create({
   cardActionsRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
+    justifyContent: "flex-start",
     marginTop: 4,
+  },
+  viewerFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  viewerPill: {
+    minHeight: 34,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderRadius: radius.pill,
+    paddingHorizontal: 12,
+  },
+  viewerPillText: {
+    fontSize: 12,
+    fontWeight: "600",
   },
   noteInput: {
     minHeight: 110,

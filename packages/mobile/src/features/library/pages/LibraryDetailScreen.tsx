@@ -33,6 +33,13 @@ import {
 
 type DetailTab = "contents" | "notes" | "about";
 type NoteFilter = "all" | "attached" | "standalone";
+type ReaderNoteParams = {
+  id: string;
+  chapter?: string;
+  highlight?: string;
+  note: string;
+  target: string;
+};
 
 export function LibraryDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -234,7 +241,14 @@ export function LibraryDetailScreen() {
                 onDraftChange={setNoteDraft}
                 onFilterChange={setNoteFilter}
                 onSave={createStandaloneNote}
-                onOpenReader={openReader}
+                onOpenReader={(note) => {
+                  if (doc) {
+                    router.push({
+                      pathname: "/read/[id]",
+                      params: readerNoteParams(doc.id, note),
+                    });
+                  }
+                }}
               />
             ) : activeTab === "about" ? (
               <View style={detailNoteStyles.about}>
@@ -315,7 +329,7 @@ function NotesTab({
   onDraftChange: (value: string) => void;
   onFilterChange: (filter: NoteFilter) => void;
   onSave: () => void;
-  onOpenReader: () => void;
+  onOpenReader: (note: Note & { highlight?: Highlight }) => void;
 }) {
   return (
     <View>
@@ -376,12 +390,27 @@ function NotesTab({
             note={note}
             detailNoteStyles={detailNoteStyles}
             palette={palette}
-            onOpen={onOpenReader}
+            onOpen={() => onOpenReader(note)}
           />
         ))
       )}
     </View>
   );
+}
+
+function readerNoteParams(
+  documentId: string,
+  note: Note & { highlight?: Highlight },
+): ReaderNoteParams {
+  const sectionKey = note.sectionKey ?? note.highlight?.sectionKey ?? null;
+  const order = sectionKey ? sectionOrderFromKey(sectionKey) : null;
+  return {
+    id: documentId,
+    ...(order !== null ? { chapter: String(order) } : {}),
+    ...(note.highlight ? { highlight: note.highlight.id } : {}),
+    note: note.id,
+    target: "1",
+  };
 }
 
 function DetailNoteItem({

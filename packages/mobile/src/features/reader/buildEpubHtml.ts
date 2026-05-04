@@ -31,12 +31,28 @@ function readerCss(bg: string, fg: string, fontSize: number): string {
   a { color: inherit; text-decoration: underline; }
   ::selection { background: rgba(255, 200, 100, 0.4); }
 
-  mark.bd-highlight { background-color: ${HL.pink}; color: inherit; padding: 0 1px; border-radius: 2px; }
+  mark.bd-highlight { background-color: ${HL.pink}; color: inherit; padding: 1px 0; border-radius: 1px; position: relative; box-shadow: 2px 0 0 ${HL.pink}, -2px 0 0 ${HL.pink}; }
   mark.bd-highlight.bd-highlight-yellow { background-color: ${HL.yellow}; }
   mark.bd-highlight.bd-highlight-green  { background-color: ${HL.green}; }
   mark.bd-highlight.bd-highlight-blue   { background-color: ${HL.blue}; }
   mark.bd-highlight.bd-highlight-purple { background-color: ${HL.purple}; }
-  mark.bd-highlight[data-highlight-has-note] { box-shadow: inset 0 -2px 0 currentColor; }
+  mark.bd-highlight.bd-highlight-yellow { box-shadow: 2px 0 0 ${HL.yellow}, -2px 0 0 ${HL.yellow}; }
+  mark.bd-highlight.bd-highlight-green  { box-shadow: 2px 0 0 ${HL.green}, -2px 0 0 ${HL.green}; }
+  mark.bd-highlight.bd-highlight-blue   { box-shadow: 2px 0 0 ${HL.blue}, -2px 0 0 ${HL.blue}; }
+  mark.bd-highlight.bd-highlight-purple { box-shadow: 2px 0 0 ${HL.purple}, -2px 0 0 ${HL.purple}; }
+  mark.bd-highlight[data-highlight-has-note]::after {
+    content: "";
+    position: absolute;
+    top: -3px;
+    right: -10px;
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: #0f0703;
+    border: 2px solid ${bg};
+    box-shadow: 0 1px 3px rgba(20,15,10,0.2);
+    pointer-events: none;
+  }
   `;
 }
 
@@ -165,10 +181,23 @@ const READER_RUNTIME = `
       var range = charOffsetsToRange(body, h.position.offsetStart, h.position.offsetEnd);
       if (!range) continue;
       var attrs = { 'data-highlight-id': h.id };
-      if (h.hasNote) attrs['data-highlight-has-note'] = 'true';
-      wrapRangeWithMarks(range, COLORS[h.color] || 'bd-highlight', attrs);
+      var marks = wrapRangeWithMarks(range, COLORS[h.color] || 'bd-highlight', attrs);
+      if (h.hasNote && marks.length > 0) {
+        marks[marks.length - 1].setAttribute('data-highlight-has-note', 'true');
+      }
     }
     setTimeout(postHeight, 0);
+  }
+
+  function reportHighlightRect(id) {
+    var mark = document.querySelector('mark[data-highlight-id="' + id + '"]');
+    if (!mark) return;
+    var rect = mark.getBoundingClientRect();
+    postMessage({
+      type: 'target-highlight',
+      id: id,
+      rect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height, bottom: rect.bottom, right: rect.right },
+    });
   }
 
   function reportSelection() {
@@ -238,6 +267,8 @@ const READER_RUNTIME = `
     var sel = window.getSelection();
     if (sel) sel.removeAllRanges();
   };
+
+  window.bd_reportHighlightRect = reportHighlightRect;
 
   window.addEventListener('load', function () {
     postHeight();

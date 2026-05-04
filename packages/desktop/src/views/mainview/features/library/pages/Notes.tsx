@@ -1,7 +1,7 @@
 import { useMemo, useState, type ComponentType } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button, ChipButton, Icons, Skeleton } from "@bainder/ui";
-import type { Highlight, Note } from "@bainder/sdk";
+import type { Document, Highlight, Note } from "@bainder/sdk";
 import { useProfileName } from "../../profile";
 import { AppSidebar } from "../components/AppSidebar";
 import {
@@ -179,8 +179,8 @@ export function Notes() {
                     source={note.document.title}
                     location={`${noteDateLabel(note.createdAt)}`}
                     onEdit={() => setEditor(note)}
-                    onOpen={() => navigate(`/read/${note.document.id}`)}
-                    onAsk={() => navigate(`/read/${note.document.id}`)}
+                    onOpen={() => navigate(readerNotePath(note))}
+                    onAsk={() => navigate(readerNotePath(note))}
                   />
                 ))
               )}
@@ -242,6 +242,22 @@ export function Notes() {
       )}
     </main>
   );
+}
+
+function readerNotePath(note: Note & { document: Document; highlight?: Highlight }): string {
+  const sectionKey = note.sectionKey ?? note.highlight?.sectionKey ?? null;
+  const order = sectionKey ? sectionOrderFromKey(sectionKey) : null;
+  const params = new URLSearchParams();
+  if (order !== null) params.set("chapter", String(order));
+  if (note.highlight) params.set("highlight", note.highlight.id);
+  params.set("note", note.id);
+  params.set("target", "1");
+  return `/read/${note.document.id}?${params.toString()}`;
+}
+
+function sectionOrderFromKey(sectionKey: string): number | null {
+  const match = /:(\d+)$/.exec(sectionKey);
+  return match ? Number(match[1]) : null;
 }
 
 function NotesSkeleton() {

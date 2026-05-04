@@ -274,10 +274,13 @@ export function LibraryDetail() {
                 onSaveDraft={createStandaloneNote}
                 onFilterChange={setNoteFilter}
                 onEdit={setEditingNote}
-                onOpenReader={() => navigate(`/read/${doc.id}`)}
+                onOpenReader={(note) => navigate(readerNotePath(doc.id, note))}
               />
             ) : activeTab === "highlights" ? (
-              <HighlightsTab highlights={highlights} />
+              <HighlightsTab
+                highlights={highlights}
+                onOpen={(highlight) => navigate(readerHighlightPath(doc.id, highlight))}
+              />
             ) : activeTab === "about" ? (
               <AboutTab doc={doc} manifest={manifest} />
             ) : (
@@ -479,7 +482,7 @@ function NotesTab({
   onSaveDraft: () => void;
   onFilterChange: (filter: NoteFilter) => void;
   onEdit: (note: Note) => void;
-  onOpenReader: () => void;
+  onOpenReader: (note: Note & { highlight?: Highlight }) => void;
 }) {
   return (
     <section className="pt-5">
@@ -520,8 +523,8 @@ function NotesTab({
             source={noteLocationLabel(note, note.highlight)}
             location={noteDateLabel(note.createdAt)}
             onEdit={() => onEdit(note)}
-            onOpen={onOpenReader}
-            onAsk={onOpenReader}
+            onOpen={() => onOpenReader(note)}
+            onAsk={() => onOpenReader(note)}
           />
         ))
       )}
@@ -529,7 +532,13 @@ function NotesTab({
   );
 }
 
-function HighlightsTab({ highlights }: { highlights: Highlight[] }) {
+function HighlightsTab({
+  highlights,
+  onOpen,
+}: {
+  highlights: Highlight[];
+  onOpen: (highlight: Highlight) => void;
+}) {
   return (
     <section className="pt-5">
       {highlights.length === 0 ? (
@@ -539,26 +548,52 @@ function HighlightsTab({ highlights }: { highlights: Highlight[] }) {
       ) : (
         highlights.map((highlight) => (
           <article key={highlight.id} className="border-b border-bd-border py-4">
-            <div className="mb-2 flex items-center gap-2">
-              <span
-                className="h-2.5 w-2.5 rounded-full"
-                style={{ background: HIGHLIGHT_COLOR[highlight.color] }}
-              />
-              <span className="t-body-s text-bd-fg-muted">
-                {noteDateLabel(highlight.createdAt)}
-              </span>
-            </div>
-            <blockquote
-              className="m-0 border-l-[3px] pl-3 font-reading text-base leading-7 text-bd-fg"
-              style={{ borderColor: HIGHLIGHT_COLOR[highlight.color] }}
+            <button
+              type="button"
+              className="w-full border-0 bg-transparent p-0 text-left"
+              onClick={() => onOpen(highlight)}
             >
-              "{highlight.textSnippet}"
-            </blockquote>
+              <div className="mb-2 flex items-center gap-2">
+                <span
+                  className="h-2.5 w-2.5 rounded-full"
+                  style={{ background: HIGHLIGHT_COLOR[highlight.color] }}
+                />
+                <span className="t-body-s text-bd-fg-muted">
+                  {noteDateLabel(highlight.createdAt)}
+                </span>
+              </div>
+              <blockquote
+                className="m-0 border-l-[3px] pl-3 font-reading text-base leading-7 text-bd-fg"
+                style={{ borderColor: HIGHLIGHT_COLOR[highlight.color] }}
+              >
+                "{highlight.textSnippet}"
+              </blockquote>
+            </button>
           </article>
         ))
       )}
     </section>
   );
+}
+
+function readerHighlightPath(documentId: string, highlight: Highlight): string {
+  const order = sectionOrderFromKey(highlight.sectionKey);
+  const params = new URLSearchParams();
+  if (order !== null) params.set("chapter", String(order));
+  params.set("highlight", highlight.id);
+  params.set("target", "1");
+  return `/read/${documentId}?${params.toString()}`;
+}
+
+function readerNotePath(documentId: string, note: Note & { highlight?: Highlight }): string {
+  const sectionKey = note.sectionKey ?? note.highlight?.sectionKey ?? null;
+  const order = sectionKey ? sectionOrderFromKey(sectionKey) : null;
+  const params = new URLSearchParams();
+  if (order !== null) params.set("chapter", String(order));
+  if (note.highlight) params.set("highlight", note.highlight.id);
+  params.set("note", note.id);
+  params.set("target", "1");
+  return `/read/${documentId}?${params.toString()}`;
 }
 
 function AboutTab({ doc, manifest }: { doc: Document; manifest: DocumentManifest | null }) {
