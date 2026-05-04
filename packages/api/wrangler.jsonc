@@ -3,7 +3,7 @@
 	// Edit this file (not the generated d.ts), then re-run cf-typegen.
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"compatibility_flags": ["nodejs_compat"],
-	"compatibility_date": "2026-02-27",
+	"compatibility_date": "2026-05-01",
 	"name": "bainder",
 	"main": "src/index.ts",
 	"env": {
@@ -14,7 +14,8 @@
 				"WEB_PUBLIC_HOST": "",
 				"WORKER_URL": "http://localhost:8787",
 				"BETTER_AUTH_URL": "http://localhost:8787",
-				"TRUSTED_ORIGINS": "http://localhost:3002",
+				"TRUSTED_ORIGINS": "http://localhost:3002,http://localhost:3003",
+				"EMAIL_FROM": "",
 				// Default off; the `dev:test` script overrides via
 				// `wrangler dev --var TEST_MODE:true`. Production never sets this.
 				"TEST_MODE": "false"
@@ -50,16 +51,15 @@
 					"GOOGLE_CLIENT_ID",
 					"GOOGLE_CLIENT_SECRET",
 					"APPLE_CLIENT_ID",
-					"APPLE_CLIENT_SECRET",
-					"EMAIL_FROM"
+					"APPLE_CLIENT_SECRET"
 				]
 			}
 		},
 		"production": {
 			"workers_dev": false,
 			"routes": [
-				// { "pattern": "bainder.app", "custom_domain": true },
-				// { "pattern": "api.bainder.app", "custom_domain": true }
+				{ "pattern": "baindar.com", "custom_domain": true },
+				{ "pattern": "api.baindar.com", "custom_domain": true }
 			],
 			"assets": {
 				// Serves the built web frontend as static assets at the root domain.
@@ -73,11 +73,12 @@
 				"enabled": true
 			},
 			"vars": {
-				"API_PUBLIC_HOST": "",
-				"WEB_PUBLIC_HOST": "",
-				"WORKER_URL": "",
-				"BETTER_AUTH_URL": "",
-				"TRUSTED_ORIGINS": "",
+				"API_PUBLIC_HOST": "https://api.bainder.com",
+				"WEB_PUBLIC_HOST": "https://bainder.com",
+				"WORKER_URL": "https://api.bainder.com",
+				"BETTER_AUTH_URL": "https://api.bainder.com",
+				"TRUSTED_ORIGINS": "https://bainder.com,bainder-desktop://",
+				"EMAIL_FROM": "no-reply@baindar.com",
 				// Production keeps TEST_MODE off. The flag is part of the env
 				// shape so `Config.isTestMode()` type-checks against both envs.
 				"TEST_MODE": "false"
@@ -86,7 +87,7 @@
 				{
 					"binding": "DB",
 					"database_name": "bainder",
-					"database_id": "00000000-0000-0000-0000-000000000000",
+					"database_id": "11bcf7c3-b115-4f7e-991b-a2449f6bef6f",
 					"migrations_dir": "migrations"
 				}
 			],
@@ -113,8 +114,7 @@
 					"GOOGLE_CLIENT_ID",
 					"GOOGLE_CLIENT_SECRET",
 					"APPLE_CLIENT_ID",
-					"APPLE_CLIENT_SECRET",
-					"EMAIL_FROM"
+					"APPLE_CLIENT_SECRET"
 				]
 			}
 		}
