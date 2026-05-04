@@ -4,7 +4,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { ThemeProvider } from "@bainder/ui";
+import { ThemeProvider } from "@baindar/ui";
 import { AuthGate } from "../src/features/auth";
 import {
   profileThemeToUi,

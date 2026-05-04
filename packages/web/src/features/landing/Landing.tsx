@@ -1,8 +1,8 @@
 import { useNavigate, Navigate } from "react-router-dom";
-import { Button, Icons, Wordmark } from "@bainder/ui";
+import { Button, Icons, Wordmark } from "@baindar/ui";
 import { authClient } from "../auth";
 
-const navItems = ["Why Bainder", "For students", "For readers", "Pricing"];
+const navItems = ["Why Baindar", "For students", "For readers", "Pricing"];
 const formats = ["EPUB", "PDF", "Articles", "Web links"];
 
 const valueCards = [
@@ -41,7 +41,7 @@ export function Landing() {
 
   const goToSignIn = () => navigate("/signin");
   const goToSignUp = () => navigate("/signup");
-  const scrollToWhy = () => document.getElementById("why-bainder")?.scrollIntoView();
+  const scrollToWhy = () => document.getElementById("why-baindar")?.scrollIntoView();
 
   return (
     <main className="min-h-screen bg-bd-bg text-bd-fg">
@@ -86,7 +86,7 @@ export function Landing() {
             to read anything.
           </h1>
           <p className="t-body-l mt-6 max-w-[500px] text-bd-fg-subtle">
-            Books, PDFs, articles, papers - drop them into Bainder and read with an attentive AI
+            Books, PDFs, articles, papers - drop them into Baindar and read with an attentive AI
             that's actually read the whole thing. Highlight, ask, remember.
           </p>
 
@@ -130,7 +130,7 @@ export function Landing() {
           <aside className="absolute bottom-6 right-0 flex w-[min(320px,88%)] flex-col gap-2 rounded-xl border border-bd-border bg-bd-bg p-5 shadow-[var(--sh-xl)] lg:-right-5">
             <div className="flex items-center gap-2">
               <Icons.Sparkles size={16} color="var(--bd-accent)" />
-              <span className="t-label-m text-bd-accent">Bainder</span>
+              <span className="t-label-m text-bd-accent">Baindar</span>
             </div>
             <p className="m-0 font-reading text-[13px] leading-[1.5] text-bd-fg">
               An <em>affordance</em> is what's possible. A <em>signifier</em> is the visible cue
@@ -142,7 +142,7 @@ export function Landing() {
       </section>
 
       <section
-        id="why-bainder"
+        id="why-baindar"
         className="mx-auto grid w-full max-w-[1440px] gap-8 border-t border-bd-border px-5 py-12 sm:px-8 md:grid-cols-3 lg:px-14"
       >
         {valueCards.map(({ Icon, title, body }) => (

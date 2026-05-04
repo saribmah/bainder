@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { Button, IconButton, Icons, Input, Sheet } from "@bainder/ui";
-import type { Document } from "@bainder/sdk";
+import { Button, IconButton, Icons, Input, Sheet } from "@baindar/ui";
+import type { Document } from "@baindar/sdk";
 
 export function RenameDialog({
   doc,

@@ -1263,7 +1263,7 @@ export class ApiClient extends HeyApiClient {
   /**
    * [test-mode] Probe whether test mode is enabled
    *
-   * Local-only. Gated by TEST_MODE=true. Returns {enabled: true} when on, 404 otherwise. Used by the @bainder/testing wrapper to skip suites when the dev server isn't running in test mode.
+   * Local-only. Gated by TEST_MODE=true. Returns {enabled: true} when on, 404 otherwise. Used by the @baindar/testing wrapper to skip suites when the dev server isn't running in test mode.
    */
   public getTestStatus<ThrowOnError extends boolean = false>(
     options?: Options<never, ThrowOnError>,

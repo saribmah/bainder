@@ -1,13 +1,13 @@
-# Bainder
+# Baindar
 
 AI-powered document binder that turns receipts, contracts, and PDFs into
 searchable, queryable memory.
 
 ## About
 
-Bainder is a personal document binder powered by AI. Drop in any PDF,
+Baindar is a personal document binder powered by AI. Drop in any PDF,
 receipt, invoice, statement, contract, manual, screenshot, or book —
-Bainder extracts structured data, organizes it, and makes it queryable in
+Baindar extracts structured data, organizes it, and makes it queryable in
 plain English. It's not a PDF chat app; it's long-term, AI-ready memory for
 your documents.
 

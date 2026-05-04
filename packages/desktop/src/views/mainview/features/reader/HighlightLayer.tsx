@@ -1,5 +1,5 @@
 import { useEffect, useState, type RefObject } from "react";
-import { Button, IconButton, Icons, SelectionToolbar, useTheme } from "@bainder/ui";
+import { Button, IconButton, Icons, SelectionToolbar, useTheme } from "@baindar/ui";
 import { useProfile } from "../profile";
 import { useHighlightLayer, type HighlightColor } from "./useHighlightLayer";
 
@@ -613,7 +613,7 @@ function NotePopover({
           onClick={onAsk}
         >
           <Icons.Sparkles size={13} />
-          <span className="t-body-s font-semibold">Ask Bainder about this passage instead</span>
+          <span className="t-body-s font-semibold">Ask Baindar about this passage instead</span>
         </button>
 
         <div className="flex items-center gap-2">

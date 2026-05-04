@@ -44,7 +44,7 @@ if (includeWorkflows) {
 console.error("Re-applying D1 migrations...");
 const migrate = spawnSync(
   "bunx",
-  ["--bun", "wrangler", "d1", "migrations", "apply", "bainder-dev", "--local", "--env", "dev"],
+  ["--bun", "wrangler", "d1", "migrations", "apply", "baindar-dev", "--local", "--env", "dev"],
   { stdio: "inherit", cwd: apiRoot },
 );
 

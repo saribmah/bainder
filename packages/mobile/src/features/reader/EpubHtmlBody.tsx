@@ -12,8 +12,8 @@ import {
   themeColors,
   type HighlightColor,
   type Theme,
-} from "@bainder/ui";
-import type { Highlight, Note } from "@bainder/sdk";
+} from "@baindar/ui";
+import type { Highlight, Note } from "@baindar/sdk";
 import { useProfile } from "../profile";
 import { buildEpubHtml } from "./buildEpubHtml.ts";
 import { inlineEpubAssets, type AssetCache } from "./inlineAssets.ts";
@@ -469,7 +469,7 @@ function FocusedHighlightCard({
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Ask Bainder"
+          accessibilityLabel="Ask Baindar"
           onPress={onAsk}
           style={({ pressed }) => [styles.viewerPill, pressed && { opacity: 0.7 }]}
         >
@@ -538,13 +538,13 @@ function NoteEditor({
       />
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Ask Bainder about this"
+        accessibilityLabel="Ask Baindar about this"
         onPress={onAsk}
         style={[styles.askShortcut, { backgroundColor: noteBgFor(theme) }]}
       >
         <Icons.Sparkles size={14} color={palette.accent} />
         <Text style={[styles.askShortcutText, { color: palette.accent }]}>
-          Ask Bainder about this
+          Ask Baindar about this
         </Text>
         <Icons.Chevron size={12} color={palette.accent} />
       </Pressable>

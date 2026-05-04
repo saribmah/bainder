@@ -1,6 +1,6 @@
 import { Redirect } from "expo-router";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
-import { color } from "@bainder/ui";
+import { color } from "@baindar/ui";
 import { authClient } from "../src/features/auth";
 import { LandingScreen } from "../src/features/landing";
 

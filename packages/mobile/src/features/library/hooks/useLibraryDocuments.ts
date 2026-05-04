@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import * as DocumentPicker from "expo-document-picker";
-import type { Document } from "@bainder/sdk";
+import type { Document } from "@baindar/sdk";
 import { useSdk } from "../../../sdk/sdk.provider";
 import { filterDocuments, sortDocuments } from "../utils/document";
 import type { LibraryFilter } from "../constants";

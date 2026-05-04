@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Document, Highlight } from "@bainder/sdk";
+import type { Document, Highlight } from "@baindar/sdk";
 import { useSdk } from "../../../sdk/sdk.provider";
 
 export type LibraryHighlight = Highlight & {

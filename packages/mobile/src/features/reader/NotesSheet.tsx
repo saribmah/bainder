@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { IconButton, Icons, Sheet, color, themeColors, type Theme } from "@bainder/ui";
-import type { DocumentSectionSummary, Highlight, Note } from "@bainder/sdk";
+import { IconButton, Icons, Sheet, color, themeColors, type Theme } from "@baindar/ui";
+import type { DocumentSectionSummary, Highlight, Note } from "@baindar/sdk";
 import { useSdk } from "../../sdk/sdk.provider.tsx";
 
 export type NotesSheetProps = {

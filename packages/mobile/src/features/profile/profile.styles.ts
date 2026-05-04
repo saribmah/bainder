@@ -1,5 +1,5 @@
 import { StyleSheet } from "react-native";
-import { font, radius, type ThemeColors } from "@bainder/ui";
+import { font, radius, type ThemeColors } from "@baindar/ui";
 
 export const buildProfileStyles = (palette: ThemeColors) =>
   StyleSheet.create({

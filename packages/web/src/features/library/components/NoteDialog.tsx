@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Button, IconButton, Icons, Sheet } from "@bainder/ui";
-import type { Document, Note } from "@bainder/sdk";
+import { Button, IconButton, Icons, Sheet } from "@baindar/ui";
+import type { Document, Note } from "@baindar/sdk";
 
 export type NoteDialogDraft = {
   documentId: string;

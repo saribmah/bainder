@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
-import { Icons, Sheet, useTheme } from "@bainder/ui";
-import type { DocumentSectionSummary, EpubTocItem } from "@bainder/sdk";
+import { Icons, Sheet, useTheme } from "@baindar/ui";
+import type { DocumentSectionSummary, EpubTocItem } from "@baindar/sdk";
 
 export type TocSheetProps = {
   toc: ReadonlyArray<EpubTocItem>;

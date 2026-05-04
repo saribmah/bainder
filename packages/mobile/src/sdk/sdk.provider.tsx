@@ -5,7 +5,7 @@ import {
   type PropsWithChildren,
   type ReactElement,
 } from "react";
-import { createApiClient, type ApiClient } from "@bainder/sdk";
+import { createApiClient, type ApiClient } from "@baindar/sdk";
 import { authClient } from "../features/auth";
 import { API_URL } from "../config.ts";
 

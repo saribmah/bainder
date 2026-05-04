@@ -26,7 +26,7 @@ describe("FloatingToolbar", () => {
           <FloatingToolbarButton aria-label="Highlight">
             <Icons.Highlight size={20} />
           </FloatingToolbarButton>
-          <FloatingToolbarButton aria-label="Ask Bainder">
+          <FloatingToolbarButton aria-label="Ask Baindar">
             <Icons.Sparkles size={20} />
           </FloatingToolbarButton>
           <FloatingToolbarButton aria-label="Bookmark">
@@ -99,7 +99,7 @@ describe("AISheet — thinking state", () => {
     expect(
       html(
         <Sheet>
-          <AISheetHeader label="Bainder" />
+          <AISheetHeader label="Baindar" />
           <AISheetQuote>"Affordances define what actions are possible…"</AISheetQuote>
           <AISheetThinking status="Reading the chapter…" />
         </Sheet>,
@@ -113,7 +113,7 @@ describe("AISheet — answer state", () => {
     expect(
       html(
         <Sheet>
-          <AISheetHeader label="Bainder" />
+          <AISheetHeader label="Baindar" />
           <AISheetQuote>"Affordances define what actions are possible…"</AISheetQuote>
           <p
             style={{

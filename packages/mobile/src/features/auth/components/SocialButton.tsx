@@ -1,5 +1,5 @@
 import { Pressable, Text } from "react-native";
-import { useThemedStyles } from "@bainder/ui";
+import { useThemedStyles } from "@baindar/ui";
 import { buildAuthStyles } from "../auth.styles";
 
 export function SocialButton({

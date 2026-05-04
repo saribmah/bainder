@@ -1,5 +1,5 @@
-import { BookCover } from "@bainder/ui";
-import type { Document } from "@bainder/sdk";
+import { BookCover } from "@baindar/ui";
+import type { Document } from "@baindar/sdk";
 import { useSdk } from "../../../sdk/sdk.provider";
 import { KIND_BG } from "../constants";
 

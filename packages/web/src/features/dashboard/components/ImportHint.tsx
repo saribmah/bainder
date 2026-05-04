@@ -1,4 +1,4 @@
-import { Icons } from "@bainder/ui";
+import { Icons } from "@baindar/ui";
 
 type IconComponent = typeof Icons.BookOpen;
 

@@ -1,4 +1,4 @@
-import type { ApiClient, DocumentStatus } from "@bainder/sdk";
+import type { ApiClient, DocumentStatus } from "@baindar/sdk";
 
 // Poll the status endpoint until the workflow reports a terminal state.
 // Returns the terminal DocumentStatus (caller decides whether `failed` is

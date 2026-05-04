@@ -54,7 +54,7 @@ export function SelectionToolbar(props: SelectionToolbarProps) {
       onPickColor,
       copyLabel = "Copy text",
       highlightLabel = "Highlight",
-      askLabel = "Ask Bainder",
+      askLabel = "Ask Baindar",
       noteLabel = "Add note",
       foregroundColor = palette.fg,
       style,

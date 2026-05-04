@@ -10,19 +10,19 @@ and maintained by the team thereafter.
 
 ## Identity
 
-- **Name**: Bainder
-- **Scope**: `@bainder`
+- **Name**: Baindar
+- **Scope**: `@baindar`
 - **Description**: AI-powered document binder that turns receipts, contracts, and PDFs into searchable, queryable memory.
-- **Worker name**: `bainder` (dev: `bainder-dev`)
-- **Production domain**: `bainder.com` (API: `api.bainder.com`)
+- **Worker name**: `baindar` (dev: `baindar-dev`)
+- **Production domain**: `baindar.com` (API: `api.baindar.com`)
 - **Web frontend**: yes (`packages/web`)
 - **Initialized at**: 2026-04-26
 
 ## What it is
 
-Bainder is a personal document binder powered by AI. Drop in any PDF,
+Baindar is a personal document binder powered by AI. Drop in any PDF,
 receipt, invoice, statement, contract, manual, screenshot, or book —
-Bainder extracts structured data, organizes it, and makes it queryable in
+Baindar extracts structured data, organizes it, and makes it queryable in
 plain English. It's not a PDF chat app; it's long-term, AI-ready memory for
 your documents.
 

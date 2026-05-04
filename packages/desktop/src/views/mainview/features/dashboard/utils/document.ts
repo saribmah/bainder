@@ -1,4 +1,4 @@
-import type { Document } from "@bainder/sdk";
+import type { Document } from "@baindar/sdk";
 import { formatRelativeTime } from "./date";
 
 // Section keys mint as `${kind}:section:${order}`. Reading the order back

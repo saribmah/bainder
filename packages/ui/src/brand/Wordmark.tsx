@@ -41,6 +41,6 @@ export function Wordmark({
       color,
       ...style,
     },
-    children: "bainder",
+    children: "baindar",
   });
 }

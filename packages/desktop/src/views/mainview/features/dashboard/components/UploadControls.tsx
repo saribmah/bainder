@@ -1,4 +1,4 @@
-import { Button, Icons } from "@bainder/ui";
+import { Button, Icons } from "@baindar/ui";
 import { ChipButton } from "./ChipButton";
 import { UploadDropTarget } from "./UploadDropTarget";
 

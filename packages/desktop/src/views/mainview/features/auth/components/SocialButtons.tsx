@@ -1,4 +1,4 @@
-import { Button } from "@bainder/ui";
+import { Button } from "@baindar/ui";
 import { authClient } from "../auth.client";
 
 export function SocialButtons() {

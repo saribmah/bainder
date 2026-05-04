@@ -1,7 +1,7 @@
 import { useState, type ComponentType } from "react";
 import { NavLink } from "react-router-dom";
-import { Button, Icons, Wordmark } from "@bainder/ui";
-import type { Shelf } from "@bainder/sdk";
+import { Button, Icons, Wordmark } from "@baindar/ui";
+import type { Shelf } from "@baindar/sdk";
 import { ProfileMenuButton } from "../../profile";
 import { UploadDropTarget } from "./UploadDropTarget";
 import { shelfPath } from "../utils/shelf";

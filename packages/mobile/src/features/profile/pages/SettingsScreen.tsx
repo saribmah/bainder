@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Chip, ChipButton, Icons, Wordmark, useThemeColors, useThemedStyles } from "@bainder/ui";
-import { ProfileHighlightColor, ProfileTheme } from "@bainder/sdk";
+import { Chip, ChipButton, Icons, Wordmark, useThemeColors, useThemedStyles } from "@baindar/ui";
+import { ProfileHighlightColor, ProfileTheme } from "@baindar/sdk";
 import { useLibraryDocuments } from "../../library/hooks/useLibraryDocuments";
 import { buildLibraryStyles } from "../../library/library.styles";
 import { signOutProfile } from "../actions";

@@ -1,7 +1,7 @@
 import { useMemo, useState, type ComponentType } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button, ChipButton, Icons, Skeleton } from "@bainder/ui";
-import type { Document, Highlight, Note } from "@bainder/sdk";
+import { Button, ChipButton, Icons, Skeleton } from "@baindar/ui";
+import type { Document, Highlight, Note } from "@baindar/sdk";
 import { useProfileName } from "../../profile";
 import { AppSidebar } from "../components/AppSidebar";
 import {

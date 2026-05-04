@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Button, Chip, ChipButton, Icons, Skeleton } from "@bainder/ui";
-import type { Document, DocumentManifest, Highlight, Note } from "@bainder/sdk";
+import { Button, Chip, ChipButton, Icons, Skeleton } from "@baindar/ui";
+import type { Document, DocumentManifest, Highlight, Note } from "@baindar/sdk";
 import { useProfileName } from "../../profile";
 import { KIND_LABEL, HIGHLIGHT_COLOR } from "../constants";
 import { DocumentShelfChips } from "../components/DocumentShelfChips";
@@ -204,7 +204,7 @@ export function LibraryDetail() {
                 onClick={() => navigate(`/read/${doc.id}`)}
                 className="w-full text-bd-accent"
               >
-                Ask Bainder about this book
+                Ask Baindar about this book
               </Button>
             </div>
             <Stats manifest={manifest} highlights={highlights.length} currentOrder={currentOrder} />

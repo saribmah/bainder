@@ -1,5 +1,5 @@
 import { Pressable, Text } from "react-native";
-import { Chip, Icons, useThemeColors, useThemedStyles } from "@bainder/ui";
+import { Chip, Icons, useThemeColors, useThemedStyles } from "@baindar/ui";
 import { buildDashboardStyles } from "../dashboard.styles";
 
 export function QuickAdd({ uploading, onPress }: { uploading: boolean; onPress: () => void }) {

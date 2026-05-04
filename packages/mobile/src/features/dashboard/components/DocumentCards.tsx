@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from "react-native";
-import { Card, IconButton, Icons, useThemeColors, useThemedStyles } from "@bainder/ui";
-import type { Document } from "@bainder/sdk";
+import { Card, IconButton, Icons, useThemeColors, useThemedStyles } from "@baindar/ui";
+import type { Document } from "@baindar/sdk";
 import { KIND_LABEL } from "../constants";
 import { buildDashboardStyles } from "../dashboard.styles";
 import { formatRelativeTime } from "../utils/date";

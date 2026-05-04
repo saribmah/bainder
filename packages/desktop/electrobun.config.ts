@@ -4,12 +4,12 @@
 // (entrypoint below).
 export default {
   app: {
-    name: "Bainder",
-    identifier: "app.bainder.desktop",
+    name: "Baindar",
+    identifier: "app.baindar.desktop",
     // macOS-only deep-link scheme. Used by the Better Auth OAuth callback.
-    // Add `bainder-desktop://` to the API's TRUSTED_ORIGINS so the redirect
+    // Add `baindar-desktop://` to the API's TRUSTED_ORIGINS so the redirect
     // is accepted.
-    urlSchemes: ["bainder-desktop"],
+    urlSchemes: ["baindar-desktop"],
   },
   build: {
     bun: {

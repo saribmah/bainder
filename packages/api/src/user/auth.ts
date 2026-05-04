@@ -31,7 +31,7 @@ export const createAuth = (env: RuntimeEnv) => {
     .filter(Boolean);
   // Mobile app deep-link scheme + Expo dev URLs. Without these the Expo client
   // sign-out/social-callback requests are rejected as untrusted origins.
-  const mobileOrigins = ["bainder://", "bainder://*", "exp://", "exp://**"];
+  const mobileOrigins = ["baindar://", "baindar://*", "exp://", "exp://**"];
   const trustedOrigins = [...configuredOrigins, ...mobileOrigins];
 
   return betterAuth({

@@ -18,7 +18,7 @@ describe("document errors", () => {
   });
 
   test("400 when uploading an empty file", async () => {
-    const { client } = await signInAs("empty@bainder.test");
+    const { client } = await signInAs("empty@baindar.test");
     const empty = new File([new Uint8Array(0)], "empty.epub", { type: "application/epub+zip" });
     const upload = await client.document.create({ file: empty });
     expect(upload.error).toBeDefined();
@@ -26,7 +26,7 @@ describe("document errors", () => {
   });
 
   test("415 when uploading an unsupported format", async () => {
-    const { client } = await signInAs("unsupported@bainder.test");
+    const { client } = await signInAs("unsupported@baindar.test");
     // Random bytes, .bin extension, octet-stream — nothing matches.
     const bytes = new Uint8Array([0x00, 0x01, 0x02, 0x03, 0xab, 0xcd, 0xef]);
     const upload = await client.document.create({
@@ -37,7 +37,7 @@ describe("document errors", () => {
   });
 
   test("415 when uploading a PDF (only EPUB is supported)", async () => {
-    const { client } = await signInAs("pdf-rejected@bainder.test");
+    const { client } = await signInAs("pdf-rejected@baindar.test");
     const pdfBytes = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34, 0x0a]);
     const upload = await client.document.create({
       file: asFile(pdfBytes, "doc.pdf", "application/pdf"),
@@ -47,21 +47,21 @@ describe("document errors", () => {
   });
 
   test("404 when fetching an unknown document id", async () => {
-    const { client } = await signInAs("notfound@bainder.test");
+    const { client } = await signInAs("notfound@baindar.test");
     const get = await client.document.get({ id: crypto.randomUUID() });
     expect(get.error).toBeDefined();
     expect(get.response.status).toBe(404);
   });
 
   test("404 when deleting an unknown document id", async () => {
-    const { client } = await signInAs("delete-missing@bainder.test");
+    const { client } = await signInAs("delete-missing@baindar.test");
     const del = await client.document.delete({ id: crypto.randomUUID() });
     expect(del.error).toBeDefined();
     expect(del.response.status).toBe(404);
   });
 
   test("409 when reading a format route on a failed document", async () => {
-    const { client } = await signInAs("failed@bainder.test");
+    const { client } = await signInAs("failed@baindar.test");
     // Broken EPUB: passes signature detection, but parse step throws → workflow
     // marks the row as `failed` with errorReason set. The workflow retries 3
     // times with exponential 5s backoff before giving up (≈35s), so we wait
@@ -84,7 +84,7 @@ describe("document errors", () => {
   }, 90000);
 
   test("400 when section order is invalid", async () => {
-    const { client } = await signInAs("badorder@bainder.test");
+    const { client } = await signInAs("badorder@baindar.test");
     // Route validates the order param before hitting the feature, so it 400s
     // even on a non-existent document — a real document isn't required.
     const section = await client.document.getSectionHtml({
@@ -98,8 +98,8 @@ describe("document errors", () => {
   test(
     "ownership isolation: user B cannot see user A's document",
     async () => {
-      const a = await signInAs("alice@bainder.test");
-      const b = await signInAs("bob@bainder.test");
+      const a = await signInAs("alice@baindar.test");
+      const b = await signInAs("bob@baindar.test");
 
       const upload = await a.client.document.create({
         file: asFile(buildEpub(), "alice.epub", "application/epub+zip"),

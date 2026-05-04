@@ -7,16 +7,16 @@ describe("user", () => {
   });
 
   test("GET /user/me returns the signed-in user", async () => {
-    const { userId, client } = await signInAs("me@bainder.test", "Me Person");
+    const { userId, client } = await signInAs("me@baindar.test", "Me Person");
     const me = await client.user.me();
     expect(me.error).toBeUndefined();
     expect(me.data?.id).toBe(userId);
-    expect(me.data?.email).toBe("me@bainder.test");
+    expect(me.data?.email).toBe("me@baindar.test");
     expect(me.data?.name).toBe("Me Person");
   });
 
   test("PATCH /user/me updates name and image", async () => {
-    const { client } = await signInAs("update@bainder.test", "Original Name");
+    const { client } = await signInAs("update@baindar.test", "Original Name");
 
     const updated = await client.user.update({
       name: "Renamed",
@@ -33,7 +33,7 @@ describe("user", () => {
   });
 
   test("PATCH /user/me accepts null image to clear it", async () => {
-    const { client } = await signInAs("clear-image@bainder.test");
+    const { client } = await signInAs("clear-image@baindar.test");
     await client.user.update({ image: "https://example.com/before.png" });
 
     const cleared = await client.user.update({ image: null });

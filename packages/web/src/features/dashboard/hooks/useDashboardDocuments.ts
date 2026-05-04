@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { Document } from "@bainder/sdk";
+import type { Document } from "@baindar/sdk";
 import { useSdk } from "../../../sdk";
 import { filterDocuments, sortByCreatedAtDesc } from "../utils/document";
 

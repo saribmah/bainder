@@ -1,4 +1,4 @@
-import type { Document, DocumentManifest, DocumentSectionSummary } from "@bainder/sdk";
+import type { Document, DocumentManifest, DocumentSectionSummary } from "@baindar/sdk";
 import type { LibraryFilter } from "../constants";
 
 const SECTION_ORDER_PATTERN = /:section:(\d+)$/;

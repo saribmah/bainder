@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Icons } from "@bainder/ui";
+import { Icons } from "@baindar/ui";
 
 export function ProfileMenuButton({ reader }: { reader: string }) {
   return (

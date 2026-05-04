@@ -11,9 +11,9 @@
 
 ## About this project
 
-Bainder is a personal document binder powered by AI. Drop in any PDF,
+Baindar is a personal document binder powered by AI. Drop in any PDF,
 receipt, invoice, statement, contract, manual, screenshot, or book —
-Bainder extracts structured data, organizes it, and makes it queryable in
+Baindar extracts structured data, organizes it, and makes it queryable in
 plain English. It's not a PDF chat app; it's long-term, AI-ready memory for
 your documents.
 
@@ -41,7 +41,7 @@ A Bun monorepo on Cloudflare Workers with:
 - **`packages/sdk/`** — TypeScript SDK auto-generated from the API OpenAPI
   spec via `@hey-api/openapi-ts`. Publishable to npm.
 - **`packages/web/`** — React 19 + Vite + TailwindCSS v4 frontend. Consumes
-  the API exclusively through `@bainder/sdk`. Served as static assets by
+  the API exclusively through `@baindar/sdk`. Served as static assets by
   the same Worker in production.
 
 Tooling: `oxlint` + `oxfmt` + `tsgo` + `husky` + `lint-staged`.
@@ -74,7 +74,7 @@ When asked to do specific kinds of work, read the matching recipe first:
   OpenAPI spec. External consumers (and `packages/web/`) integrate through
   this package. Never edit `packages/sdk/src/v1/gen/*` by hand.
 - `packages/web/` is a first-party UI client. It consumes
-  `@bainder/sdk` and MUST NOT import backend internals from
+  `@baindar/sdk` and MUST NOT import backend internals from
   `packages/api/`.
 
 ### Backend layering (`packages/api`)
@@ -171,7 +171,7 @@ When asked to do specific kinds of work, read the matching recipe first:
   when generated types/contracts shift.
 - Never manually edit `packages/sdk/src/v1/gen/*` or `packages/sdk/lib/*`.
 - `packages/web/`, `packages/mobile/`, and `packages/desktop/` consume the API
-  exclusively via `@bainder/sdk`. Do not import directly from `packages/api/`
+  exclusively via `@baindar/sdk`. Do not import directly from `packages/api/`
   or hand-roll API clients.
 - See [`.agents/regenerate-sdk.md`](./.agents/regenerate-sdk.md) for the
   regeneration recipe.

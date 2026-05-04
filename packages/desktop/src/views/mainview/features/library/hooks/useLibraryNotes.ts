@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { Document, Note } from "@bainder/sdk";
+import type { Document, Note } from "@baindar/sdk";
 import { useSdk } from "../../../sdk";
 
 export type LibraryNote = Note & {

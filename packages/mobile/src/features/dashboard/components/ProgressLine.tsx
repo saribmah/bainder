@@ -1,6 +1,6 @@
 import { View } from "react-native";
-import { color, useThemeColors, useThemedStyles } from "@bainder/ui";
-import type { Document } from "@bainder/sdk";
+import { color, useThemeColors, useThemedStyles } from "@baindar/ui";
+import type { Document } from "@baindar/sdk";
 import { buildDashboardStyles } from "../dashboard.styles";
 
 export function ProgressLine({ doc }: { doc: Document }) {

@@ -6,7 +6,7 @@ const isDev = process.env.NODE_ENV === "development";
 const viewUrl = isDev ? "http://localhost:3003" : "views://mainview/index.html";
 
 const mainWindow = new BrowserWindow({
-  title: "Bainder",
+  title: "Baindar",
   url: viewUrl,
   frame: {
     x: 0,
@@ -23,6 +23,6 @@ const mainWindow = new BrowserWindow({
 // needs the view-side handler to consume the `code` and call Better Auth's
 // callback endpoint, which we'll wire when we add OAuth to desktop.
 Electrobun.events.on("open-url", (event: ElectrobunEvent<{ url: string }, void>) => {
-  console.log("[bainder-desktop] received deep link:", event.data.url);
+  console.log("[baindar-desktop] received deep link:", event.data.url);
   mainWindow.webview.loadURL(event.data.url);
 });

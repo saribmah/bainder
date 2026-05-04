@@ -1,4 +1,4 @@
-import type { Shelf } from "@bainder/sdk";
+import type { Shelf } from "@baindar/sdk";
 import { shelfDescription, shelfItemNoun, shelfPaletteColors } from "../utils/shelf";
 
 export function SpineFan({ shelf, size = 48 }: { shelf: Shelf; size?: number }) {

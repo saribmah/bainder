@@ -30,11 +30,11 @@ declare namespace Cloudflare {
     EMAIL: SendEmail;
     AI: Ai;
     ASSETS: Fetcher;
-    API_PUBLIC_HOST: "https://api.bainder.com";
-    WEB_PUBLIC_HOST: "https://bainder.com";
-    WORKER_URL: "https://api.bainder.com";
-    BETTER_AUTH_URL: "https://api.bainder.com";
-    TRUSTED_ORIGINS: "https://bainder.com,bainder-desktop://";
+    API_PUBLIC_HOST: "https://api.baindar.com";
+    WEB_PUBLIC_HOST: "https://baindar.com";
+    WORKER_URL: "https://api.baindar.com";
+    BETTER_AUTH_URL: "https://api.baindar.com";
+    TRUSTED_ORIGINS: "https://baindar.com,baindar-desktop://";
     TEST_MODE: "false";
     BETTER_AUTH_SECRET: string;
     GOOGLE_CLIENT_ID: string;
@@ -49,13 +49,13 @@ declare namespace Cloudflare {
     DB?: D1Database;
     EMAIL?: SendEmail;
     AI?: Ai;
-    API_PUBLIC_HOST?: "" | "https://api.bainder.com";
-    WEB_PUBLIC_HOST?: "" | "https://bainder.com";
-    WORKER_URL?: "http://localhost:8787" | "https://api.bainder.com";
-    BETTER_AUTH_URL?: "http://localhost:8787" | "https://api.bainder.com";
+    API_PUBLIC_HOST?: "" | "https://api.baindar.com";
+    WEB_PUBLIC_HOST?: "" | "https://baindar.com";
+    WORKER_URL?: "http://localhost:8787" | "https://api.baindar.com";
+    BETTER_AUTH_URL?: "http://localhost:8787" | "https://api.baindar.com";
     TRUSTED_ORIGINS?:
       | "http://localhost:3002,http://localhost:3003"
-      | "https://bainder.com,bainder-desktop://";
+      | "https://baindar.com,baindar-desktop://";
     TEST_MODE?: "false";
     BETTER_AUTH_SECRET?: string;
     GOOGLE_CLIENT_ID?: string;

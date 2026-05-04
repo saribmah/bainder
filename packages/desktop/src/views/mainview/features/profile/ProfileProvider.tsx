@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { Profile, ProfileUpdateData } from "@bainder/sdk";
+import type { Profile, ProfileUpdateData } from "@baindar/sdk";
 import { useSdk } from "../../sdk";
 
 type ProfilePatch = NonNullable<ProfileUpdateData["body"]>;

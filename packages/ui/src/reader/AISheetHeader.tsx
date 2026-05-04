@@ -8,7 +8,7 @@ export type AISheetHeaderProps = Omit<HTMLAttributes<HTMLDivElement>, "children"
 };
 
 export function AISheetHeader({
-  label = "Ask Bainder",
+  label = "Ask Baindar",
   iconSize = 14,
   className,
   ...rest

@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Bainder",
-    "slug": "bainder",
-    "scheme": "bainder",
+    "name": "Baindar",
+    "slug": "baindar",
+    "scheme": "baindar",
     "version": "0.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -15,10 +15,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.bainder.app"
+      "bundleIdentifier": "com.baindar.app"
     },
     "android": {
-      "package": "com.bainder.app",
+      "package": "com.baindar.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#fafafa"

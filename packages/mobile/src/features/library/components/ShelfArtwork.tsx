@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import type { Shelf } from "@bainder/sdk";
-import { color, font } from "@bainder/ui";
+import type { Shelf } from "@baindar/sdk";
+import { color, font } from "@baindar/ui";
 import { shelfDescription, shelfItemNoun, shelfPaletteColors } from "../utils/shelf";
 
 export function SpineFan({ shelf, size = 48 }: { shelf: Shelf; size?: number }) {

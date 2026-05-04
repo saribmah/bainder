@@ -1,5 +1,5 @@
 import { Pressable } from "react-native";
-import { Icons, useThemeColors, useThemedStyles } from "@bainder/ui";
+import { Icons, useThemeColors, useThemedStyles } from "@baindar/ui";
 import { buildAuthStyles } from "../auth.styles";
 
 export function BackButton({ onPress }: { onPress: () => void }) {

@@ -1,5 +1,5 @@
 import { Text, View } from "react-native";
-import { useThemedStyles } from "@bainder/ui";
+import { useThemedStyles } from "@baindar/ui";
 import { buildDashboardStyles } from "../dashboard.styles";
 
 export function SectionHeader({ title, meta }: { title: string; meta: string }) {

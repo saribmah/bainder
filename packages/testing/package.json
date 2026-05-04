@@ -1,7 +1,7 @@
 {
-  "name": "@bainder/testing",
+  "name": "@baindar/testing",
   "version": "0.0.0",
-  "description": "End-to-end SDK-driven tests against a running bainder API",
+  "description": "End-to-end SDK-driven tests against a running baindar API",
   "private": true,
   "type": "module",
   "scripts": {
@@ -14,7 +14,7 @@
     "ts-check": "bunx --bun tsgo --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@bainder/sdk": "workspace:*",
+    "@baindar/sdk": "workspace:*",
     "fflate": "^0.8.2"
   },
   "devDependencies": {

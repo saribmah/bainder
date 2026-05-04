@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { RefObject } from "react";
-import type { Highlight, Note } from "@bainder/sdk";
+import type { Highlight, Note } from "@baindar/sdk";
 import { useSdk } from "../../sdk";
 import { useReaderHighlights } from "./highlightsRefresh";
 import {

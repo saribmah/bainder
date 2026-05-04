@@ -1,5 +1,5 @@
-import type { Document, Highlight } from "@bainder/sdk";
-import { color } from "@bainder/ui";
+import type { Document, Highlight } from "@baindar/sdk";
+import { color } from "@baindar/ui";
 
 export type LibraryFilter = "all" | "books" | "pdfs" | "articles";
 

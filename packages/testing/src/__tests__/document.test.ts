@@ -15,7 +15,7 @@ describe("document", () => {
   test(
     "EPUB upload → processed → read back chapters + raw",
     async () => {
-      const { client } = await signInAs("epub-reader@bainder.test");
+      const { client } = await signInAs("epub-reader@baindar.test");
 
       const upload = await client.document.create({
         file: asFile(buildEpub(), "book.epub", "application/epub+zip"),
@@ -39,7 +39,7 @@ describe("document", () => {
       const get = await client.document.get({ id: documentId });
       expect(get.error).toBeUndefined();
       expect(get.data?.status).toBe("processed");
-      expect(get.data?.title).toBe("Bainder Test Book");
+      expect(get.data?.title).toBe("Baindar Test Book");
 
       const manifest = await client.document.getManifest({ id: documentId });
       expect(manifest.error).toBeUndefined();
@@ -89,7 +89,7 @@ describe("document", () => {
   test(
     "EPUB with image stores asset reachable via getAsset",
     async () => {
-      const { client } = await signInAs("epub-image@bainder.test");
+      const { client } = await signInAs("epub-image@baindar.test");
 
       const upload = await client.document.create({
         file: asFile(buildEpubWithImage(), "image-book.epub", "application/epub+zip"),
@@ -119,7 +119,7 @@ describe("document", () => {
   test(
     "DELETE removes document and read-back returns 404",
     async () => {
-      const { client } = await signInAs("deleter@bainder.test");
+      const { client } = await signInAs("deleter@baindar.test");
 
       const upload = await client.document.create({
         file: asFile(buildEpub(), "tmp.epub", "application/epub+zip"),

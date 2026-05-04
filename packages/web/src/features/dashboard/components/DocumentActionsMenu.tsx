@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { IconButton, Icons } from "@bainder/ui";
+import { IconButton, Icons } from "@baindar/ui";
 
 export function DocumentActionsMenu({
   onRename,

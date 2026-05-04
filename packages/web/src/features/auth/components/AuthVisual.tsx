@@ -20,7 +20,7 @@ export function AuthVisual() {
 
       <figure className="absolute bottom-14 left-14 right-14 m-0 rounded-xl bg-bd-bg px-8 py-7 shadow-[var(--sh-lg)]">
         <blockquote className="m-0 font-display text-[22px] font-normal leading-[1.25] tracking-normal text-bd-fg">
-          "Bainder is the first reader that feels like it's read the book with me."
+          "Baindar is the first reader that feels like it's read the book with me."
         </blockquote>
         <figcaption className="mt-4 flex items-center gap-3">
           <span className="h-7 w-7 rounded-full bg-bd-surface-raised" />

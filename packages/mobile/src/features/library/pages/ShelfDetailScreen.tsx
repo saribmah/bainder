@@ -12,8 +12,8 @@ import {
   useThemeColors,
   useThemedStyles,
   type ThemeColors,
-} from "@bainder/ui";
-import type { Document, Shelf } from "@bainder/sdk";
+} from "@baindar/ui";
+import type { Document, Shelf } from "@baindar/sdk";
 import { useSdk } from "../../../sdk/sdk.provider";
 import { LibraryCover } from "../components/LibraryCover";
 import { AddBooksSheet, CreateShelfSheet, EditShelfSheet } from "../components/ShelfSheets";

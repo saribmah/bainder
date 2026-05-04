@@ -8,7 +8,7 @@ describe("auth", () => {
 
   test("test-mode sign-in mints a usable bearer token", async () => {
     const { userId, sessionToken, client } = await signInAs(
-      "auth-roundtrip@bainder.test",
+      "auth-roundtrip@baindar.test",
       "Auth Roundtrip",
     );
     expect(sessionToken).toBeTruthy();
@@ -17,13 +17,13 @@ describe("auth", () => {
     const me = await client.user.me();
     expect(me.error).toBeUndefined();
     expect(me.data?.id).toBe(userId);
-    expect(me.data?.email).toBe("auth-roundtrip@bainder.test");
+    expect(me.data?.email).toBe("auth-roundtrip@baindar.test");
     expect(me.data?.name).toBe("Auth Roundtrip");
   });
 
   test("repeated sign-in upserts the same user but mints a fresh token", async () => {
-    const first = await signInAs("repeat@bainder.test");
-    const second = await signInAs("repeat@bainder.test");
+    const first = await signInAs("repeat@baindar.test");
+    const second = await signInAs("repeat@baindar.test");
     expect(second.userId).toBe(first.userId);
     expect(second.sessionToken).not.toBe(first.sessionToken);
 

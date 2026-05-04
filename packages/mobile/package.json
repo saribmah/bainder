@@ -1,5 +1,5 @@
 {
-  "name": "@bainder/mobile",
+  "name": "@baindar/mobile",
   "version": "0.0.0",
   "private": true,
   "main": "expo-router/entry",
@@ -14,8 +14,8 @@
     "ts-check": "bunx --bun tsgo --noEmit"
   },
   "dependencies": {
-    "@bainder/sdk": "*",
-    "@bainder/ui": "workspace:*",
+    "@baindar/sdk": "*",
+    "@baindar/ui": "workspace:*",
     "@better-auth/expo": "^1.6.9",
     "@expo/metro-runtime": "~6.1.2",
     "@react-navigation/bottom-tabs": "^7.15.11",

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { Document, Shelf, ShelfCustom } from "@bainder/sdk";
+import type { Document, Shelf, ShelfCustom } from "@baindar/sdk";
 import { useSdk } from "../../../sdk";
 
 export type ShelfMemberships = Record<string, ShelfCustom[]>;

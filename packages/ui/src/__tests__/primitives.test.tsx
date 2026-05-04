@@ -30,7 +30,7 @@ describe("Button", () => {
     expect(
       html(
         <Button variant="wine" size="md" iconStart={<Icons.Sparkles size={16} />}>
-          Ask Bainder
+          Ask Baindar
         </Button>,
       ),
     ).toMatchSnapshot();

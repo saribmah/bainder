@@ -1,6 +1,6 @@
 import { Text, View } from "react-native";
-import { Card, useThemedStyles } from "@bainder/ui";
-import type { Document } from "@bainder/sdk";
+import { Card, useThemedStyles } from "@baindar/ui";
+import type { Document } from "@baindar/sdk";
 import { buildDashboardStyles } from "../dashboard.styles";
 import { DocumentRow, RecentCard } from "./DocumentCards";
 import { QuickAdd } from "./QuickAdd";
@@ -54,7 +54,7 @@ export function DashboardContent({
           ) : (
             <Card style={styles.emptyCard}>
               <Text style={styles.emptyCardText}>
-                Open a document and Bainder will keep your place here.
+                Open a document and Baindar will keep your place here.
               </Text>
             </Card>
           )}
