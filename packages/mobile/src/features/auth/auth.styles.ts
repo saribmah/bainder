@@ -79,20 +79,6 @@ export const buildAuthStyles = (palette: ThemeColors) =>
     socialLabelApple: {
       color: palette.actionFg,
     },
-    socialMark: {
-      width: 18,
-      textAlign: "center",
-      fontFamily: font.nativeFamily.ui,
-      fontSize: 17,
-      fontWeight: "700",
-      lineHeight: 20,
-    },
-    socialMarkGoogle: {
-      color: "#4285F4",
-    },
-    socialMarkApple: {
-      color: palette.actionFg,
-    },
     divider: {
       flexDirection: "row",
       alignItems: "center",
