@@ -112,9 +112,6 @@ export function LibraryScreen() {
                 >
                   <Icons.Search size={16} color={palette.fg} />
                 </Pressable>
-                <Pressable accessibilityRole="button" style={styles.iconButton}>
-                  <Icons.Filter size={16} color={palette.fg} />
-                </Pressable>
               </View>
             </View>
 

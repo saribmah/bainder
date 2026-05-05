@@ -124,19 +124,6 @@ export function NotesScreen() {
       >
         <View style={library.header}>
           <Wordmark size="sm" />
-          <View style={styles.headerActions}>
-            <View style={library.iconButton}>
-              <Icons.Search size={16} color={palette.fg} />
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              disabled={readyDocuments.length === 0}
-              style={[library.iconButton, styles.primaryIcon]}
-              onPress={() => setEditor("new")}
-            >
-              <Icons.Plus size={16} color={palette.actionFg} />
-            </Pressable>
-          </View>
         </View>
 
         <View style={library.titleBlock}>
@@ -417,13 +404,6 @@ function formatDate(iso: string): string {
 
 const buildNotesScreenStyles = (palette: ThemeColors) =>
   StyleSheet.create({
-    headerActions: {
-      flexDirection: "row",
-      gap: 8,
-    },
-    primaryIcon: {
-      backgroundColor: palette.action,
-    },
     pressed: {
       opacity: 0.72,
     },
