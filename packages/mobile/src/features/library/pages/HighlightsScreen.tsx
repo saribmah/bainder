@@ -2,14 +2,7 @@ import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import {
-  ChipButton,
-  Icons,
-  Skeleton,
-  Wordmark,
-  useThemeColors,
-  useThemedStyles,
-} from "@baindar/ui";
+import { ChipButton, Skeleton, Wordmark, useThemedStyles } from "@baindar/ui";
 import type { Highlight } from "@baindar/sdk";
 import { HIGHLIGHT_COLOR, HIGHLIGHT_LABEL } from "../constants";
 import { useLibraryDocuments } from "../hooks/useLibraryDocuments";
@@ -30,7 +23,6 @@ export function HighlightsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const styles = useThemedStyles(buildLibraryStyles);
-  const palette = useThemeColors();
   const { documents } = useLibraryDocuments();
   const { highlights, error } = useLibraryHighlights(documents);
   const [filter, setFilter] = useState<ColorFilter>("all");
@@ -69,9 +61,6 @@ export function HighlightsScreen() {
       >
         <View style={styles.header}>
           <Wordmark size="sm" />
-          <View style={styles.iconButton}>
-            <Icons.Search size={16} color={palette.fg} />
-          </View>
         </View>
 
         <View style={styles.titleBlock}>
