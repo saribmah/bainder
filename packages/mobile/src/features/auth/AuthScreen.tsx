@@ -14,6 +14,8 @@ export type AuthMode = "signin" | "signup";
 
 type Phase = "email" | "otp";
 
+const signedInCallbackURL = "/dashboard";
+
 const authCopy = {
   signin: {
     title: "Welcome back,\nreader.",
@@ -126,11 +128,15 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
         <View style={styles.form}>
           <SocialButton
             provider="google"
-            onPress={() => authClient.signIn.social({ provider: "google" })}
+            onPress={() =>
+              authClient.signIn.social({ provider: "google", callbackURL: signedInCallbackURL })
+            }
           />
           <SocialButton
             provider="apple"
-            onPress={() => authClient.signIn.social({ provider: "apple" })}
+            onPress={() =>
+              authClient.signIn.social({ provider: "apple", callbackURL: signedInCallbackURL })
+            }
           />
           <OrDivider />
 
