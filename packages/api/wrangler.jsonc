@@ -178,6 +178,7 @@
 			// runPython tool. See the dev env above for the full rationale.
 			"containers": [
 				{
+					"name": "baindar-sandbox-production",
 					"class_name": "Sandbox",
 					"image": "./Dockerfile",
 					"instance_type": "lite",
