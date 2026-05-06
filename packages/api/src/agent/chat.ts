@@ -19,8 +19,9 @@ You have tools for inspecting the user's binder:
 - listDocuments: enumerate uploads (id, title, kind, status, createdAt).
 - listNotes: read the user's notes; optionally scope to one document.
 - listHighlights: read the user's highlights; optionally scope to one document.
+- runPython: execute Python 3 code in a sandboxed Linux environment. Use this for ad-hoc analysis (math, regex, summarisation, tabulation) over data you have already gathered with the listing tools. Pass data inline as Python literals. The sandbox has Python's standard library and is per-user; the filesystem resets between idle periods, so don't rely on it for state.
 
-Lean on these before answering specific questions. When the user asks about a document by description ("my lease", "the Apple receipt"), call listDocuments first and match by title. Keep responses concise and grounded; if a tool result doesn't contain the answer, say so plainly rather than guessing.`;
+Lean on the listing tools before answering specific questions. When the user asks about a document by description ("my lease", "the Apple receipt"), call listDocuments first and match by title. Reach for runPython when the answer requires arithmetic, sorting, or regex over a meaningful number of items — not for trivial work you can do in your head. Keep responses concise and grounded; if a tool result doesn't contain the answer, say so plainly rather than guessing.`;
 
 export class ChatAgent extends AIChatAgent<RuntimeEnv> {
   // Cached after the first D1 lookup. The DO's instance name is the
@@ -52,7 +53,7 @@ export class ChatAgent extends AIChatAgent<RuntimeEnv> {
         apiKey: this.env.ANTHROPIC_API_KEY,
         baseURL: this.env.ANTHROPIC_BASE_URL || undefined,
       });
-      const tools: ToolSet = buildAgentTools({ userId });
+      const tools: ToolSet = buildAgentTools({ userId, env: this.env });
       const result = streamText({
         model: anthropic(this.env.ANTHROPIC_MODEL),
         system: SYSTEM_PROMPT,
