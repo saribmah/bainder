@@ -4,12 +4,6 @@ import { useSdk } from "../../../sdk";
 
 type Status = "loading" | "ready" | "error";
 
-// Sidebar's data layer. Loads the user's conversations on mount, exposes
-// the currently-selected one, and wraps the SDK mutations so the page
-// stays focused on layout. After every mutation the local list is
-// updated optimistically and `refresh` is called only on errors — the
-// SDK is the source of truth, but a network round-trip per click is
-// pointless when the response already gives us the row.
 export function useConversations() {
   const { client } = useSdk();
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -32,32 +26,19 @@ export function useConversations() {
       return items;
     } catch (err) {
       setStatus("error");
-      setError(String(err));
+      setError(err instanceof Error ? err.message : String(err));
       return [] as Conversation[];
     }
   }, [client]);
 
   useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const items = await refresh();
-      if (cancelled) return;
-      // Auto-select the most-recent conversation on first load (server
-      // orders by lastActivityAt desc). If there are none, leave the
-      // selection empty so the empty-state CTA shows.
-      setSelectedId(items[0]?.id ?? null);
-    })();
-    return () => {
-      cancelled = true;
-    };
+    void refresh();
   }, [refresh]);
 
   const selected = useMemo(
-    () => conversations.find((c) => c.id === selectedId) ?? null,
+    () => conversations.find((conversation) => conversation.id === selectedId) ?? null,
     [conversations, selectedId],
   );
-
-  const select = useCallback((id: string) => setSelectedId(id), []);
 
   const create = useCallback(async () => {
     try {
@@ -66,15 +47,12 @@ export function useConversations() {
         setError("Failed to start a conversation");
         return null;
       }
-      const created = res.data;
-      // Insert at the top — the list is ordered by lastActivityAt desc
-      // and a brand-new row has the most recent activity.
-      setConversations((prev) => [created, ...prev]);
-      setSelectedId(created.id);
+      setConversations((prev) => [res.data, ...prev]);
+      setSelectedId(res.data.id);
       setError(null);
-      return created;
+      return res.data;
     } catch (err) {
-      setError(String(err));
+      setError(err instanceof Error ? err.message : String(err));
       return null;
     }
   }, [client]);
@@ -84,14 +62,15 @@ export function useConversations() {
       try {
         const res = await client.conversation.update({ id, title });
         if (!res.data) {
-          setError("Failed to rename");
+          setError("Failed to rename conversation");
           return;
         }
-        const updated = res.data;
-        setConversations((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+        setConversations((prev) =>
+          prev.map((conversation) => (conversation.id === res.data.id ? res.data : conversation)),
+        );
         setError(null);
       } catch (err) {
-        setError(String(err));
+        setError(err instanceof Error ? err.message : String(err));
       }
     },
     [client],
@@ -102,22 +81,17 @@ export function useConversations() {
       try {
         const res = await client.conversation.delete({ id });
         if (res.error) {
-          setError("Failed to delete");
+          setError("Failed to delete conversation");
           return;
         }
         setConversations((prev) => {
-          const next = prev.filter((c) => c.id !== id);
-          // If the active conversation was deleted, fall back to the
-          // next-most-recent. If none remain, clear selection so the
-          // empty state surfaces.
-          if (selectedId === id) {
-            setSelectedId(next[0]?.id ?? null);
-          }
+          const next = prev.filter((conversation) => conversation.id !== id);
+          if (selectedId === id) setSelectedId(null);
           return next;
         });
         setError(null);
       } catch (err) {
-        setError(String(err));
+        setError(err instanceof Error ? err.message : String(err));
       }
     },
     [client, selectedId],
@@ -129,7 +103,7 @@ export function useConversations() {
     selectedId,
     status,
     error,
-    select,
+    select: setSelectedId,
     create,
     rename,
     remove,

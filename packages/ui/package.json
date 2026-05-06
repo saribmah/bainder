@@ -58,13 +58,22 @@
       "types": "./src/reader/index.ts",
       "default": "./src/reader/index.ts"
     },
+    "./chat": {
+      "react-native": {
+        "types": "./src/chat/index.native.ts",
+        "default": "./src/chat/index.native.ts"
+      },
+      "types": "./src/chat/index.ts",
+      "default": "./src/chat/index.ts"
+    },
     "./styles.css": "./src/styles/index.css",
     "./styles/tokens.css": "./src/styles/tokens.css",
     "./styles/typography.css": "./src/styles/typography.css",
     "./styles/primitives.css": "./src/styles/primitives.css",
     "./styles/reset.css": "./src/styles/reset.css",
     "./styles/theme.css": "./src/styles/theme.css",
-    "./styles/reader.css": "./src/styles/reader.css"
+    "./styles/reader.css": "./src/styles/reader.css",
+    "./styles/chat.css": "./src/styles/chat.css"
   },
   "scripts": {
     "build": "bun scripts/build-tokens.ts",

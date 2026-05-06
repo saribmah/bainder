@@ -74,6 +74,21 @@ export const Share = (p: IconProps) => (
   </Icon>
 );
 
+export const Reply = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M10 8L5 13l5 5" />
+    <path d="M5 13h9a5 5 0 015 5v1" />
+  </Icon>
+);
+
+export const Code = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M8 9l-4 3 4 3" />
+    <path d="M16 9l4 3-4 3" />
+    <path d="M13 5l-2 14" />
+  </Icon>
+);
+
 export const Settings = (p: IconProps) => (
   <Icon {...p}>
     <circle cx="12" cy="12" r="3" />

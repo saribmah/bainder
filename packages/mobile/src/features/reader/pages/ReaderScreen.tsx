@@ -1,9 +1,14 @@
 import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   Button,
+  ChatAssistantTurn,
+  ChatComposer,
+  ChatPanelHeader,
+  ChatThread,
+  ChatUserTurn,
   FloatingToolbar,
   FloatingToolbarButton,
   IconButton,
@@ -674,61 +679,42 @@ function ReaderAiSheet({
   quote: string | null;
   prompt: string;
 }) {
+  const [draft, setDraft] = useState("");
   const quoteText =
     quote ??
     "Affordances define what actions are possible. Signifiers specify how people discover those possibilities.";
   const promptText = prompt || "What's the most important idea in this chapter?";
   return (
     <Sheet visible={visible} onClose={onClose}>
-      <View style={aiStyles.header}>
-        <View style={aiStyles.brandRow}>
-          <Icons.Sparkles size={18} color={palette.accent} />
-          <Text style={[aiStyles.brand, { color: palette.accent }]}>Baindar</Text>
-        </View>
-        <Text style={[aiStyles.chapter, { color: palette.fgMuted }]}>{chapterLabel}</Text>
-      </View>
-      <View
-        style={[
-          aiStyles.quote,
-          { backgroundColor: palette.surfaceRaised, borderLeftColor: palette.accent },
-        ]}
-      >
-        <Text style={[aiStyles.quoteText, { color: palette.fgSubtle }]}>{`"${quoteText}"`}</Text>
-      </View>
-      <View style={aiStyles.promptRow}>
-        <View style={[aiStyles.promptBubble, { backgroundColor: palette.action }]}>
-          <Text style={[aiStyles.promptText, { color: palette.actionFg }]}>{promptText}</Text>
-        </View>
-      </View>
-      <Text style={[aiStyles.answer, { color: palette.fgSubtle }]}>
-        Norman is drawing a careful line. An affordance is what is possible. A signifier is the
-        visible cue that tells you that possibility exists.
-      </Text>
-      <View style={aiStyles.chips}>
-        {["Give me an example", "Why does this matter?", "Save to notes"].map((item) => (
-          <Pressable
-            key={item}
-            accessibilityRole="button"
-            style={[aiStyles.chip, { borderColor: palette.borderStrong }]}
-          >
-            <Text style={[aiStyles.chipText, { color: palette.fgSubtle }]}>{item}</Text>
-          </Pressable>
-        ))}
-      </View>
-      <View style={[aiStyles.inputRow, { backgroundColor: palette.surfaceRaised }]}>
-        <TextInput
-          placeholder="Ask a follow-up..."
-          placeholderTextColor={palette.fgMuted}
-          style={[aiStyles.input, { color: palette.text }]}
-        />
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Send"
-          style={[aiStyles.send, { backgroundColor: palette.action }]}
+      <ChatPanelHeader sub={chapterLabel} onClose={onClose} />
+      <ChatThread>
+        <ChatUserTurn attachment={{ label: chapterLabel, text: quoteText }}>
+          {promptText}
+        </ChatUserTurn>
+        <ChatAssistantTurn
+          sub="just now"
+          tools={[
+            { id: "reader-search", kind: "searchBook", state: "success", query: promptText },
+            { id: "reader-lookup", kind: "lookup", state: "success", query: "current chapter" },
+          ]}
+          footerCitations={["Current chapter"]}
+          actions={[
+            { label: "Save", icon: <Icons.Note size={11} color={palette.fgMuted} /> },
+            { label: "Copy", icon: <Icons.Copy size={11} color={palette.fgMuted} /> },
+          ]}
         >
-          <Icons.Send size={14} color={palette.actionFg} />
-        </Pressable>
-      </View>
+          Norman is drawing a careful line. An affordance is what is possible. A signifier is the
+          visible cue that tells you that possibility exists.
+        </ChatAssistantTurn>
+      </ChatThread>
+      <ChatComposer
+        value={draft}
+        onValueChange={setDraft}
+        onSubmit={() => setDraft("")}
+        context={{ label: chapterLabel, text: quoteText }}
+        placeholder="Ask a follow-up..."
+        suggestions={["Give me an example", "Why does this matter?", "Save to notes"]}
+      />
     </Sheet>
   );
 }
@@ -837,98 +823,4 @@ const tocStyles = StyleSheet.create({
     paddingBottom: 4,
   },
   title: { fontSize: 15, fontWeight: "500" },
-});
-
-const aiStyles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  brandRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  brand: {
-    fontFamily: font.nativeFamily.ui,
-    fontSize: 15,
-    fontWeight: "500",
-  },
-  chapter: {
-    flexShrink: 1,
-    fontFamily: font.nativeFamily.ui,
-    fontSize: 13,
-  },
-  quote: {
-    borderLeftWidth: 2,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  quoteText: {
-    fontFamily: font.nativeFamily.reading,
-    fontSize: 13,
-    fontStyle: "italic",
-    lineHeight: 20,
-  },
-  promptRow: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-  },
-  promptBubble: {
-    maxWidth: "78%",
-    borderRadius: 18,
-    borderBottomRightRadius: 4,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  promptText: {
-    fontFamily: font.nativeFamily.ui,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  answer: {
-    fontFamily: font.nativeFamily.reading,
-    fontSize: 15,
-    lineHeight: 23,
-  },
-  chips: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-  },
-  chip: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  chipText: {
-    fontFamily: font.nativeFamily.ui,
-    fontSize: 13,
-    fontWeight: "500",
-  },
-  inputRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderRadius: 999,
-    padding: 6,
-  },
-  input: {
-    flex: 1,
-    height: 36,
-    paddingHorizontal: 12,
-    fontFamily: font.nativeFamily.ui,
-    fontSize: 15,
-  },
-  send: {
-    width: 36,
-    height: 36,
-    borderRadius: 999,
-    alignItems: "center",
-    justifyContent: "center",
-  },
 });

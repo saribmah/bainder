@@ -1,7 +1,6 @@
 import {
   createContext,
   type CSSProperties,
-  type FormEvent,
   useCallback,
   useContext,
   useEffect,
@@ -13,6 +12,12 @@ import {
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   Button,
+  ChatAssistantTurn,
+  ChatCitationChip,
+  ChatComposer,
+  ChatPanelHeader,
+  ChatThread,
+  ChatUserTurn,
   FloatingToolbar,
   FloatingToolbarButton,
   IconButton,
@@ -242,17 +247,13 @@ function ReaderShell({
   const progressLabel =
     meta?.chapterCount !== undefined ? `${currentOrder + 1} / ${meta.chapterCount}` : position;
 
-  const handleAskSubmit = useCallback(
-    (event?: FormEvent<HTMLFormElement>) => {
-      event?.preventDefault();
-      const trimmed = askDraft.trim();
-      setAiQuote(null);
-      setLastPrompt(trimmed || "What's the most important idea in this chapter?");
-      setAskDraft("");
-      setAiOpen(true);
-    },
-    [askDraft],
-  );
+  const handleAskSubmit = useCallback((value: string) => {
+    const trimmed = value.trim();
+    setAiQuote(null);
+    setLastPrompt(trimmed || "What's the most important idea in this chapter?");
+    setAskDraft("");
+    setAiOpen(true);
+  }, []);
 
   const openAsk = useCallback((payload?: ReaderAskPayload) => {
     setAiQuote(payload?.quote ?? null);
@@ -334,7 +335,14 @@ function ReaderShell({
           </div>
         </header>
 
-        <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden xl:grid-cols-[240px_minmax(0,1fr)_240px]">
+        <div
+          className={[
+            "grid min-h-0 flex-1 grid-cols-1 overflow-hidden",
+            aiOpen
+              ? "xl:grid-cols-[240px_minmax(0,1fr)_460px]"
+              : "xl:grid-cols-[240px_minmax(0,1fr)_240px]",
+          ].join(" ")}
+        >
           <aside
             className="hidden min-h-0 overflow-hidden border-r px-6 py-8 xl:block"
             style={{ borderColor: "var(--bd-border)" }}
@@ -361,16 +369,35 @@ function ReaderShell({
           </section>
 
           <aside
-            className="hidden min-h-0 overflow-hidden border-l px-6 py-8 xl:block"
+            className="hidden min-h-0 overflow-hidden border-l xl:block"
             style={{ borderColor: "var(--bd-border)" }}
           >
-            <NotesRail
-              documentId={doc.id}
-              sections={toc?.sections}
-              currentOrder={currentOrder}
-              refreshToken={refresh?.refreshToken ?? 0}
-              onJumpToTarget={jumpToReaderTarget}
-            />
+            {aiOpen ? (
+              <ReaderChatPanel
+                title={doc.title}
+                chapterLabel={
+                  meta
+                    ? `Chapter ${meta.chapterOrder + 1} · ${meta.chapterTitle}`
+                    : "Current chapter"
+                }
+                quote={aiQuote ?? meta?.quote}
+                prompt={lastPrompt}
+                draft={askDraft}
+                onDraftChange={setAskDraft}
+                onSubmit={handleAskSubmit}
+                onClose={() => setAiOpen(false)}
+              />
+            ) : (
+              <div className="h-full px-6 py-8">
+                <NotesRail
+                  documentId={doc.id}
+                  sections={toc?.sections}
+                  currentOrder={currentOrder}
+                  refreshToken={refresh?.refreshToken ?? 0}
+                  onJumpToTarget={jumpToReaderTarget}
+                />
+              </div>
+            )}
           </aside>
         </div>
 
@@ -434,14 +461,17 @@ function ReaderShell({
         )}
 
         {aiOpen && (
-          <ReaderAiSheet
+          <ReaderChatOverlay
             theme={theme}
             title={doc.title}
             chapterLabel={
-              meta ? `Chapter ${meta.chapterOrder + 1} - ${meta.chapterTitle}` : "Current chapter"
+              meta ? `Chapter ${meta.chapterOrder + 1} · ${meta.chapterTitle}` : "Current chapter"
             }
             quote={aiQuote ?? meta?.quote}
             prompt={lastPrompt}
+            draft={askDraft}
+            onDraftChange={setAskDraft}
+            onSubmit={handleAskSubmit}
             onClose={() => setAiOpen(false)}
           />
         )}
@@ -767,38 +797,71 @@ function AskBaindarBar({
 }: {
   draft: string;
   onDraftChange: (value: string) => void;
-  onSubmit: (event?: FormEvent<HTMLFormElement>) => void;
+  onSubmit: (value: string) => void;
 }) {
   return (
-    <form
-      onSubmit={onSubmit}
-      className="hidden shrink-0 items-center gap-3 border-t px-7 py-3 xl:flex"
+    <div
+      className="hidden shrink-0 border-t px-7 py-3 xl:block"
       style={{ background: "var(--bd-bg)", borderColor: "var(--bd-border)" }}
     >
-      <Icons.Sparkles size={18} color="var(--bd-accent)" />
-      <span className="t-label-l shrink-0" style={{ color: "var(--bd-accent)" }}>
-        Ask Baindar
-      </span>
-      <input
-        className="t-body-m h-10 min-w-0 flex-1 rounded-full border-0 px-4 outline-none"
-        style={{ background: "var(--bd-surface-raised)", color: "var(--bd-fg)" }}
-        placeholder="Ask anything about this chapter..."
+      <ChatComposer
         value={draft}
-        onChange={(event) => onDraftChange(event.currentTarget.value)}
+        onValueChange={onDraftChange}
+        onSubmit={onSubmit}
+        placeholder="Ask anything about this chapter..."
       />
-      <Button type="submit" variant="primary" size="sm">
-        Send
-      </Button>
-    </form>
+    </div>
   );
 }
 
-function ReaderAiSheet({
+function ReaderChatPanel({
+  title,
+  chapterLabel,
+  quote,
+  prompt,
+  draft,
+  onDraftChange,
+  onSubmit,
+  onClose,
+}: {
+  title: string;
+  chapterLabel: string;
+  quote?: string;
+  prompt: string;
+  draft: string;
+  onDraftChange: (value: string) => void;
+  onSubmit: (value: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="flex h-full min-h-0 flex-col bg-bd-bg">
+      <ChatPanelHeader sub={`${chapterLabel} · ${title}`} onClose={onClose} />
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+        <ReaderChatThread quote={quote} prompt={prompt} />
+      </div>
+      <div className="border-t border-bd-border px-4 py-4">
+        <ChatComposer
+          value={draft}
+          onValueChange={onDraftChange}
+          onSubmit={onSubmit}
+          context={quote ? { label: chapterLabel, text: quote } : null}
+          placeholder="Ask a follow-up..."
+          suggestions={["Why does this matter?", "Summarize this chapter", "Save as note"]}
+        />
+      </div>
+    </div>
+  );
+}
+
+function ReaderChatOverlay({
   theme,
   title,
   chapterLabel,
   quote,
   prompt,
+  draft,
+  onDraftChange,
+  onSubmit,
   onClose,
 }: {
   theme: Theme;
@@ -806,6 +869,9 @@ function ReaderAiSheet({
   chapterLabel: string;
   quote?: string;
   prompt: string;
+  draft: string;
+  onDraftChange: (value: string) => void;
+  onSubmit: (value: string) => void;
   onClose: () => void;
 }) {
   useEffect(() => {
@@ -817,78 +883,75 @@ function ReaderAiSheet({
   }, [onClose]);
 
   const backdropBg = theme === "dark" ? "rgba(0, 0, 0, 0.6)" : "rgba(20, 15, 10, 0.18)";
-  const answer =
-    quote && prompt
-      ? "Norman is drawing a careful line. An affordance is the underlying relationship between an object and a person: what is possible. A signifier is the visible cue that tells you that possibility exists."
-      : "This chapter is about the cues that make actions legible. Affordances describe what can be done; signifiers help people discover it.";
-
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-label="Ask Baindar"
-      className="fixed inset-0 z-30 flex flex-col justify-end"
+      className="fixed inset-0 z-30 flex flex-col justify-end xl:hidden"
       style={{ background: backdropBg }}
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
     >
       <section
-        className="mx-auto flex max-h-[72vh] w-full max-w-[720px] flex-col gap-3 rounded-t-[28px] px-6 py-4 shadow-[var(--sh-sheet)] md:px-7 md:pb-6"
+        className="mx-auto flex max-h-[78vh] w-full max-w-[720px] flex-col overflow-hidden rounded-t-[28px] shadow-[var(--sh-sheet)]"
         style={{ background: "var(--bd-bg)", color: "var(--bd-fg)" }}
         onClick={(event) => event.stopPropagation()}
       >
-        <div
-          aria-hidden
-          className="h-1 w-10 self-center rounded-full"
-          style={{ background: "var(--bd-border-strong)" }}
-        />
-        <div className="flex items-center gap-2">
-          <Icons.Sparkles size={18} color="var(--bd-accent)" />
-          <span className="t-label-l" style={{ color: "var(--bd-accent)" }}>
-            Baindar
-          </span>
-          <span className="t-body-s ml-auto truncate" style={{ color: "var(--bd-fg-muted)" }}>
-            {chapterLabel} · {title}
-          </span>
+        <div className="flex flex-col items-center px-6 pt-2">
+          <div
+            aria-hidden
+            className="mb-3 h-1 w-10 rounded-full"
+            style={{ background: "var(--bd-border-strong)" }}
+          />
         </div>
-        {quote && (
-          <blockquote
-            className="rounded-[14px] border-l-2 px-4 py-3 font-reading text-sm leading-relaxed italic"
-            style={{
-              background: "var(--bd-surface-raised)",
-              borderColor: "var(--bd-accent)",
-              color: "var(--bd-fg-subtle)",
-            }}
-          >
-            "{quote}"
-          </blockquote>
-        )}
-        {prompt && (
-          <div className="flex justify-end">
-            <div
-              className="max-w-[72%] rounded-[18px] rounded-br px-4 py-2.5 text-sm leading-snug"
-              style={{ background: "var(--bd-action)", color: "var(--bd-action-fg)" }}
-            >
-              {prompt}
-            </div>
-          </div>
-        )}
-        <p
-          className="font-reading text-base leading-relaxed"
-          style={{ color: "var(--bd-fg-subtle)" }}
-        >
-          {answer}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {["Give me an example", "Why does this matter?", "Save to notes"].map((item) => (
-            <span key={item} className="bd-chip bd-chip-outline">
-              {item}
-            </span>
-          ))}
+        <ChatPanelHeader sub={`${chapterLabel} · ${title}`} onClose={onClose} />
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+          <ReaderChatThread quote={quote} prompt={prompt} />
+        </div>
+        <div className="border-t border-bd-border px-4 py-4">
+          <ChatComposer
+            value={draft}
+            onValueChange={onDraftChange}
+            onSubmit={onSubmit}
+            context={quote ? { label: chapterLabel, text: quote } : null}
+            placeholder="Ask a follow-up..."
+          />
         </div>
       </section>
     </div>
+  );
+}
+
+function ReaderChatThread({ quote, prompt }: { quote?: string; prompt: string }) {
+  const question = prompt || "What's the most important idea in this chapter?";
+  const answer =
+    quote && prompt
+      ? "Norman is drawing a careful line. An affordance is the relationship between an object and a person: what is possible. A signifier is the visible cue that tells you that possibility exists."
+      : "This chapter is about the cues that make actions legible. Affordances describe what can be done; signifiers help people discover it.";
+
+  return (
+    <ChatThread>
+      <ChatUserTurn attachment={quote ? { label: "Passage", text: quote } : null}>
+        {question}
+      </ChatUserTurn>
+      <ChatAssistantTurn
+        sub="just now"
+        tools={[
+          { id: "reader-search", kind: "searchBook", state: "success", query: question },
+          { id: "reader-lookup", kind: "lookup", state: "success", query: "current chapter" },
+        ]}
+        footerCitations={["Current chapter"]}
+        actions={[
+          { label: "Save as note", icon: <Icons.Note size={12} /> },
+          { label: "Copy", icon: <Icons.Copy size={12} /> },
+          { label: "Quote", icon: <Icons.Reply size={12} /> },
+        ]}
+      >
+        {answer} <ChatCitationChip citation={{ page: 1, chapter: "current" }} />
+      </ChatAssistantTurn>
+    </ChatThread>
   );
 }
 
