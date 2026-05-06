@@ -62,6 +62,13 @@ export namespace Conversation {
     return entity;
   };
 
+  // Internal lookup used by ChatAgent: given a conversationId (the DO
+  // instance name), return the owning userId. Returns null if no row
+  // exists. The auth middleware has already verified the caller owns this
+  // conversation, so we don't need to re-scope here.
+  export const ownerOf = async (id: string): Promise<string | null> =>
+    ConversationStorage.ownerOf(id);
+
   export const create = async (userId: string, input: CreateInput): Promise<Entity> => {
     // Confirm the caller owns the doc they're scoping to. Document.get throws
     // DocumentNotFoundError for both missing rows and rows owned by another
