@@ -48,15 +48,23 @@
 			"durable_objects": {
 				"bindings": [
 					{
-						"name": "CounterAgent",
-						"class_name": "CounterAgent"
+						"name": "ChatAgent",
+						"class_name": "ChatAgent"
 					}
 				]
 			},
+			// v1 created CounterAgent (smoke test). v2 retires it and stands up
+			// the real ChatAgent. Migrations are append-only, so the smoke
+			// class is deleted via `deleted_classes`, not by editing v1.
 			"migrations": [
 				{
 					"tag": "v1",
 					"new_sqlite_classes": ["CounterAgent"]
+				},
+				{
+					"tag": "v2",
+					"deleted_classes": ["CounterAgent"],
+					"new_sqlite_classes": ["ChatAgent"]
 				}
 			],
 			"secrets": {
@@ -65,7 +73,8 @@
 					"GOOGLE_CLIENT_ID",
 					"GOOGLE_CLIENT_SECRET",
 					"APPLE_CLIENT_ID",
-					"APPLE_CLIENT_SECRET"
+					"APPLE_CLIENT_SECRET",
+					"ANTHROPIC_API_KEY"
 				]
 			}
 		},
@@ -125,15 +134,23 @@
 			"durable_objects": {
 				"bindings": [
 					{
-						"name": "CounterAgent",
-						"class_name": "CounterAgent"
+						"name": "ChatAgent",
+						"class_name": "ChatAgent"
 					}
 				]
 			},
+			// v1 created CounterAgent (smoke test). v2 retires it and stands up
+			// the real ChatAgent. Migrations are append-only, so the smoke
+			// class is deleted via `deleted_classes`, not by editing v1.
 			"migrations": [
 				{
 					"tag": "v1",
 					"new_sqlite_classes": ["CounterAgent"]
+				},
+				{
+					"tag": "v2",
+					"deleted_classes": ["CounterAgent"],
+					"new_sqlite_classes": ["ChatAgent"]
 				}
 			],
 			"secrets": {
@@ -142,7 +159,8 @@
 					"GOOGLE_CLIENT_ID",
 					"GOOGLE_CLIENT_SECRET",
 					"APPLE_CLIENT_ID",
-					"APPLE_CLIENT_SECRET"
+					"APPLE_CLIENT_SECRET",
+					"ANTHROPIC_API_KEY"
 				]
 			}
 		}
