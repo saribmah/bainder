@@ -10,7 +10,7 @@ export { EpubWorkflow } from "./document/formats/epub/workflow";
 
 // Agent (Durable Object) class exports so wrangler can locate them via
 // `class_name` in wrangler.jsonc → durable_objects.bindings.
-export { CounterAgent } from "./agent/counter";
+export { ChatAgent } from "./agent/chat";
 
 const hostnameOf = (value: string | null | undefined): string | null => {
   if (!value) return null;

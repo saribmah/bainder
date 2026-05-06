@@ -18,7 +18,12 @@
 				"EMAIL_FROM": "",
 				// Default off; the `dev:test` script overrides via
 				// `wrangler dev --var TEST_MODE:true`. Production never sets this.
-				"TEST_MODE": "false"
+				"TEST_MODE": "false",
+				// Chat agent model. Empty `ANTHROPIC_BASE_URL` falls back to the
+				// `@ai-sdk/anthropic` default (the official API). Override per env
+				// to point at a proxy or alternative provider.
+				"ANTHROPIC_BASE_URL": "https://opencode.ai/zen/go/v1",
+				"ANTHROPIC_MODEL": "minimax-m2.7"
 			},
 			"d1_databases": [
 				{
@@ -48,15 +53,23 @@
 			"durable_objects": {
 				"bindings": [
 					{
-						"name": "CounterAgent",
-						"class_name": "CounterAgent"
+						"name": "ChatAgent",
+						"class_name": "ChatAgent"
 					}
 				]
 			},
+			// v1 created CounterAgent (smoke test). v2 retires it and stands up
+			// the real ChatAgent. Migrations are append-only, so the smoke
+			// class is deleted via `deleted_classes`, not by editing v1.
 			"migrations": [
 				{
 					"tag": "v1",
 					"new_sqlite_classes": ["CounterAgent"]
+				},
+				{
+					"tag": "v2",
+					"deleted_classes": ["CounterAgent"],
+					"new_sqlite_classes": ["ChatAgent"]
 				}
 			],
 			"secrets": {
@@ -65,7 +78,8 @@
 					"GOOGLE_CLIENT_ID",
 					"GOOGLE_CLIENT_SECRET",
 					"APPLE_CLIENT_ID",
-					"APPLE_CLIENT_SECRET"
+					"APPLE_CLIENT_SECRET",
+					"ANTHROPIC_API_KEY"
 				]
 			}
 		},
@@ -95,7 +109,11 @@
 				"EMAIL_FROM": "no-reply@baindar.com",
 				// Production keeps TEST_MODE off. The flag is part of the env
 				// shape so `Config.isTestMode()` type-checks against both envs.
-				"TEST_MODE": "false"
+				"TEST_MODE": "false",
+				// Chat agent model. Empty `ANTHROPIC_BASE_URL` uses the SDK's
+				// default (the official Anthropic API).
+				"ANTHROPIC_BASE_URL": "",
+				"ANTHROPIC_MODEL": "claude-sonnet-4-6"
 			},
 			"d1_databases": [
 				{
@@ -125,15 +143,23 @@
 			"durable_objects": {
 				"bindings": [
 					{
-						"name": "CounterAgent",
-						"class_name": "CounterAgent"
+						"name": "ChatAgent",
+						"class_name": "ChatAgent"
 					}
 				]
 			},
+			// v1 created CounterAgent (smoke test). v2 retires it and stands up
+			// the real ChatAgent. Migrations are append-only, so the smoke
+			// class is deleted via `deleted_classes`, not by editing v1.
 			"migrations": [
 				{
 					"tag": "v1",
 					"new_sqlite_classes": ["CounterAgent"]
+				},
+				{
+					"tag": "v2",
+					"deleted_classes": ["CounterAgent"],
+					"new_sqlite_classes": ["ChatAgent"]
 				}
 			],
 			"secrets": {
@@ -142,7 +168,8 @@
 					"GOOGLE_CLIENT_ID",
 					"GOOGLE_CLIENT_SECRET",
 					"APPLE_CLIENT_ID",
-					"APPLE_CLIENT_SECRET"
+					"APPLE_CLIENT_SECRET",
+					"ANTHROPIC_API_KEY"
 				]
 			}
 		}
