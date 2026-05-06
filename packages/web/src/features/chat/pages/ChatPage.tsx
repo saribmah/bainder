@@ -1,7 +1,9 @@
 import { useState, type FormEvent } from "react";
+import type { Conversation } from "@baindar/sdk";
 import { useAgentChat } from "agents/ai-react";
 import { useAgent } from "agents/react";
 import { useSession } from "../../auth";
+import { useActiveConversation } from "../hooks/useActiveConversation";
 
 const agentsHost = import.meta.env.VITE_AGENTS_HOST || undefined;
 
@@ -17,15 +19,37 @@ export function ChatPage() {
     );
   }
 
-  return <ChatExperience userId={userId} />;
+  return <ChatGate />;
 }
 
-function ChatExperience({ userId }: { userId: string }) {
+function ChatGate() {
+  const conversation = useActiveConversation();
+
+  if (conversation.status === "loading") {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-bd-bg text-bd-fg-muted">
+        <p>Loading chat…</p>
+      </main>
+    );
+  }
+
+  if (conversation.status === "error") {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-bd-bg text-bd-fg">
+        <p className="text-sm text-red-400">{conversation.message}</p>
+      </main>
+    );
+  }
+
+  return <ChatExperience conversation={conversation.conversation} />;
+}
+
+function ChatExperience({ conversation }: { conversation: Conversation }) {
   const [draft, setDraft] = useState("");
 
   const agent = useAgent({
     agent: "ChatAgent",
-    name: userId,
+    name: conversation.id,
     host: agentsHost,
   });
 
@@ -44,7 +68,7 @@ function ChatExperience({ userId }: { userId: string }) {
   return (
     <main className="mx-auto flex h-screen max-w-2xl flex-col bg-bd-bg text-bd-fg">
       <header className="flex items-center justify-between border-b border-bd-border px-4 py-3">
-        <h1 className="text-base font-semibold">Baindar chat</h1>
+        <h1 className="text-base font-semibold">{conversation.title}</h1>
         <button
           type="button"
           className="text-xs text-bd-fg-muted hover:text-bd-fg"
@@ -56,9 +80,7 @@ function ChatExperience({ userId }: { userId: string }) {
 
       <div className="flex-1 overflow-y-auto px-4 py-4">
         {messages.length === 0 ? (
-          <p className="text-center text-sm text-bd-fg-muted">
-            Ask anything about your binder. (No tools wired yet — replies are general.)
-          </p>
+          <p className="text-center text-sm text-bd-fg-muted">Ask anything about your binder.</p>
         ) : (
           <ul className="flex flex-col gap-3">
             {messages.map((m) => (

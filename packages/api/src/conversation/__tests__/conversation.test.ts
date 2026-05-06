@@ -130,6 +130,16 @@ describe("Conversation feature", () => {
     });
   });
 
+  it("ownerOf returns the user_id for an existing row, null otherwise", async () => {
+    const created = await runtime.runAs(userA, () => Conversation.create(userA, {}));
+    // ownerOf is unscoped on purpose — used internally by the chat agent's
+    // DO, where the only handle is the conversationId.
+    await runtime.runAs(userB, async () => {
+      expect(await Conversation.ownerOf(created.id)).toBe(userA);
+      expect(await Conversation.ownerOf("does-not-exist")).toBeNull();
+    });
+  });
+
   it("removes a conversation and 404s on a second delete", async () => {
     await runtime.runAs(userA, async () => {
       const created = await Conversation.create(userA, {});

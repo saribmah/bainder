@@ -60,6 +60,20 @@ export namespace ConversationStorage {
     return rows.map(toEntity);
   };
 
+  // Internal lookup: returns the row's owner (or null) without scoping by
+  // user. Used by ChatAgent when its DO instance name (the conversationId)
+  // is the only handle it has — the agent needs the userId to scope tool
+  // calls. Not exposed via routes; do not use from feature code that has a
+  // userId already in scope.
+  export const ownerOf = async (id: string): Promise<string | null> => {
+    const rows = await Instance.db
+      .select({ userId: conversation.userId })
+      .from(conversation)
+      .where(eq(conversation.id, id))
+      .limit(1);
+    return rows[0]?.userId ?? null;
+  };
+
   export const get = async (id: string, userId: string): Promise<Conversation.Entity | null> => {
     const rows = await Instance.db
       .select(entitySelect)
