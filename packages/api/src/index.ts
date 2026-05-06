@@ -12,6 +12,13 @@ export { EpubWorkflow } from "./document/formats/epub/workflow";
 // `class_name` in wrangler.jsonc → durable_objects.bindings.
 export { ChatAgent } from "./agent/chat";
 
+// Sandbox (Durable Object backed by a Linux container) re-exported so
+// wrangler can locate the class — same as ChatAgent above. The class
+// itself is implemented by the @cloudflare/sandbox package; we own
+// only the binding and the per-user instance addressing inside the
+// chat agent's runPython tool.
+export { Sandbox } from "@cloudflare/sandbox";
+
 const hostnameOf = (value: string | null | undefined): string | null => {
   if (!value) return null;
   try {

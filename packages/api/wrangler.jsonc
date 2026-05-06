@@ -55,12 +55,30 @@
 					{
 						"name": "ChatAgent",
 						"class_name": "ChatAgent"
+					},
+					{
+						"name": "Sandbox",
+						"class_name": "Sandbox"
 					}
 				]
 			},
-			// v1 created CounterAgent (smoke test). v2 retires it and stands up
-			// the real ChatAgent. Migrations are append-only, so the smoke
-			// class is deleted via `deleted_classes`, not by editing v1.
+			// Per-user containerised sandbox that backs the chat agent's
+			// runPython tool. Each instance is one Linux container; the
+			// Sandbox class lives in the @cloudflare/sandbox package and is
+			// re-exported from src/index.ts. Local `wrangler dev` builds and
+			// runs this image via Docker (must be running locally).
+			"containers": [
+				{
+					"class_name": "Sandbox",
+					"image": "./Dockerfile",
+					"instance_type": "lite",
+					"max_instances": 1
+				}
+			],
+			// v1 created CounterAgent (smoke test). v2 retires it and stands
+			// up the real ChatAgent. v3 stands up the Sandbox container DO.
+			// Migrations are append-only, so retired classes are removed via
+			// `deleted_classes` rather than editing earlier tags.
 			"migrations": [
 				{
 					"tag": "v1",
@@ -70,6 +88,10 @@
 					"tag": "v2",
 					"deleted_classes": ["CounterAgent"],
 					"new_sqlite_classes": ["ChatAgent"]
+				},
+				{
+					"tag": "v3",
+					"new_sqlite_classes": ["Sandbox"]
 				}
 			],
 			"secrets": {
@@ -145,12 +167,26 @@
 					{
 						"name": "ChatAgent",
 						"class_name": "ChatAgent"
+					},
+					{
+						"name": "Sandbox",
+						"class_name": "Sandbox"
 					}
 				]
 			},
-			// v1 created CounterAgent (smoke test). v2 retires it and stands up
-			// the real ChatAgent. Migrations are append-only, so the smoke
-			// class is deleted via `deleted_classes`, not by editing v1.
+			// Per-user containerised sandbox that backs the chat agent's
+			// runPython tool. See the dev env above for the full rationale.
+			"containers": [
+				{
+					"class_name": "Sandbox",
+					"image": "./Dockerfile",
+					"instance_type": "lite",
+					"max_instances": 1
+				}
+			],
+			// v1 created CounterAgent (smoke test). v2 retires it and stands
+			// up the real ChatAgent. v3 stands up the Sandbox container DO.
+			// Migrations are append-only.
 			"migrations": [
 				{
 					"tag": "v1",
@@ -160,6 +196,10 @@
 					"tag": "v2",
 					"deleted_classes": ["CounterAgent"],
 					"new_sqlite_classes": ["ChatAgent"]
+				},
+				{
+					"tag": "v3",
+					"new_sqlite_classes": ["Sandbox"]
 				}
 			],
 			"secrets": {
