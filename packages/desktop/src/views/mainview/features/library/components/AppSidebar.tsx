@@ -54,7 +54,7 @@ export function AppSidebar({
   const items: NavItem[] = [
     { icon: Icons.Home, name: "Home", to: "/dashboard" },
     { icon: Icons.Library, name: "Library", to: "/library" },
-    { icon: Icons.Sparkles, name: "Conversations" },
+    { icon: Icons.Sparkles, name: "Conversations", to: "/conversations" },
     { icon: Icons.Highlight, name: "Highlights", to: "/highlights" },
     { icon: Icons.Note, name: "Notes", to: "/notes" },
   ];

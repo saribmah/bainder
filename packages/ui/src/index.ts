@@ -4,3 +4,4 @@ export * from "./icons/index.ts";
 export * from "./primitives/index.ts";
 export * from "./theme/index.ts";
 export * from "./reader/index.ts";
+export * from "./chat/index.ts";

@@ -10,21 +10,21 @@ import {
   type ThemeColors,
 } from "@baindar/ui";
 
-export type BottomTabKey = "home" | "library" | "highlights" | "notes";
+export type BottomTabKey = "home" | "library" | "conversations" | "settings";
 
 const ROUTE_BY_TAB: Record<BottomTabKey, string> = {
   home: "dashboard",
   library: "library",
-  highlights: "highlights",
-  notes: "notes",
+  conversations: "conversations",
+  settings: "settings",
 };
 
 const TABS = [
   { key: "home", icon: Icons.Home, name: "Home" },
   { key: "library", icon: Icons.Library, name: "Library" },
   { key: "add", icon: Icons.Plus, name: "Add", primary: true },
-  { key: "highlights", icon: Icons.Highlight, name: "Highlights" },
-  { key: "notes", icon: Icons.Note, name: "Notes" },
+  { key: "conversations", icon: Icons.Sparkles, name: "Chat" },
+  { key: "settings", icon: Icons.User, name: "You" },
 ] as const;
 
 type Props = BottomTabBarProps & {

@@ -162,6 +162,7 @@ const indexCss = `${HEADER}@import "./tokens.css";
 @import "./typography.css";
 @import "./primitives.css";
 @import "./reader.css";
+@import "./chat.css";
 `;
 
 const stylesDir = path.join(dir, "src", "styles");

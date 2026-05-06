@@ -2,7 +2,7 @@ import { useEffect, type ReactNode } from "react";
 import { Outlet, BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { ThemeProvider } from "@baindar/ui";
 import { RequireAuth, SignIn, SignUp } from "./features/auth";
-import { ChatPage } from "./features/chat";
+import { ConversationsPage } from "./features/conversations";
 import { Dashboard } from "./features/dashboard";
 import { Landing } from "./features/landing";
 import { Highlights, Library, LibraryDetail, Notes, ShelfDetail } from "./features/library";
@@ -23,9 +23,9 @@ export function App() {
         <Route path="/signin" element={<SignIn />} />
         <Route path="/signup" element={<SignUp />} />
         <Route element={<RequireAuth />}>
-          <Route path="/chat" element={<ChatPage />} />
           <Route element={<SignedInShell />}>
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/conversations" element={<ConversationsPage />} />
             <Route path="/library" element={<Library />} />
             <Route path="/library/shelves/:id" element={<ShelfDetail />} />
             <Route path="/library/:id" element={<LibraryDetail />} />

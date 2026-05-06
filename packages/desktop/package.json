@@ -14,8 +14,11 @@
     "ts-check": "bunx --bun tsgo --noEmit && bunx --bun tsgo --noEmit -p tsconfig.main.json"
   },
   "dependencies": {
+    "@ai-sdk/react": "^3.0.177",
     "@baindar/sdk": "*",
     "@baindar/ui": "workspace:*",
+    "agents": "^0.12.3",
+    "ai": "^6.0.175",
     "better-auth": "^1.6.9",
     "electrobun": "^1.16.0",
     "react": "^19.2.4",
