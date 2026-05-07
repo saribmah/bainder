@@ -6,14 +6,11 @@ import type {
 } from "@cloudflare/sandbox";
 import { z } from "zod";
 import { Config } from "../config/config";
-import { Document } from "../document/document";
 import { Instance } from "../instance";
 
 export namespace Sandbox {
   export const DocumentsMountPath = "/mnt/baindar/documents";
-  export const CatalogPath = "/workspace/baindar/catalog.json";
 
-  const workspaceDir = "/workspace/baindar";
   const outputLimit = 20_000;
   const defaultTimeoutMs = 30_000;
 
@@ -79,7 +76,6 @@ export namespace Sandbox {
     const parsed = RunBashInput.parse(input);
     const client = await getClient(userId);
     await prepareForUser(userId);
-    await refreshCatalog(userId, client);
 
     const scriptPath = `/tmp/baindar-${crypto.randomUUID()}.sh`;
     await client.writeFile(scriptPath, `#!/usr/bin/env bash\n${parsed.command}\n`);
@@ -89,7 +85,6 @@ export namespace Sandbox {
       timeout: parsed.timeoutMs ?? defaultTimeoutMs,
       env: {
         BAINDAR_DOCUMENTS_DIR: DocumentsMountPath,
-        BAINDAR_CATALOG: CatalogPath,
         PYTHONUNBUFFERED: "1",
       },
     });
@@ -109,8 +104,7 @@ export namespace Sandbox {
     const sandboxId = sandboxIdForUser(userId);
     if (clientFactoryForTests) return clientFactoryForTests(sandboxId);
     const { getSandbox } = await import("@cloudflare/sandbox");
-    const namespace = Instance.env.Sandbox as DurableObjectNamespace<CloudflareSandbox>;
-    return getSandbox(namespace, sandboxId);
+    return getSandbox(Instance.env.Sandbox, sandboxId);
   };
 
   const mountOptionsForUser = (userId: string): MountBucketOptions => {
@@ -127,45 +121,14 @@ export namespace Sandbox {
     };
   };
 
-  const refreshCatalog = async (userId: string, client: Client): Promise<void> => {
-    const documents = await Document.list(userId);
-    await client.mkdir(workspaceDir, { recursive: true });
-    await client.writeFile(
-      CatalogPath,
-      JSON.stringify(
-        {
-          generatedAt: new Date().toISOString(),
-          documentsDir: DocumentsMountPath,
-          documents: documents.map((doc) => {
-            const documentDir = `${DocumentsMountPath}/${doc.id}`;
-            return {
-              id: doc.id,
-              title: doc.title,
-              kind: doc.kind,
-              status: doc.status,
-              originalFilename: doc.originalFilename,
-              createdAt: doc.createdAt,
-              updatedAt: doc.updatedAt,
-              documentDir,
-              manifestPath: `${documentDir}/manifest.json`,
-              contentDir: `${documentDir}/content`,
-              originalGlob: `${documentDir}/original.*`,
-            };
-          }),
-        },
-        null,
-        2,
-      ),
-    );
-  };
-
   const isAlreadyMountedError = (error: unknown): boolean => {
     const message = error instanceof Error ? error.message : String(error);
     const normalized = message.toLowerCase();
     return (
       normalized.includes("already mounted") ||
       normalized.includes("path already mounted") ||
-      normalized.includes("mount path already in use")
+      normalized.includes("mount path already in use") ||
+      (normalized.includes("mount path") && normalized.includes("already in use"))
     );
   };
 

@@ -137,8 +137,8 @@
 				"TEST_MODE": "false",
 				// Chat agent model. Empty `ANTHROPIC_BASE_URL` uses the SDK's
 				// default (the official Anthropic API).
-				"ANTHROPIC_BASE_URL": "",
-				"ANTHROPIC_MODEL": "claude-sonnet-4-6",
+				"ANTHROPIC_BASE_URL": "https://opencode.ai/zen/go/v1",
+				"ANTHROPIC_MODEL": "minimax-m2.7",
 				// Production sandbox mounts use R2's S3-compatible endpoint.
 				"SANDBOX_R2_LOCAL": "false",
 				"SANDBOX_R2_BUCKET_NAME": "baindar-assets"

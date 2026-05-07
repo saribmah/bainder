@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import type { ExecOptions, ExecResult, MountBucketOptions } from "@cloudflare/sandbox";
-import { DocumentStorage } from "../../document/storage";
 import { createTestRuntime } from "../../document/__tests__/test-db";
 import { Sandbox } from "../sandbox";
 
@@ -50,21 +49,6 @@ class FakeSandboxClient implements Sandbox.Client {
     return { ...this.execResult, command };
   }
 }
-
-const seedDocument = async (userId: string, id: string, title: string) =>
-  DocumentStorage.create({
-    id,
-    userId,
-    kind: "epub",
-    mimeType: "application/epub+zip",
-    originalFilename: `${title}.epub`,
-    sizeBytes: 100,
-    sha256: "0".repeat(64),
-    title,
-    sensitive: false,
-    status: "processed",
-    r2KeyOriginal: `users/${userId}/documents/${id}/original.epub`,
-  });
 
 describe("Sandbox feature", () => {
   const userA = "user-a";
@@ -147,17 +131,16 @@ describe("Sandbox feature", () => {
   it("treats an already-mounted path as prepared", async () => {
     const client = clients.get(Sandbox.sandboxIdForUser(userA)) ?? new FakeSandboxClient();
     clients.set(Sandbox.sandboxIdForUser(userA), client);
-    client.mountError = new Error("InvalidMountConfigError: Mount path already in use");
+    client.mountError = new Error(
+      'InvalidMountConfigError: Mount path "/mnt/baindar/documents" is already in use by bucket "baindar-assets:/users/user-a/documents/".',
+    );
 
     await expect(
       runtime.runAs(userA, () => Sandbox.prepareForUser(userA)),
     ).resolves.toBeUndefined();
   });
 
-  it("runs bash with catalog env and truncates large output", async () => {
-    await runtime.runAs(userA, () => seedDocument(userA, "doc-a", "Lease"));
-    await runtime.runAs(userB, () => seedDocument(userB, "doc-b", "Other User Receipt"));
-
+  it("runs bash with document env and truncates large output", async () => {
     const client = clients.get(Sandbox.sandboxIdForUser(userA)) ?? new FakeSandboxClient();
     clients.set(Sandbox.sandboxIdForUser(userA), client);
     client.execResult = {
@@ -176,16 +159,7 @@ describe("Sandbox feature", () => {
     expect(result.duration).toBe(34);
     expect(result.truncated).toBe(true);
     expect(result.stdout.endsWith("[truncated]")).toBe(true);
-
-    const catalog = JSON.parse(client.writes.get(Sandbox.CatalogPath) ?? "{}") as {
-      documents: Array<{ id: string; title: string; documentDir: string }>;
-    };
-    expect(catalog.documents).toHaveLength(1);
-    expect(catalog.documents[0]).toMatchObject({
-      id: "doc-a",
-      title: "Lease",
-      documentDir: `${Sandbox.DocumentsMountPath}/doc-a`,
-    });
+    expect(client.writes.size).toBe(1);
 
     const exec = client.execCalls[0];
     expect(exec?.command.startsWith("bash '/tmp/baindar-")).toBe(true);
@@ -193,8 +167,9 @@ describe("Sandbox feature", () => {
     expect(exec?.options?.timeout).toBe(5_000);
     expect(exec?.options?.env).toMatchObject({
       BAINDAR_DOCUMENTS_DIR: Sandbox.DocumentsMountPath,
-      BAINDAR_CATALOG: Sandbox.CatalogPath,
+      PYTHONUNBUFFERED: "1",
     });
+    expect(exec?.options?.env).not.toHaveProperty("BAINDAR_CATALOG");
   });
 
   it("validates bash timeout bounds", async () => {

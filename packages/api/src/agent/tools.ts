@@ -85,7 +85,7 @@ export const buildAgentTools = ({ userId }: { userId: string }) => {
 
     runBash: tool({
       description:
-        "Run bash in the user's prepared Linux sandbox. The user's document R2 prefix is mounted read-only at /mnt/baindar/documents, and /workspace/baindar/catalog.json maps document ids/titles to mounted paths. Use rg, find, jq, cat/head, and Python heredocs for document search and analysis.",
+        "Run bash in the user's prepared Linux sandbox. The user's document R2 prefix is mounted read-only at /mnt/baindar/documents. Use listDocuments first; each document id is the directory name under /mnt/baindar/documents/{documentId}. Use rg, find, jq, cat/head, and Python heredocs for document search and analysis.",
       inputSchema: z.object({
         command: z
           .string()
