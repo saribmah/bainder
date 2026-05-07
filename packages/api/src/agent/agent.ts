@@ -13,9 +13,8 @@ export namespace Agent {
   // Idempotent at the binding level — calling it on a never-activated
   // DO instance is a no-op.
   export const destroy = async (conversationId: string): Promise<void> => {
-    const namespace = Instance.env.ChatAgent;
-    const id = namespace.idFromName(conversationId);
-    const stub = namespace.get(id);
+    const id = Instance.env.ChatAgent.idFromName(conversationId);
+    const stub = Instance.env.ChatAgent.get(id);
     await stub.destroy();
   };
 }
