@@ -1,5 +1,8 @@
 import { Binder } from "../binder/binder";
-import type { DocumentRow as BinderDocumentRow } from "../binder/binder-store";
+import type {
+  DocumentRow as BinderDocumentRow,
+  DocumentWithProgressRow,
+} from "../binder/binder-store";
 import type { Document } from "./document";
 
 // Document catalog accessor. BinderDO is the only source of truth — D1's
@@ -47,6 +50,17 @@ export namespace DocumentStorage {
     updatedAt: new Date(row.updatedAt).toISOString(),
   });
 
+  const progressSnapshotFromRow = (
+    row: DocumentWithProgressRow,
+  ): Document.ProgressSnapshot | null =>
+    row.progress
+      ? {
+          sectionKey: row.progress.sectionKey,
+          progressPercent: row.progress.progressPercent,
+          updatedAt: new Date(row.progress.updatedAt).toISOString(),
+        }
+      : null;
+
   export type CreateInput = {
     id: string;
     userId: string;
@@ -83,36 +97,19 @@ export namespace DocumentStorage {
     userId: string,
   ): Promise<(Document.Entity & { r2KeyOriginal: string }) | null> => {
     const binder = Binder.require(userId);
-    const row = await binder.getDocument(id);
+    const row = await binder.getDocumentWithProgress(id);
     if (!row) return null;
-    const progressRow = await binder.getProgress(id);
-    const snapshot = progressRow
-      ? {
-          sectionKey: progressRow.sectionKey,
-          progressPercent: progressRow.progressPercent,
-          updatedAt: new Date(progressRow.updatedAt).toISOString(),
-        }
-      : null;
+    const snapshot = progressSnapshotFromRow(row);
     const entity = binderRowToEntity(userId, row, snapshot);
     return { ...projectEntity(entity), r2KeyOriginal: entity.r2KeyOriginal };
   };
 
   export const list = async (userId: string): Promise<Document.Entity[]> => {
     const binder = Binder.require(userId);
-    const rows = await binder.listDocuments();
-    if (rows.length === 0) return [];
-    const progressByDoc = await binder.listProgressByDocuments(rows.map((r) => r.documentId));
-    return rows.map((row) => {
-      const p = progressByDoc.get(row.documentId);
-      const snapshot: Document.ProgressSnapshot | null = p
-        ? {
-            sectionKey: p.sectionKey,
-            progressPercent: p.progressPercent,
-            updatedAt: new Date(p.updatedAt).toISOString(),
-          }
-        : null;
-      return projectEntity(binderRowToEntity(userId, row, snapshot));
-    });
+    const rows = await binder.listDocumentsWithProgress();
+    return rows.map((row) =>
+      projectEntity(binderRowToEntity(userId, row, progressSnapshotFromRow(row))),
+    );
   };
 
   // Drop the BinderDO catalog row + cascade child tables. BinderDO's
@@ -154,15 +151,8 @@ export namespace DocumentStorage {
     const binder = Binder.require(userId);
     const updated = await binder.updateDocument({ documentId: id, title });
     if (!updated) return null;
-    const progressRow = await binder.getProgress(id);
-    const snapshot = progressRow
-      ? {
-          sectionKey: progressRow.sectionKey,
-          progressPercent: progressRow.progressPercent,
-          updatedAt: new Date(progressRow.updatedAt).toISOString(),
-        }
-      : null;
-    return projectEntity(binderRowToEntity(userId, updated, snapshot));
+    const row = await binder.getDocumentWithProgress(id);
+    return row ? projectEntity(binderRowToEntity(userId, row, progressSnapshotFromRow(row))) : null;
   };
 
   export const markFailed = async (userId: string, id: string, reason: string): Promise<void> => {

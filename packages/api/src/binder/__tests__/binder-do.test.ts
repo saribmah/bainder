@@ -19,7 +19,10 @@ const createFakeSql = (): { sql: SqlStorage; close: () => void } => {
       }
       const trimmed = stmt.trim().toLowerCase();
       const isQuery =
-        trimmed.startsWith("select") || trimmed.startsWith("with") || / returning /i.test(stmt);
+        trimmed.startsWith("select") ||
+        trimmed.startsWith("with") ||
+        trimmed.startsWith("pragma") ||
+        / returning /i.test(stmt);
       const prepared = db.prepare(stmt);
       if (isQuery) {
         const rows = prepared.all(...(args as never[]));
@@ -54,6 +57,14 @@ const newDocument = () => ({
   status: "processing",
   originalKey: "users/u1/documents/d1/original.epub",
 });
+
+const seedDocument = (store: BinderStore, documentId = "d1") =>
+  store.createDocument({
+    ...newDocument(),
+    documentId,
+    title: documentId,
+    originalKey: `users/u1/documents/${documentId}/original.epub`,
+  });
 
 describe("BinderStore catalog", () => {
   let close: () => void;
@@ -197,10 +208,12 @@ describe("BinderStore catalog", () => {
       documentTitle: input.title,
       chunks,
     });
-    // No public count getter — we cleanup via removeDocument and assert
-    // it succeeds without error (the cascade will delete refs + fts rows).
+    expect(store.search({ query: "hello" }).map((hit) => hit.documentId)).toEqual([
+      input.documentId,
+    ]);
     store.removeDocument(input.documentId);
     expect(store.getDocument(input.documentId)).toBeNull();
+    expect(store.search({ query: "hello" })).toEqual([]);
   });
 
   test("indexDocumentChunks throws when documents row missing", () => {
@@ -222,6 +235,8 @@ describe("BinderStore progress", () => {
     const fake = createFakeSql();
     close = fake.close;
     store = new BinderStore(fake.sql);
+    seedDocument(store, "d1");
+    seedDocument(store, "d2");
   });
 
   afterEach(() => close());
@@ -277,6 +292,7 @@ describe("BinderStore highlights", () => {
     const fake = createFakeSql();
     close = fake.close;
     store = new BinderStore(fake.sql);
+    seedDocument(store, "d1");
   });
 
   afterEach(() => close());
@@ -338,6 +354,7 @@ describe("BinderStore notes", () => {
     const fake = createFakeSql();
     close = fake.close;
     store = new BinderStore(fake.sql);
+    seedDocument(store, "d1");
   });
 
   afterEach(() => close());

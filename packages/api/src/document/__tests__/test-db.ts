@@ -313,8 +313,19 @@ class FakeBinder {
     return this.documents.get(documentId) ?? null;
   }
 
+  async getDocumentWithProgress(documentId: string): Promise<FakeDocumentWithProgressRow | null> {
+    const row = this.documents.get(documentId);
+    return row ? this.withProgress(row) : null;
+  }
+
   async listDocuments(): Promise<FakeDocumentRow[]> {
     return [...this.documents.values()].sort((a, b) => b.createdAt - a.createdAt);
+  }
+
+  async listDocumentsWithProgress(): Promise<FakeDocumentWithProgressRow[]> {
+    return [...this.documents.values()]
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .map((row) => this.withProgress(row));
   }
 
   async updateDocument(input: {
@@ -528,6 +539,20 @@ class FakeBinder {
       if (row) out.set(id, row);
     }
     return out;
+  }
+
+  private withProgress(row: FakeDocumentRow): FakeDocumentWithProgressRow {
+    const progress = this.progress.get(row.documentId);
+    return {
+      ...row,
+      progress: progress
+        ? {
+            sectionKey: progress.sectionKey,
+            progressPercent: progress.progressPercent,
+            updatedAt: progress.updatedAt,
+          }
+        : null,
+    };
   }
 
   // ---- Highlights ---------------------------------------------------------

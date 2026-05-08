@@ -4,356 +4,70 @@
 // this store with `this.ctx.storage.sql`.
 
 import { compileFtsQuery, tokenizeQuery } from "../document/document-store";
+import { runSqlMigrations } from "../utils/sqlite-migrations";
+import { binderMigrations } from "./migrations";
+import {
+  rowToConversation,
+  rowToDocument,
+  rowToDocumentWithProgress,
+  rowToHighlight,
+  rowToNote,
+  rowToProgress,
+  rowToShelf,
+  type BinderSearchHit,
+  type BinderSearchInput,
+  type ConversationCreateInput,
+  type ConversationRow,
+  type ConversationRowSql,
+  type ConversationUpdateInput,
+  type CreateDocumentInput,
+  type DocumentRow,
+  type DocumentRowSql,
+  type DocumentWithProgressRow,
+  type DocumentWithProgressRowSql,
+  type HighlightCreateInput,
+  type HighlightRow,
+  type HighlightRowSql,
+  type MarkDocumentProcessedInput,
+  type NoteCreateInput,
+  type NoteRow,
+  type NoteRowSql,
+  type ProgressInput,
+  type ProgressRow,
+  type ProgressRowSql,
+  type ShelfCreateInput,
+  type ShelfRow,
+  type ShelfRowSql,
+  type ShelfRowWithCount,
+  type UpdateDocumentInput,
+} from "./tables";
 
-type Migration = {
-  readonly id: number;
-  readonly sql: string;
-};
-
-// Append-only. New migrations get a new monotonically-increasing id.
-// Editing an existing entry will diverge from already-applied DOs in the
-// wild — always add a new row instead.
-//
-// `binder_chunks_fts` uses external-content FTS5 (`content='binder_chunk_refs'`)
-// instead of the PRD's contentless mode (PRD §9). Contentless FTS5's DELETE
-// command requires re-supplying every original column value, which would
-// force a DocumentDO round-trip on every removeDocument call. External
-// content keeps text once in `binder_chunk_refs.text`, lets standard SQL
-// UPSERT/DELETE drive index changes, and keeps storage cost bounded. Pure
-// contentless can be revisited if BinderDO size ever bottlenecks (PRD §18
-// open question 1).
-const MIGRATIONS: readonly Migration[] = [
-  {
-    id: 1,
-    sql: `
-      CREATE TABLE meta (
-        key TEXT PRIMARY KEY,
-        value TEXT NOT NULL
-      );
-
-      CREATE TABLE documents (
-        document_id TEXT PRIMARY KEY,
-        kind TEXT NOT NULL,
-        mime_type TEXT NOT NULL,
-        original_filename TEXT NOT NULL,
-        size_bytes INTEGER NOT NULL,
-        content_hash TEXT NOT NULL,
-        title TEXT NOT NULL,
-        sensitive INTEGER NOT NULL DEFAULT 0,
-        status TEXT NOT NULL,
-        error_reason TEXT,
-        cover_image TEXT,
-        source_url TEXT,
-        original_key TEXT NOT NULL,
-        manifest_key TEXT,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL
-      );
-      CREATE INDEX idx_documents_updated_at ON documents(updated_at);
-      CREATE INDEX idx_documents_status ON documents(status);
-
-      CREATE TABLE shelves (
-        shelf_id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        description TEXT,
-        position REAL,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL
-      );
-      CREATE UNIQUE INDEX idx_shelves_name_lower ON shelves(lower(name));
-
-      CREATE TABLE shelf_documents (
-        shelf_id TEXT NOT NULL,
-        document_id TEXT NOT NULL,
-        position REAL,
-        added_at INTEGER NOT NULL,
-        PRIMARY KEY (shelf_id, document_id)
-      );
-      CREATE INDEX idx_shelf_documents_document ON shelf_documents(document_id);
-
-      CREATE TABLE progress (
-        document_id TEXT PRIMARY KEY,
-        section_key TEXT NOT NULL,
-        position_json TEXT,
-        progress_percent REAL,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL
-      );
-      CREATE INDEX idx_progress_updated_at ON progress(updated_at);
-
-      CREATE TABLE highlights (
-        highlight_id TEXT PRIMARY KEY,
-        document_id TEXT NOT NULL,
-        section_key TEXT NOT NULL,
-        position_json TEXT NOT NULL,
-        text_snippet TEXT NOT NULL,
-        color TEXT NOT NULL,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL
-      );
-      CREATE INDEX idx_highlights_document_section ON highlights(document_id, section_key);
-      CREATE INDEX idx_highlights_created_at ON highlights(created_at);
-
-      CREATE TABLE notes (
-        note_id TEXT PRIMARY KEY,
-        document_id TEXT NOT NULL,
-        section_key TEXT,
-        highlight_id TEXT,
-        body TEXT NOT NULL,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL
-      );
-      CREATE INDEX idx_notes_document_section ON notes(document_id, section_key);
-      CREATE INDEX idx_notes_highlight ON notes(highlight_id);
-      CREATE INDEX idx_notes_created_at ON notes(created_at);
-
-      CREATE TABLE conversations (
-        conversation_id TEXT PRIMARY KEY,
-        title TEXT NOT NULL,
-        primary_document_id TEXT,
-        created_at INTEGER NOT NULL,
-        last_activity_at INTEGER NOT NULL
-      );
-      CREATE INDEX idx_conversations_activity ON conversations(last_activity_at);
-
-      -- Cross-binder chunk references + tokenizable text. PRD §9 specs a
-      -- contentless FTS5 (content=''), but contentless FTS5 DELETE/UPDATE
-      -- semantics require the caller to surface the full original column
-      -- values for every removal -- unworkable for removeDocument without
-      -- a round-trip back to DocumentDO. Use external-content FTS5 instead:
-      -- text lives once in binder_chunk_refs.text and the FTS index is
-      -- kept in sync via triggers. Trades modest BinderDO storage growth
-      -- for clean UPSERT/DELETE behavior. Pure contentless can revisit
-      -- if BinderDO size becomes a bottleneck (PRD §18 open question 1).
-      CREATE TABLE binder_chunk_refs (
-        rowid INTEGER PRIMARY KEY,
-        document_id TEXT NOT NULL,
-        document_title TEXT NOT NULL,
-        kind TEXT NOT NULL,
-        section_key TEXT NOT NULL,
-        section_title TEXT,
-        section_order INTEGER NOT NULL,
-        chunk_index INTEGER NOT NULL,
-        start_offset INTEGER NOT NULL,
-        end_offset INTEGER NOT NULL,
-        text_path TEXT NOT NULL,
-        text TEXT NOT NULL
-      );
-      CREATE INDEX idx_binder_chunk_refs_document ON binder_chunk_refs(document_id);
-      CREATE INDEX idx_binder_chunk_refs_kind ON binder_chunk_refs(kind);
-      CREATE UNIQUE INDEX idx_binder_chunk_refs_unique
-        ON binder_chunk_refs(document_id, section_key, chunk_index);
-
-      CREATE VIRTUAL TABLE binder_chunks_fts USING fts5(
-        document_title,
-        section_title,
-        text,
-        content='binder_chunk_refs',
-        content_rowid='rowid',
-        tokenize='porter unicode61 remove_diacritics 2'
-      );
-
-      -- Standard FTS5 external-content sync triggers.
-      CREATE TRIGGER binder_chunk_refs_ai AFTER INSERT ON binder_chunk_refs BEGIN
-        INSERT INTO binder_chunks_fts(rowid, document_title, section_title, text)
-        VALUES (new.rowid, new.document_title, new.section_title, new.text);
-      END;
-      CREATE TRIGGER binder_chunk_refs_ad AFTER DELETE ON binder_chunk_refs BEGIN
-        INSERT INTO binder_chunks_fts(binder_chunks_fts, rowid, document_title, section_title, text)
-        VALUES ('delete', old.rowid, old.document_title, old.section_title, old.text);
-      END;
-      CREATE TRIGGER binder_chunk_refs_au AFTER UPDATE ON binder_chunk_refs BEGIN
-        INSERT INTO binder_chunks_fts(binder_chunks_fts, rowid, document_title, section_title, text)
-        VALUES ('delete', old.rowid, old.document_title, old.section_title, old.text);
-        INSERT INTO binder_chunks_fts(rowid, document_title, section_title, text)
-        VALUES (new.rowid, new.document_title, new.section_title, new.text);
-      END;
-
-      CREATE TABLE ai_session (
-        key TEXT PRIMARY KEY,
-        value TEXT NOT NULL
-      );
-    `,
-  },
-];
-
-export type DocumentRow = {
-  documentId: string;
-  kind: string;
-  mimeType: string;
-  originalFilename: string;
-  sizeBytes: number;
-  contentHash: string;
-  title: string;
-  sensitive: boolean;
-  status: string;
-  errorReason: string | null;
-  coverImage: string | null;
-  sourceUrl: string | null;
-  originalKey: string;
-  manifestKey: string | null;
-  createdAt: number;
-  updatedAt: number;
-};
-
-export type CreateDocumentInput = {
-  documentId: string;
-  kind: string;
-  mimeType: string;
-  originalFilename: string;
-  sizeBytes: number;
-  contentHash: string;
-  title: string;
-  sensitive: boolean;
-  status: string;
-  originalKey: string;
-};
-
-export type UpdateDocumentInput = {
-  documentId: string;
-  title?: string;
-};
-
-export type MarkDocumentProcessedInput = {
-  documentId: string;
-  title: string | null;
-  coverImage: string | null;
-  manifestKey?: string | null;
-};
-
-// Position payloads transit DO RPC, so they must be a concrete
-// serializable shape. Format-specific position types (e.g. `{offsetStart,
-// offsetEnd}` for highlights, `{offset}` for progress) all reduce to a
-// numeric record at the wire level. Storage callers narrow to the
-// format-specific type.
-export type PositionPayload = Record<string, number>;
-
-export type ProgressInput = {
-  documentId: string;
-  sectionKey: string;
-  position: PositionPayload | null;
-  progressPercent: number | null;
-};
-
-export type ProgressRow = {
-  documentId: string;
-  sectionKey: string;
-  position: PositionPayload | null;
-  progressPercent: number | null;
-  createdAt: number;
-  updatedAt: number;
-};
-
-export type HighlightCreateInput = {
-  highlightId: string;
-  documentId: string;
-  sectionKey: string;
-  position: PositionPayload;
-  textSnippet: string;
-  color: string;
-};
-
-export type HighlightRow = {
-  highlightId: string;
-  documentId: string;
-  sectionKey: string;
-  position: PositionPayload;
-  textSnippet: string;
-  color: string;
-  createdAt: number;
-  updatedAt: number;
-};
-
-export type NoteCreateInput = {
-  noteId: string;
-  documentId: string;
-  sectionKey: string | null;
-  highlightId: string | null;
-  body: string;
-};
-
-export type NoteRow = {
-  noteId: string;
-  documentId: string;
-  sectionKey: string | null;
-  highlightId: string | null;
-  body: string;
-  createdAt: number;
-  updatedAt: number;
-};
-
-export type ShelfCreateInput = {
-  shelfId: string;
-  name: string;
-  description: string | null;
-};
-
-export type ShelfRow = {
-  shelfId: string;
-  name: string;
-  description: string | null;
-  position: number | null;
-  createdAt: number;
-  updatedAt: number;
-};
-
-export type ShelfRowWithCount = ShelfRow & { itemCount: number };
-
-export type DocumentWithProgressRow = DocumentRow & {
-  progress: {
-    sectionKey: string;
-    progressPercent: number | null;
-    updatedAt: number;
-  } | null;
-};
-
-// Single ranked hit from `BinderStore.search`. Carries enough to fan out to
-// `DocumentDO.getChunkSnippet` for snippet rendering. `score` is FTS5's raw
-// bm25 (smaller = better-ranked). `terms` are the user-supplied search terms
-// the snippet helper passes back into DocumentDO so its snippet() call uses
-// the same matched-token set. Only `documentTitle` and `kind` come from the
-// binder's own row data (not the FTS index).
-export type BinderSearchHit = {
-  documentId: string;
-  documentTitle: string;
-  kind: string;
-  sectionKey: string;
-  sectionTitle: string | null;
-  chunkIndex: number;
-  score: number;
-  terms: string[];
-};
-
-export type BinderSearchInput = {
-  query: string;
-  limit?: number;
-  kind?: string;
-  excludeDocumentId?: string;
-  excludeSectionKey?: string;
-};
-
-export type ConversationCreateInput = {
-  conversationId: string;
-  title: string;
-  primaryDocumentId: string | null;
-};
-
-export type ConversationRow = {
-  conversationId: string;
-  title: string;
-  primaryDocumentId: string | null;
-  createdAt: number;
-  lastActivityAt: number;
-};
-
-export type ConversationUpdateInput = {
-  conversationId: string;
-  title?: string;
-};
+export type {
+  BinderSearchHit,
+  BinderSearchInput,
+  ConversationCreateInput,
+  ConversationRow,
+  ConversationUpdateInput,
+  CreateDocumentInput,
+  DocumentRow,
+  DocumentWithProgressRow,
+  HighlightCreateInput,
+  HighlightRow,
+  MarkDocumentProcessedInput,
+  NoteCreateInput,
+  NoteRow,
+  PositionPayload,
+  ProgressInput,
+  ProgressRow,
+  ShelfCreateInput,
+  ShelfRow,
+  ShelfRowWithCount,
+  UpdateDocumentInput,
+} from "./tables";
 
 export class BinderStore {
   constructor(private readonly sql: SqlStorage) {
-    this.#runMigrations();
+    runSqlMigrations(sql, binderMigrations, "BinderStore");
   }
 
   createDocument(input: CreateDocumentInput): DocumentRow {
@@ -387,11 +101,43 @@ export class BinderStore {
     return this.#getDocumentRow(documentId);
   }
 
+  getDocumentWithProgress(documentId: string): DocumentWithProgressRow | null {
+    const rows = this.sql
+      .exec<DocumentWithProgressRowSql>(
+        `SELECT d.*,
+                p.section_key       AS progress_section_key,
+                p.progress_percent  AS progress_percent_join,
+                p.updated_at        AS progress_updated_at
+         FROM documents d
+         LEFT JOIN progress p ON p.document_id = d.document_id
+         WHERE d.document_id = ?`,
+        documentId,
+      )
+      .toArray();
+    const row = rows[0];
+    return row ? rowToDocumentWithProgress(row) : null;
+  }
+
   listDocuments(): DocumentRow[] {
     const rows = this.sql
       .exec<DocumentRowSql>(`SELECT * FROM documents ORDER BY created_at DESC`)
       .toArray();
     return rows.map(rowToDocument);
+  }
+
+  listDocumentsWithProgress(): DocumentWithProgressRow[] {
+    const rows = this.sql
+      .exec<DocumentWithProgressRowSql>(
+        `SELECT d.*,
+                p.section_key       AS progress_section_key,
+                p.progress_percent  AS progress_percent_join,
+                p.updated_at        AS progress_updated_at
+         FROM documents d
+         LEFT JOIN progress p ON p.document_id = d.document_id
+         ORDER BY d.created_at DESC`,
+      )
+      .toArray();
+    return rows.map(rowToDocumentWithProgress);
   }
 
   updateDocument(input: UpdateDocumentInput): DocumentRow | null {
@@ -570,16 +316,6 @@ export class BinderStore {
   // Idempotent cleanup. Safe under DocumentDeletionWorkflow step replays —
   // re-running against an already-deleted doc is a no-op.
   removeDocument(documentId: string): void {
-    // FTS rows for binder_chunk_refs drop automatically via triggers.
-    this.sql.exec("DELETE FROM binder_chunk_refs WHERE document_id = ?", documentId);
-    this.sql.exec("DELETE FROM shelf_documents WHERE document_id = ?", documentId);
-    this.sql.exec("DELETE FROM highlights WHERE document_id = ?", documentId);
-    this.sql.exec("DELETE FROM notes WHERE document_id = ?", documentId);
-    this.sql.exec("DELETE FROM progress WHERE document_id = ?", documentId);
-    this.sql.exec(
-      "UPDATE conversations SET primary_document_id = NULL WHERE primary_document_id = ?",
-      documentId,
-    );
     this.sql.exec("DELETE FROM documents WHERE document_id = ?", documentId);
   }
 
@@ -690,7 +426,6 @@ export class BinderStore {
 
   removeShelf(shelfId: string): boolean {
     const existed = this.shelfExists(shelfId);
-    this.sql.exec(`DELETE FROM shelf_documents WHERE shelf_id = ?`, shelfId);
     this.sql.exec(`DELETE FROM shelves WHERE shelf_id = ?`, shelfId);
     return existed;
   }
@@ -1059,7 +794,6 @@ export class BinderStore {
   // dropping it is the right semantic.
   removeHighlight(highlightId: string): boolean {
     const existed = this.getHighlight(highlightId) !== null;
-    this.sql.exec(`DELETE FROM notes WHERE highlight_id = ?`, highlightId);
     this.sql.exec(`DELETE FROM highlights WHERE highlight_id = ?`, highlightId);
     return existed;
   }
@@ -1173,172 +907,4 @@ export class BinderStore {
     const row = rows[0];
     return row ? rowToDocument(row) : null;
   }
-
-  #runMigrations(): void {
-    this.sql.exec(`
-      CREATE TABLE IF NOT EXISTS _sql_schema_migrations (
-        id INTEGER PRIMARY KEY,
-        applied_at TEXT NOT NULL DEFAULT (datetime('now'))
-      );
-    `);
-    const applied = new Set<number>();
-    for (const row of this.sql.exec<{ id: number }>("SELECT id FROM _sql_schema_migrations")) {
-      applied.add(row.id);
-    }
-    for (const migration of MIGRATIONS) {
-      if (applied.has(migration.id)) continue;
-      this.sql.exec(migration.sql);
-      this.sql.exec("INSERT INTO _sql_schema_migrations(id) VALUES (?)", migration.id);
-    }
-  }
 }
-
-type DocumentRowSql = {
-  document_id: string;
-  kind: string;
-  mime_type: string;
-  original_filename: string;
-  size_bytes: number;
-  content_hash: string;
-  title: string;
-  sensitive: number;
-  status: string;
-  error_reason: string | null;
-  cover_image: string | null;
-  source_url: string | null;
-  original_key: string;
-  manifest_key: string | null;
-  created_at: number;
-  updated_at: number;
-};
-
-const rowToDocument = (row: DocumentRowSql): DocumentRow => ({
-  documentId: row.document_id,
-  kind: row.kind,
-  mimeType: row.mime_type,
-  originalFilename: row.original_filename,
-  sizeBytes: row.size_bytes,
-  contentHash: row.content_hash,
-  title: row.title,
-  sensitive: row.sensitive === 1,
-  status: row.status,
-  errorReason: row.error_reason,
-  coverImage: row.cover_image,
-  sourceUrl: row.source_url,
-  originalKey: row.original_key,
-  manifestKey: row.manifest_key,
-  createdAt: row.created_at,
-  updatedAt: row.updated_at,
-});
-
-type ProgressRowSql = {
-  document_id: string;
-  section_key: string;
-  position_json: string | null;
-  progress_percent: number | null;
-  created_at: number;
-  updated_at: number;
-};
-
-const rowToProgress = (row: ProgressRowSql): ProgressRow => ({
-  documentId: row.document_id,
-  sectionKey: row.section_key,
-  position: row.position_json === null ? null : (JSON.parse(row.position_json) as PositionPayload),
-  progressPercent: row.progress_percent,
-  createdAt: row.created_at,
-  updatedAt: row.updated_at,
-});
-
-type HighlightRowSql = {
-  highlight_id: string;
-  document_id: string;
-  section_key: string;
-  position_json: string;
-  text_snippet: string;
-  color: string;
-  created_at: number;
-  updated_at: number;
-};
-
-const rowToHighlight = (row: HighlightRowSql): HighlightRow => ({
-  highlightId: row.highlight_id,
-  documentId: row.document_id,
-  sectionKey: row.section_key,
-  position: JSON.parse(row.position_json) as PositionPayload,
-  textSnippet: row.text_snippet,
-  color: row.color,
-  createdAt: row.created_at,
-  updatedAt: row.updated_at,
-});
-
-type NoteRowSql = {
-  note_id: string;
-  document_id: string;
-  section_key: string | null;
-  highlight_id: string | null;
-  body: string;
-  created_at: number;
-  updated_at: number;
-};
-
-const rowToNote = (row: NoteRowSql): NoteRow => ({
-  noteId: row.note_id,
-  documentId: row.document_id,
-  sectionKey: row.section_key,
-  highlightId: row.highlight_id,
-  body: row.body,
-  createdAt: row.created_at,
-  updatedAt: row.updated_at,
-});
-
-type ShelfRowSql = {
-  shelf_id: string;
-  name: string;
-  description: string | null;
-  position: number | null;
-  created_at: number;
-  updated_at: number;
-};
-
-const rowToShelf = (row: ShelfRowSql): ShelfRow => ({
-  shelfId: row.shelf_id,
-  name: row.name,
-  description: row.description,
-  position: row.position,
-  createdAt: row.created_at,
-  updatedAt: row.updated_at,
-});
-
-type DocumentWithProgressRowSql = DocumentRowSql & {
-  progress_section_key: string | null;
-  progress_percent_join: number | null;
-  progress_updated_at: number | null;
-};
-
-const rowToDocumentWithProgress = (row: DocumentWithProgressRowSql): DocumentWithProgressRow => ({
-  ...rowToDocument(row),
-  progress:
-    row.progress_section_key && row.progress_updated_at !== null
-      ? {
-          sectionKey: row.progress_section_key,
-          progressPercent: row.progress_percent_join,
-          updatedAt: row.progress_updated_at,
-        }
-      : null,
-});
-
-type ConversationRowSql = {
-  conversation_id: string;
-  title: string;
-  primary_document_id: string | null;
-  created_at: number;
-  last_activity_at: number;
-};
-
-const rowToConversation = (row: ConversationRowSql): ConversationRow => ({
-  conversationId: row.conversation_id,
-  title: row.title,
-  primaryDocumentId: row.primary_document_id,
-  createdAt: row.created_at,
-  lastActivityAt: row.last_activity_at,
-});

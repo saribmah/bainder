@@ -54,8 +54,16 @@ export class BinderDO extends DurableObject<RuntimeEnv> {
     return this.#store.getDocument(documentId);
   }
 
+  async getDocumentWithProgress(documentId: string): Promise<DocumentWithProgressRow | null> {
+    return this.#store.getDocumentWithProgress(documentId);
+  }
+
   async listDocuments(): Promise<DocumentRow[]> {
     return this.#store.listDocuments();
+  }
+
+  async listDocumentsWithProgress(): Promise<DocumentWithProgressRow[]> {
+    return this.#store.listDocumentsWithProgress();
   }
 
   async updateDocument(input: UpdateDocumentInput): Promise<DocumentRow | null> {

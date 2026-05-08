@@ -3,131 +3,29 @@
 // The DO class (`./document-do.ts`) is a thin wrapper that constructs this
 // store with `this.ctx.storage.sql`. See PRD §10.
 
-type Migration = {
-  readonly id: number;
-  readonly sql: string;
-};
+import { runSqlMigrations } from "../utils/sqlite-migrations";
+import { documentMigrations } from "./migrations";
+import type {
+  ChunkSnippet,
+  DocumentMeta,
+  DocumentSearchHit,
+  IndexChunksInput,
+  InitInput,
+} from "./tables";
 
-const MIGRATIONS: readonly Migration[] = [
-  {
-    id: 1,
-    sql: `
-      CREATE TABLE document_meta (
-        key TEXT PRIMARY KEY,
-        value TEXT NOT NULL
-      );
-
-      CREATE TABLE sections (
-        section_key TEXT PRIMARY KEY,
-        section_order INTEGER NOT NULL,
-        title TEXT,
-        word_count INTEGER,
-        text_path TEXT NOT NULL
-      );
-      CREATE INDEX idx_sections_order ON sections(section_order);
-
-      CREATE TABLE chunks (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        section_key TEXT NOT NULL,
-        section_order INTEGER NOT NULL,
-        section_title TEXT,
-        chunk_index INTEGER NOT NULL,
-        start_offset INTEGER NOT NULL,
-        end_offset INTEGER NOT NULL,
-        text_path TEXT NOT NULL,
-        text TEXT NOT NULL
-      );
-      CREATE UNIQUE INDEX idx_chunks_unique ON chunks(section_key, chunk_index);
-      CREATE INDEX idx_chunks_section ON chunks(section_key);
-
-      CREATE VIRTUAL TABLE chunks_fts USING fts5(
-        section_title,
-        text,
-        content='chunks',
-        content_rowid='id',
-        tokenize='porter unicode61 remove_diacritics 2'
-      );
-
-      CREATE TABLE summaries (
-        target_type TEXT NOT NULL,
-        target_key TEXT NOT NULL,
-        content_hash TEXT NOT NULL,
-        summary TEXT NOT NULL,
-        model TEXT NOT NULL,
-        r2_key TEXT NOT NULL,
-        created_at INTEGER NOT NULL,
-        PRIMARY KEY (target_type, target_key, content_hash)
-      );
-    `,
-  },
-];
-
-export type InitInput = {
-  documentId: string;
-  userId: string;
-  kind: string;
-  manifestKey: string;
-  contentHash: string;
-};
-
-export type SectionInput = {
-  sectionKey: string;
-  sectionOrder: number;
-  title: string | null;
-  wordCount: number;
-  textPath: string;
-};
-
-export type ChunkInput = {
-  sectionKey: string;
-  sectionOrder: number;
-  sectionTitle: string | null;
-  chunkIndex: number;
-  startOffset: number;
-  endOffset: number;
-  textPath: string;
-  text: string;
-};
-
-export type IndexChunksInput = {
-  sections: SectionInput[];
-  chunks: ChunkInput[];
-};
-
-export type ChunkSnippet = {
-  sectionKey: string;
-  sectionTitle: string | null;
-  chunkIndex: number;
-  startOffset: number;
-  endOffset: number;
-  text: string;
-};
-
-// Single ranked hit from `DocumentStore.search`. `score` is the raw bm25
-// rank — smaller is better-ranked (FTS5 returns negative bm25 by default).
-// `snippet` carries the FTS5-rendered snippet around the matched terms,
-// with `<mark>` / `</mark>` wrapping the matches.
-export type DocumentSearchHit = {
-  sectionKey: string;
-  sectionTitle: string | null;
-  chunkIndex: number;
-  startOffset: number;
-  endOffset: number;
-  score: number;
-  snippet: string;
-};
-
-export type DocumentMeta = {
-  documentId: string | null;
-  userId: string | null;
-  kind: string | null;
-  manifestKey: string | null;
-  contentHash: string | null;
-};
+export type {
+  ChunkInput,
+  ChunkSnippet,
+  DocumentMeta,
+  DocumentSearchHit,
+  IndexChunksInput,
+  InitInput,
+  SectionInput,
+} from "./tables";
 
 export class DocumentStore {
   constructor(private readonly sql: SqlStorage) {
-    this.#runMigrations();
+    runSqlMigrations(sql, documentMigrations, "DocumentStore");
   }
 
   // Initialise (or re-affirm) the document's meta row. Idempotent.
@@ -393,24 +291,6 @@ export class DocumentStore {
       score: r.score,
       snippet: r.snippet,
     }));
-  }
-
-  #runMigrations(): void {
-    this.sql.exec(`
-      CREATE TABLE IF NOT EXISTS _sql_schema_migrations (
-        id INTEGER PRIMARY KEY,
-        applied_at TEXT NOT NULL DEFAULT (datetime('now'))
-      );
-    `);
-    const applied = new Set<number>();
-    for (const row of this.sql.exec<{ id: number }>("SELECT id FROM _sql_schema_migrations")) {
-      applied.add(row.id);
-    }
-    for (const migration of MIGRATIONS) {
-      if (applied.has(migration.id)) continue;
-      this.sql.exec(migration.sql);
-      this.sql.exec("INSERT INTO _sql_schema_migrations(id) VALUES (?)", migration.id);
-    }
   }
 }
 

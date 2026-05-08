@@ -19,7 +19,10 @@ const createFakeSql = (): { sql: SqlStorage; close: () => void } => {
       }
       const trimmed = stmt.trim().toLowerCase();
       const isQuery =
-        trimmed.startsWith("select") || trimmed.startsWith("with") || / returning /i.test(stmt);
+        trimmed.startsWith("select") ||
+        trimmed.startsWith("with") ||
+        trimmed.startsWith("pragma") ||
+        / returning /i.test(stmt);
       const prepared = db.prepare(stmt);
       if (isQuery) {
         const rows = prepared.all(...(args as never[]));
