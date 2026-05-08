@@ -23,10 +23,7 @@
 				// `@ai-sdk/anthropic` default (the official API). Override per env
 				// to point at a proxy or alternative provider.
 				"ANTHROPIC_BASE_URL": "https://opencode.ai/zen/go/v1",
-				"ANTHROPIC_MODEL": "minimax-m2.7",
-				// Local sandbox mounts use the Worker R2 binding directly.
-				"SANDBOX_R2_LOCAL": "true",
-				"SANDBOX_R2_BUCKET_NAME": "BUCKET"
+				"ANTHROPIC_MODEL": "minimax-m2.7"
 			},
 			"d1_databases": [
 				{
@@ -65,10 +62,6 @@
 						"class_name": "ChatAgent"
 					},
 					{
-						"name": "Sandbox",
-						"class_name": "Sandbox"
-					},
-					{
 						"name": "BINDER",
 						"class_name": "BinderDO"
 					},
@@ -78,25 +71,10 @@
 					}
 				]
 			},
-			// Per-user containerised sandbox reserved for future heavy
-			// document transformation/export work. Each instance is one
-			// Linux container; the Sandbox class lives in the
-			// @cloudflare/sandbox package and is re-exported from src/index.ts.
-			// Local `wrangler dev` builds and runs this image via Docker
-			// (must be running locally).
-			"containers": [
-				{
-					"class_name": "Sandbox",
-					"image": "./Dockerfile",
-					"instance_type": "lite",
-					"max_instances": 1
-				}
-			],
 			// v1 created CounterAgent (smoke test). v2 retires it and stands
-			// up the real ChatAgent. v3 stands up the Sandbox container DO.
-			// v4 stands up BinderDO (per-user binder aggregate) and
-			// DocumentDO (per-document content/search/summary actor) per the
-			// AI-layer PRD. Migrations are append-only.
+			// up the real ChatAgent. v3 stands up BinderDO (per-user binder
+			// aggregate) and DocumentDO (per-document content/search/summary
+			// actor) per the AI-layer PRD. Migrations are append-only.
 			"migrations": [
 				{
 					"tag": "v1",
@@ -109,10 +87,6 @@
 				},
 				{
 					"tag": "v3",
-					"new_sqlite_classes": ["Sandbox"]
-				},
-				{
-					"tag": "v4",
 					"new_sqlite_classes": ["BinderDO", "DocumentDO"]
 				}
 			],
@@ -157,10 +131,7 @@
 				// Chat agent model. Empty `ANTHROPIC_BASE_URL` uses the SDK's
 				// default (the official Anthropic API).
 				"ANTHROPIC_BASE_URL": "https://opencode.ai/zen/go/v1",
-				"ANTHROPIC_MODEL": "minimax-m2.7",
-				// Production sandbox mounts use R2's S3-compatible endpoint.
-				"SANDBOX_R2_LOCAL": "false",
-				"SANDBOX_R2_BUCKET_NAME": "baindar-assets"
+				"ANTHROPIC_MODEL": "minimax-m2.7"
 			},
 			"d1_databases": [
 				{
@@ -199,10 +170,6 @@
 						"class_name": "ChatAgent"
 					},
 					{
-						"name": "Sandbox",
-						"class_name": "Sandbox"
-					},
-					{
 						"name": "BINDER",
 						"class_name": "BinderDO"
 					},
@@ -212,21 +179,9 @@
 					}
 				]
 			},
-			// Per-user containerised sandbox for future heavy document
-			// transformation/export work. See the dev env above for details.
-			"containers": [
-				{
-					"name": "baindar-sandbox-production",
-					"class_name": "Sandbox",
-					"image": "./Dockerfile",
-					"instance_type": "lite",
-					"max_instances": 1
-				}
-			],
 			// v1 created CounterAgent (smoke test). v2 retires it and stands
-			// up the real ChatAgent. v3 stands up the Sandbox container DO.
-			// v4 stands up BinderDO and DocumentDO per the AI-layer PRD.
-			// Migrations are append-only.
+			// up the real ChatAgent. v3 stands up BinderDO and DocumentDO per
+			// the AI-layer PRD. Migrations are append-only.
 			"migrations": [
 				{
 					"tag": "v1",
@@ -239,10 +194,6 @@
 				},
 				{
 					"tag": "v3",
-					"new_sqlite_classes": ["Sandbox"]
-				},
-				{
-					"tag": "v4",
 					"new_sqlite_classes": ["BinderDO", "DocumentDO"]
 				}
 			],
@@ -253,10 +204,7 @@
 					"GOOGLE_CLIENT_SECRET",
 					"APPLE_CLIENT_ID",
 					"APPLE_CLIENT_SECRET",
-					"ANTHROPIC_API_KEY",
-					"CLOUDFLARE_ACCOUNT_ID",
-					"R2_ACCESS_KEY_ID",
-					"R2_SECRET_ACCESS_KEY"
+					"ANTHROPIC_API_KEY"
 				]
 			}
 		}

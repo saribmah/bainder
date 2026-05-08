@@ -56,8 +56,6 @@ export const createTestRuntime = (
     ChatAgent: createFakeChatAgentBinding(destroyedConversationIds),
     BINDER: createFakeBinderBinding(),
     DOCUMENT: createFakeDocumentBinding(),
-    SANDBOX_R2_LOCAL: "true",
-    SANDBOX_R2_BUCKET_NAME: "BUCKET",
     ...envOverrides,
   } as RuntimeEnv;
 

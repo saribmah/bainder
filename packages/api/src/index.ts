@@ -13,13 +13,6 @@ export { DocumentDeletionWorkflow } from "./document/processing/deletion-workflo
 // `class_name` in wrangler.jsonc → durable_objects.bindings.
 export { ChatAgent } from "./agent/chat";
 
-// Sandbox (Durable Object backed by a Linux container) re-exported so
-// wrangler can locate the class — same as ChatAgent above. The class
-// itself is implemented by the @cloudflare/sandbox package; we own only
-// the binding and per-user instance addressing for future heavy document
-// transformation/export work.
-export { Sandbox } from "@cloudflare/sandbox";
-
 // Per-user binder aggregate and per-document content actor. See
 // `.agents/ai-layer-prd.md` §9–§10. Re-exported here so wrangler can
 // locate them via `class_name` in wrangler.jsonc → durable_objects.bindings.
