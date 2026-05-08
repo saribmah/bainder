@@ -9,6 +9,11 @@ export const conversationsTableSql = `
   CREATE INDEX idx_conversations_activity ON conversations(last_activity_at);
 `;
 
+export const conversationsPrimaryDocumentIndexSql = `
+  CREATE INDEX idx_conversations_primary_document
+    ON conversations(primary_document_id);
+`;
+
 export type ConversationCreateInput = {
   conversationId: string;
   title: string;
