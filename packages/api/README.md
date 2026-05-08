@@ -20,7 +20,6 @@ Cloudflare Workers backend built on Hono + hono-openapi.
 - **`src/highlight/`** — Type-agnostic highlights (`sectionKey` + JSON `position`)
 - **`src/progress/`** — Type-agnostic reading progress
 - **`src/user/`** — User profile
-- **`src/example/`** — Reference feature for new contributors
 
 Dependency direction is one-way: `server/routes → feature → storage`. Storage
 is the only layer that touches `db`; format directories are

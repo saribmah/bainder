@@ -4,14 +4,60 @@ export type ClientOptions = {
   baseUrl: `${string}://${string}` | (string & {});
 };
 
-export type Example = {
-  id: string;
-  name: string;
-  createdAt: string;
+export type AiSearchHit = {
+  documentId: string;
+  documentTitle: string;
+  kind: string;
+  sectionKey: string;
+  sectionTitle: string | null;
+  chunkIndex: number;
+  startOffset: number;
+  endOffset: number;
+  score: number;
+  snippet: string;
+};
+
+export type AiSearchInput = {
+  query: string;
+  documentId?: string;
+  kind?: string;
+  excludeDocumentId?: string;
+  excludeSectionKey?: string;
+  limit?: number;
+};
+
+export type AiReadChunk = {
+  sectionKey: string;
+  sectionTitle: string | null;
+  chunkIndex: number;
+  startOffset: number;
+  endOffset: number;
+  text: string;
+};
+
+export type AiReadResponse = {
+  documentId: string;
+  sectionKey: string;
+  chunks: Array<AiReadChunk>;
+};
+
+export type AiReadInput = {
+  documentId: string;
+  sectionKey: string;
+  offset?: number;
+  limit?: number;
+};
+
+export type AiSummarizeInput = {
+  documentId: string;
+  targetType: "section" | "document";
+  targetKey: string;
+  force?: boolean;
 };
 
 export type Conversation = {
   id: string;
+  agentName: string;
   title: string;
   primaryDocId: string | null;
   createdAt: string;
@@ -72,6 +118,24 @@ export type ShelfCustom = {
   updatedAt: string;
 };
 
+export type DocumentManifestProcessor = {
+  name: string;
+  version: string;
+};
+
+export type DocumentManifestSource = {
+  original: string;
+};
+
+export type DocumentManifestContentLayout = {
+  basePath: string;
+  assetsPath: string;
+};
+
+export type DocumentManifestAiLayout = {
+  summariesPath: string;
+};
+
 export type DocumentSectionSummary = {
   sectionKey: string;
   order: number;
@@ -105,12 +169,21 @@ export type EpubTocItem = {
 };
 
 export type EpubManifest = {
-  schemaVersion: 1;
+  schemaVersion: 2;
+  documentId: string;
+  userId: string;
+  processor: DocumentManifestProcessor;
+  createdAt: string;
+  updatedAt: string;
+  contentHash: string;
   title: string;
   language: string;
   coverImage: string | null;
   chapterCount: number;
   wordCount: number;
+  source: DocumentManifestSource;
+  content: DocumentManifestContentLayout;
+  ai: DocumentManifestAiLayout;
   sections: Array<DocumentSectionSummary>;
   kind: "epub";
   metadata: EpubManifestMetadata;
@@ -207,73 +280,98 @@ export type TestModeSignInInput = {
   name?: string;
 };
 
-export type ExampleListData = {
-  body?: never;
+export type AiSearchData = {
+  body: AiSearchInput;
   path?: never;
   query?: never;
-  url: "/example";
+  url: "/ai/search";
 };
 
-export type ExampleListResponses = {
+export type AiSearchErrors = {
   /**
-   * All examples
+   * Invalid input
    */
-  200: {
-    items: Array<Example>;
-  };
-};
-
-export type ExampleListResponse = ExampleListResponses[keyof ExampleListResponses];
-
-export type ExampleCreateData = {
-  body: {
-    name: string;
-  };
-  path?: never;
-  query?: never;
-  url: "/example";
-};
-
-export type ExampleCreateErrors = {
+  400: unknown;
   /**
-   * Name already taken
+   * Not authenticated
    */
-  409: unknown;
-};
-
-export type ExampleCreateResponses = {
+  401: unknown;
   /**
-   * Created
-   */
-  201: Example;
-};
-
-export type ExampleCreateResponse = ExampleCreateResponses[keyof ExampleCreateResponses];
-
-export type ExampleGetData = {
-  body?: never;
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/example/{id}";
-};
-
-export type ExampleGetErrors = {
-  /**
-   * Not found
+   * Document not found
    */
   404: unknown;
 };
 
-export type ExampleGetResponses = {
+export type AiSearchResponses = {
   /**
-   * Example
+   * Ranked search hits with snippets
    */
-  200: Example;
+  200: {
+    items: Array<AiSearchHit>;
+  };
 };
 
-export type ExampleGetResponse = ExampleGetResponses[keyof ExampleGetResponses];
+export type AiSearchResponse = AiSearchResponses[keyof AiSearchResponses];
+
+export type AiReadData = {
+  body: AiReadInput;
+  path?: never;
+  query?: never;
+  url: "/ai/read";
+};
+
+export type AiReadErrors = {
+  /**
+   * Invalid input
+   */
+  400: unknown;
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * Document not found
+   */
+  404: unknown;
+};
+
+export type AiReadResponses = {
+  /**
+   * Section chunks
+   */
+  200: AiReadResponse;
+};
+
+export type AiReadResponse2 = AiReadResponses[keyof AiReadResponses];
+
+export type AiSummarizeData = {
+  body: AiSummarizeInput;
+  path?: never;
+  query?: never;
+  url: "/ai/summarize";
+};
+
+export type AiSummarizeErrors = {
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * Not implemented
+   */
+  501: unknown;
+};
+
+export type AiSummarizeResponses = {
+  /**
+   * Summary
+   */
+  200: {
+    [key: string]: unknown;
+  };
+};
+
+export type AiSummarizeResponse = AiSummarizeResponses[keyof AiSummarizeResponses];
 
 export type ConversationListData = {
   body?: never;
@@ -515,12 +613,10 @@ export type DocumentDeleteErrors = {
 
 export type DocumentDeleteResponses = {
   /**
-   * Deleted
+   * Deletion accepted
    */
-  204: void;
+  202: unknown;
 };
-
-export type DocumentDeleteResponse = DocumentDeleteResponses[keyof DocumentDeleteResponses];
 
 export type DocumentGetData = {
   body?: never;

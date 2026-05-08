@@ -58,6 +58,7 @@ When asked to do specific kinds of work, read the matching recipe first:
 - [`.agents/add-storage-d1.md`](./.agents/add-storage-d1.md) — wire Cloudflare D1
 - [`.agents/add-auth-provider.md`](./.agents/add-auth-provider.md) — add SIWE/Privy/OAuth
 - [`.agents/PROJECT.md`](./.agents/PROJECT.md) — project-level context (read for orientation)
+- [`.agents/ai-layer-prd.md`](./.agents/ai-layer-prd.md) — clean-slate DO-native AI/binder architecture direction
 
 ## Tooling Rules
 
@@ -374,7 +375,7 @@ imports. Remove unused imports.
 
 ## Feature namespacing
 
-- Organize backend code by feature namespace (`example`, `note`, `order`, ...).
+- Organize backend code by feature namespace (`document`, `note`, `shelf`, ...).
 - Each feature is self-contained under its own directory.
 - No global cross-feature folders for feature logic.
 - Feature-local helpers stay inside the namespace (non-exported by default).

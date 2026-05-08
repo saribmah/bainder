@@ -36,6 +36,20 @@
       "when": 1778041486404,
       "tag": "0004_wealthy_talos",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1778249875259,
+      "tag": "0005_optimal_sister_grimm",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1778252302982,
+      "tag": "0006_talented_khan",
+      "breakpoints": true
     }
   ]
 }

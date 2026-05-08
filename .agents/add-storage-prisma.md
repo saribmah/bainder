@@ -24,13 +24,13 @@ Postgres connection.
      provider = "postgresql"
    }
 
-   // Add your models here. Example for the Example feature:
-   model Example {
+   // Add your models here, matching the feature entities you are persisting.
+   model Receipt {
      id        String   @id @default(uuid(7)) @db.Uuid
      name      String   @unique
      createdAt DateTime @default(now())
 
-     @@map("examples")
+     @@map("receipts")
    }
    ```
 
@@ -94,29 +94,29 @@ Postgres connection.
    ```
    Then `bun run --filter '*/api' cf-typegen`.
 
-7. **Rewrite `src/example/storage.ts`** to use Prisma:
+7. **Rewrite the feature-local `storage.ts`** to use Prisma:
    ```ts
    import type { Prisma } from "../../generated/prisma";
    import { Instance } from "../instance";
-   import type { Example } from "./example";
+   import type { Receipt } from "./receipt";
 
-   export namespace ExampleStorage {
+   export namespace ReceiptStorage {
      export const entitySelect = {
        id: true,
        name: true,
        createdAt: true,
-     } satisfies Prisma.ExampleSelect;
+     } satisfies Prisma.ReceiptSelect;
 
-     export type EntityRow = Prisma.ExampleGetPayload<{ select: typeof entitySelect }>;
+     export type EntityRow = Prisma.ReceiptGetPayload<{ select: typeof entitySelect }>;
 
-     export const toEntity = (row: EntityRow): Example.Entity => ({
+     export const toEntity = (row: EntityRow): Receipt.Entity => ({
        id: row.id,
        name: row.name,
        createdAt: row.createdAt.toISOString(),
      });
 
-     export const get = async (id: string): Promise<Example.Entity | null> => {
-       const row = await Instance.db.example.findUnique({ where: { id }, select: entitySelect });
+     export const get = async (id: string): Promise<Receipt.Entity | null> => {
+       const row = await Instance.db.receipt.findUnique({ where: { id }, select: entitySelect });
        return row ? toEntity(row) : null;
      };
 

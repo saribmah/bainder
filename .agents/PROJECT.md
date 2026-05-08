@@ -74,9 +74,10 @@ collections.
   `GET /documents/:id/{name}` (assets). Same endpoints work for every
   format.
 - Planned siblings: `pdf`, `article`, `image` formats — each adds a parser
-  and a manifest arm. A future cross-corpus binder/search feature will
-  compose across them by reading from R2 in an AI sandbox (no
-  embeddings/vectors).
+  and a manifest arm. The future cross-corpus AI/search direction is captured
+  in [`ai-layer-prd.md`](./ai-layer-prd.md): typed Durable Object tools over
+  binder/document state, no embeddings/vectors, and no AI sandbox for normal
+  read/search/summarize paths.
 
 ## Notes
 

@@ -1,33 +1,22 @@
-import { and, desc, eq } from "drizzle-orm";
-import { conversation } from "../db/schema";
-import { Instance } from "../instance";
+import { Binder } from "../binder/binder";
+import type { ConversationRow } from "../binder/binder-store";
 import type { Conversation } from "./conversation";
 
-// D1-backed `conversation` store. All reads/writes are scoped by userId; a row
-// owned by another user is treated identically to a missing row.
+// BinderDO-backed `conversation` store. UserId scopes to the BinderDO
+// instance (`Binder.require(userId)`); a row owned by another user lives
+// in another DO and is unreachable.
+//
+// `ownerOf` is gone — ChatAgent now persists `(userId, conversationId)`
+// in its own DO storage on init, so reverse lookup by conversationId is
+// no longer needed.
 export namespace ConversationStorage {
-  export const entitySelect = {
-    id: conversation.id,
-    title: conversation.title,
-    primaryDocId: conversation.primaryDocId,
-    createdAt: conversation.createdAt,
-    lastActivityAt: conversation.lastActivityAt,
-  } as const;
-
-  export type EntityRow = {
-    id: string;
-    title: string;
-    primaryDocId: string | null;
-    createdAt: Date;
-    lastActivityAt: Date;
-  };
-
-  export const toEntity = (row: EntityRow): Conversation.Entity => ({
-    id: row.id,
+  const toEntity = (userId: string, row: ConversationRow): Conversation.Entity => ({
+    id: row.conversationId,
+    agentName: `${userId}:${row.conversationId}`,
     title: row.title,
-    primaryDocId: row.primaryDocId,
-    createdAt: row.createdAt.toISOString(),
-    lastActivityAt: row.lastActivityAt.toISOString(),
+    primaryDocId: row.primaryDocumentId,
+    createdAt: new Date(row.createdAt).toISOString(),
+    lastActivityAt: new Date(row.lastActivityAt).toISOString(),
   });
 
   export type CreateInput = {
@@ -38,50 +27,25 @@ export namespace ConversationStorage {
   };
 
   export const create = async (input: CreateInput): Promise<Conversation.Entity> => {
-    const now = new Date();
-    const row: EntityRow & { userId: string } = {
-      id: input.id,
-      userId: input.userId,
+    const binder = Binder.require(input.userId);
+    const row = await binder.createConversation({
+      conversationId: input.id,
       title: input.title,
-      primaryDocId: input.primaryDocId,
-      createdAt: now,
-      lastActivityAt: now,
-    };
-    await Instance.db.insert(conversation).values(row);
-    return toEntity(row);
+      primaryDocumentId: input.primaryDocId,
+    });
+    return toEntity(input.userId, row);
   };
 
   export const list = async (userId: string): Promise<Conversation.Entity[]> => {
-    const rows = await Instance.db
-      .select(entitySelect)
-      .from(conversation)
-      .where(eq(conversation.userId, userId))
-      .orderBy(desc(conversation.lastActivityAt));
-    return rows.map(toEntity);
-  };
-
-  // Internal lookup: returns the row's owner (or null) without scoping by
-  // user. Used by ChatAgent when its DO instance name (the conversationId)
-  // is the only handle it has — the agent needs the userId to scope tool
-  // calls. Not exposed via routes; do not use from feature code that has a
-  // userId already in scope.
-  export const ownerOf = async (id: string): Promise<string | null> => {
-    const rows = await Instance.db
-      .select({ userId: conversation.userId })
-      .from(conversation)
-      .where(eq(conversation.id, id))
-      .limit(1);
-    return rows[0]?.userId ?? null;
+    const binder = Binder.require(userId);
+    const rows = await binder.listConversations();
+    return rows.map((row) => toEntity(userId, row));
   };
 
   export const get = async (id: string, userId: string): Promise<Conversation.Entity | null> => {
-    const rows = await Instance.db
-      .select(entitySelect)
-      .from(conversation)
-      .where(and(eq(conversation.id, id), eq(conversation.userId, userId)))
-      .limit(1);
-    const row = rows[0];
-    return row ? toEntity(row) : null;
+    const binder = Binder.require(userId);
+    const row = await binder.getConversation(id);
+    return row ? toEntity(userId, row) : null;
   };
 
   export type UpdatePatch = {
@@ -94,27 +58,27 @@ export namespace ConversationStorage {
     userId: string,
     patch: UpdatePatch,
   ): Promise<Conversation.Entity | null> => {
-    const set: Record<string, unknown> = {};
-    if (patch.title !== undefined) set["title"] = patch.title;
-    if (patch.lastActivityAt !== undefined) set["lastActivityAt"] = patch.lastActivityAt;
-    if (Object.keys(set).length === 0) {
-      // Nothing to update — return the current row so callers don't 404.
+    const binder = Binder.require(userId);
+    // BinderDO splits "rename" from "bump activity" into two RPCs since
+    // they have different update semantics — title patches the row,
+    // touch only bumps last_activity_at. Compose both here.
+    if (patch.title !== undefined) {
+      const updated = await binder.updateConversation({ conversationId: id, title: patch.title });
+      if (!updated) return null;
+    }
+    if (patch.lastActivityAt !== undefined) {
+      const touched = await binder.touchConversation(id);
+      if (!touched) return null;
+    }
+    if (patch.title === undefined && patch.lastActivityAt === undefined) {
+      // No-op caller (matches prior D1 semantics: returns the current row).
       return get(id, userId);
     }
-    const rows = await Instance.db
-      .update(conversation)
-      .set(set)
-      .where(and(eq(conversation.id, id), eq(conversation.userId, userId)))
-      .returning(entitySelect);
-    const row = rows[0];
-    return row ? toEntity(row) : null;
+    return get(id, userId);
   };
 
   export const remove = async (id: string, userId: string): Promise<boolean> => {
-    const rows = await Instance.db
-      .delete(conversation)
-      .where(and(eq(conversation.id, id), eq(conversation.userId, userId)))
-      .returning({ id: conversation.id });
-    return rows.length > 0;
+    const binder = Binder.require(userId);
+    return binder.removeConversation(id);
   };
 }

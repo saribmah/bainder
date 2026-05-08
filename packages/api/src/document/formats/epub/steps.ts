@@ -1,7 +1,10 @@
+import { Binder } from "../../../binder/binder";
 import { formatErrorChain } from "../../../utils/error";
 import { padOrder, slugify } from "../../../utils/slug";
 import { DocumentAssetStore } from "../../asset-store";
+import { DocumentBinding } from "../../document-binding";
 import type { Document } from "../../document";
+import { chunkSection } from "../../processing/chunk";
 import { DocumentStorage } from "../../storage";
 import { Epub } from "./epub";
 import { ParseFailure } from "./parser";
@@ -10,6 +13,11 @@ import { ParseFailure } from "./parser";
 // chained message before it balloons (drizzle's query-error message alone
 // can run multiple kilobytes of bound parameters).
 const MAX_REASON_LENGTH = 2000;
+
+// Processor identity baked into manifest v2 so consumers can tell which
+// pipeline rendered a document and at what version. Bump `version` on
+// behavior changes that should invalidate consumers' caches.
+const PROCESSOR = { name: "baindar-epub", version: "0.1.0" } as const;
 
 // ---------------------------------------------------------------------------
 // EPUB workflow step bodies. Each function is idempotent and is reused by
@@ -22,15 +30,15 @@ const MAX_REASON_LENGTH = 2000;
 // Bun-based unit test runtime can import and execute the steps directly.
 // ---------------------------------------------------------------------------
 
-export type LoadResult = { userId: string; originalKey: string };
+export type LoadResult = { originalKey: string; contentHash: string };
 
-export const loadDocument = async (documentId: string): Promise<LoadResult> => {
-  const row = await DocumentStorage.getInternal(documentId);
+export const loadDocument = async (userId: string, documentId: string): Promise<LoadResult> => {
+  const row = await Binder.require(userId).getDocument(documentId);
   if (!row) throw new Error(`Document ${documentId} not found`);
-  if (row.kindParsed !== "epub") {
-    throw new Error(`EpubWorkflow expected kind=epub for ${documentId}, got ${row.kindParsed}`);
+  if (row.kind !== "epub") {
+    throw new Error(`EpubWorkflow expected kind=epub for ${documentId}, got ${row.kind}`);
   }
-  return { userId: row.userId, originalKey: row.r2KeyOriginal };
+  return { originalKey: row.originalKey, contentHash: row.contentHash };
 };
 
 export const resetRendered = async (userId: string, documentId: string): Promise<void> => {
@@ -41,6 +49,7 @@ export const parseAndRender = async (
   userId: string,
   documentId: string,
   originalKey: string,
+  contentHash: string,
 ): Promise<Document.EpubManifest> => {
   const bytes = await DocumentAssetStore.getOriginalBytes(userId, documentId, originalKey);
   if (!bytes) throw new Error(`Original blob missing at ${originalKey}`);
@@ -97,14 +106,28 @@ export const parseAndRender = async (
   }
 
   const wordCount = parsed.chapters.reduce((sum, c) => sum + c.wordCount, 0);
+  const now = new Date().toISOString();
+  const docPrefix = `users/${userId}/documents/${documentId}/`;
+  const sourceOriginal = originalKey.startsWith(docPrefix)
+    ? originalKey.slice(docPrefix.length)
+    : originalKey;
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     kind: "epub",
+    documentId,
+    userId,
+    processor: { name: PROCESSOR.name, version: PROCESSOR.version },
+    createdAt: now,
+    updatedAt: now,
+    contentHash,
     title: parsed.metadata.title || "Untitled",
     language: parsed.metadata.language,
     coverImage: parsed.metadata.coverImage,
     chapterCount: parsed.chapters.length,
     wordCount,
+    source: { original: sourceOriginal },
+    content: { basePath: "content", assetsPath: "assets" },
+    ai: { summariesPath: "ai/summaries" },
     sections,
     metadata: {
       authors: parsed.metadata.authors,
@@ -118,7 +141,11 @@ export const parseAndRender = async (
   };
 };
 
-export type FinalizedManifest = { title: string | null; coverImage: string | null };
+export type FinalizedManifest = {
+  title: string | null;
+  coverImage: string | null;
+  manifestKey: string;
+};
 
 export const writeManifest = async (
   userId: string,
@@ -126,19 +153,28 @@ export const writeManifest = async (
   manifest: Document.EpubManifest,
 ): Promise<FinalizedManifest> => {
   await DocumentAssetStore.putManifest(userId, documentId, manifest);
-  return { title: manifest.title || null, coverImage: manifest.coverImage };
+  return {
+    title: manifest.title || null,
+    coverImage: manifest.coverImage,
+    manifestKey: `users/${userId}/documents/${documentId}/manifest.json`,
+  };
 };
 
 export const markProcessed = async (
+  userId: string,
   documentId: string,
   finalized: FinalizedManifest,
 ): Promise<void> => {
-  await DocumentStorage.markProcessed(documentId, finalized);
+  await DocumentStorage.markProcessed(userId, documentId, finalized);
 };
 
-export const recordFailure = async (documentId: string, error: unknown): Promise<void> => {
+export const recordFailure = async (
+  userId: string,
+  documentId: string,
+  error: unknown,
+): Promise<void> => {
   const reason = (formatErrorChain(error) || "Processing failed").slice(0, MAX_REASON_LENGTH);
-  await DocumentStorage.markFailed(documentId, reason);
+  await DocumentStorage.markFailed(userId, documentId, reason);
 };
 
 // ---------------------------------------------------------------------------
@@ -149,16 +185,137 @@ export const recordFailure = async (documentId: string, error: unknown): Promise
 // both happy and parse-failure paths.
 // ---------------------------------------------------------------------------
 
-export const runEpubInline = async (documentId: string): Promise<void> => {
+export const runEpubInline = async (userId: string, documentId: string): Promise<void> => {
   try {
-    const loaded = await loadDocument(documentId);
-    await resetRendered(loaded.userId, documentId);
-    const manifest = await parseAndRender(loaded.userId, documentId, loaded.originalKey);
-    const finalized = await writeManifest(loaded.userId, documentId, manifest);
-    await markProcessed(documentId, finalized);
+    const loaded = await loadDocument(userId, documentId);
+    await resetRendered(userId, documentId);
+    const manifest = await parseAndRender(
+      userId,
+      documentId,
+      loaded.originalKey,
+      loaded.contentHash,
+    );
+    const finalized = await writeManifest(userId, documentId, manifest);
+    await indexDocument(userId, documentId, loaded.contentHash, manifest, finalized);
+    await markProcessed(userId, documentId, finalized);
   } catch (error) {
-    await recordFailure(documentId, error);
+    await recordFailure(userId, documentId, error);
   }
+};
+
+// Idempotently initialize the per-document actor after the manifest write.
+// This runs as its own Workflow checkpoint so retries don't replay parsing.
+export const initDocumentDO = async (
+  userId: string,
+  documentId: string,
+  contentHash: string,
+  finalized: FinalizedManifest,
+): Promise<void> => {
+  await DocumentBinding.require(documentId).init({
+    documentId,
+    userId,
+    kind: "epub",
+    manifestKey: finalized.manifestKey,
+    contentHash,
+  });
+};
+
+// Index one deterministic section batch. Workflow retries re-enter a single
+// section and both backing stores UPSERT by stable keys, so repeated
+// execution updates rows instead of duplicating chunks.
+export const indexDocumentBatch = async (
+  userId: string,
+  documentId: string,
+  documentTitle: string,
+  section: Document.SectionSummary,
+): Promise<void> => {
+  const textPath = section.files.text;
+  const asset = await DocumentAssetStore.getContent(userId, documentId, basename(textPath));
+  if (!asset) {
+    throw new Error(`Section text missing at ${textPath}`);
+  }
+
+  const sectionInput = {
+    sectionKey: section.sectionKey,
+    sectionOrder: section.order,
+    title: section.title || null,
+    wordCount: section.wordCount,
+    textPath,
+  };
+  const text = await streamToString(asset.body);
+  const chunks = chunkSection(text);
+  const documentDOChunks = chunks.map((c) => ({
+    sectionKey: section.sectionKey,
+    sectionOrder: section.order,
+    sectionTitle: section.title || null,
+    chunkIndex: c.chunkIndex,
+    startOffset: c.startOffset,
+    endOffset: c.endOffset,
+    textPath,
+    text: c.text,
+  }));
+
+  await DocumentBinding.require(documentId).indexChunks({
+    sections: [sectionInput],
+    chunks: documentDOChunks,
+  });
+
+  if (documentDOChunks.length === 0) return;
+  await Binder.require(userId).indexDocumentChunks({
+    documentId,
+    documentTitle,
+    chunks: documentDOChunks.map((c) => ({
+      sectionKey: c.sectionKey,
+      sectionTitle: c.sectionTitle,
+      sectionOrder: c.sectionOrder,
+      chunkIndex: c.chunkIndex,
+      startOffset: c.startOffset,
+      endOffset: c.endOffset,
+      textPath: c.textPath,
+      text: c.text,
+    })),
+  });
+};
+
+// Inline/test helper with the same successful end-state as the Workflow
+// class: initialize DocumentDO once, then run every section batch.
+export const indexDocument = async (
+  userId: string,
+  documentId: string,
+  contentHash: string,
+  manifest: Document.EpubManifest,
+  finalized: FinalizedManifest,
+): Promise<void> => {
+  await initDocumentDO(userId, documentId, contentHash, finalized);
+  for (const section of manifest.sections) {
+    await indexDocumentBatch(userId, documentId, manifest.title, section);
+  }
+};
+
+const basename = (path: string): string => {
+  const stripped = path.startsWith("content/") ? path.slice("content/".length) : path;
+  return stripped;
+};
+
+const streamToString = async (stream: ReadableStream<Uint8Array>): Promise<string> => {
+  const reader = stream.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    if (value) {
+      chunks.push(value);
+      total += value.byteLength;
+    }
+  }
+  const merged = new Uint8Array(total);
+  let offset = 0;
+  for (const c of chunks) {
+    merged.set(c, offset);
+    offset += c.byteLength;
+  }
+  return new TextDecoder().decode(merged);
 };
 
 // ---------------------------------------------------------------------------

@@ -44,9 +44,10 @@ default for low/medium traffic apps that want zero infra.
    bunx wrangler d1 migrations apply <db-name> --local  # local
    ```
 
-6. **Rewrite `example/storage.ts`** to use the chosen query layer. Keep the
-   exported surface the same: `entitySelect` (or column list), `EntityRow`,
-   `toEntity`, query functions returning `Example.Entity`.
+6. **Rewrite the feature-local `storage.ts`** to use the chosen query layer.
+   Keep the exported surface the same: `entitySelect` (or column list),
+   `EntityRow`, `toEntity`, and query functions returning the feature's
+   `<Feature>.Entity`.
 
 7. **Update CI** (`.github/workflows/ci.yml`) — D1 doesn't need a generate
    step, but add a migration apply step to `deploy.yml`:
