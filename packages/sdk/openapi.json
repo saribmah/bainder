@@ -18,25 +18,6 @@
       }
     },
     "schemas": {
-      "Example": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "createdAt": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "createdAt"
-        ]
-      },
       "AiSearchHit": {
         "type": "object",
         "properties": {
@@ -1212,105 +1193,6 @@
     }
   },
   "paths": {
-    "/example": {
-      "get": {
-        "operationId": "example.list",
-        "summary": "List examples",
-        "responses": {
-          "200": {
-            "description": "All examples",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "items": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/Example"
-                      }
-                    }
-                  },
-                  "required": [
-                    "items"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "operationId": "example.create",
-        "summary": "Create example",
-        "responses": {
-          "201": {
-            "description": "Created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Example"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Name already taken"
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 100
-                  }
-                },
-                "required": [
-                  "name"
-                ]
-              }
-            }
-          }
-        }
-      }
-    },
-    "/example/{id}": {
-      "get": {
-        "operationId": "example.get",
-        "summary": "Get example by id",
-        "responses": {
-          "200": {
-            "description": "Example",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Example"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found"
-          }
-        },
-        "parameters": [
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "id",
-            "required": true
-          }
-        ]
-      }
-    },
     "/ai/search": {
       "post": {
         "operationId": "ai.search",

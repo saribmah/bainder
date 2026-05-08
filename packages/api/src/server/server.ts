@@ -6,7 +6,6 @@ import { createAuth } from "../user/auth";
 import aiRouter from "./routes/ai";
 import conversationRouter from "./routes/conversation";
 import documentRouter from "./routes/document";
-import exampleRouter from "./routes/example";
 import highlightRouter from "./routes/highlight";
 import noteRouter from "./routes/note";
 import profileRouter from "./routes/profile";
@@ -21,7 +20,6 @@ const server = new Hono<AppEnv>();
 server.on(["GET", "POST"], "/auth/*", (c) => createAuth(c.env).handler(c.req.raw));
 
 // Mount feature routers here. Match feature path prefixes to feature names.
-server.route("/example", exampleRouter);
 server.route("/ai", aiRouter);
 server.route("/conversations", conversationRouter);
 server.route("/documents", documentRouter);

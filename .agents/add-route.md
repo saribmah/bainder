@@ -27,7 +27,7 @@ If the route requires an authenticated user, add `requireAuth` from
 `../middleware/auth` as middleware:
 
 ```ts
-exampleRouter.post("/", requireAuth, validator("json", Example.CreateInput), async (c) => {
+noteRouter.post("/", requireAuth, validator("json", Note.CreateInput), async (c) => {
   // Inside, Instance.userId is available.
 });
 ```

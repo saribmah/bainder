@@ -3,13 +3,16 @@
 Use this recipe when the user says "add a feature", "add a domain module",
 "create a notes/posts/orders module", etc.
 
-The canonical reference is `packages/api/src/example/` + the route at
-`packages/api/src/server/routes/example.ts`. Mirror its structure exactly.
+Use the existing feature modules as references. Good starting points are
+`packages/api/src/note/` with `packages/api/src/server/routes/note.ts` for a
+full CRUD-style feature, or `packages/api/src/progress/` with
+`packages/api/src/server/routes/progress.ts` for a compact storage-backed
+feature.
 
 ## Inputs to confirm with the user
 
-- **Feature name** — singular, lowercase. Example: `note`, `post`, `order`.
-- **Public route prefix** — usually plural of the feature name. Example: `/notes`.
+- **Feature name** — singular, lowercase, such as `note`, `post`, or `order`.
+- **Public route prefix** — usually plural of the feature name, such as `/notes`.
 - **Fields** — what does the entity carry? (id, plus your fields)
 - **Operations** — start with: `list`, `get`, `create`. Add `update`/`delete`/etc as needed.
 - **Auth** — does the feature require an authenticated user? (drives `requireAuth` middleware)
@@ -32,13 +35,6 @@ import <feature>Router from "./routes/<feature>";
 // ...
 server.route("/<plural>", <feature>Router);
 ```
-
-## File templates
-
-Copy from `src/example/example.ts`, `src/example/storage.ts`, and
-`src/server/routes/example.ts`. Rename `Example` → `<Feature>`,
-`example` → `<feature>`, `Example.NameTakenError` → whatever errors your
-domain needs.
 
 ## Pattern rules (non-negotiable)
 

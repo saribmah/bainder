@@ -375,7 +375,7 @@ imports. Remove unused imports.
 
 ## Feature namespacing
 
-- Organize backend code by feature namespace (`example`, `note`, `order`, ...).
+- Organize backend code by feature namespace (`document`, `note`, `shelf`, ...).
 - Each feature is self-contained under its own directory.
 - No global cross-feature folders for feature logic.
 - Feature-local helpers stay inside the namespace (non-exported by default).

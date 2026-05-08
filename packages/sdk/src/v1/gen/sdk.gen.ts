@@ -52,11 +52,6 @@ import {
   type DocumentListShelvesResponses,
   type DocumentUpdateErrors,
   type DocumentUpdateResponses,
-  type ExampleCreateErrors,
-  type ExampleCreateResponses,
-  type ExampleGetErrors,
-  type ExampleGetResponses,
-  type ExampleListResponses,
   type GetTestStatusErrors,
   type GetTestStatusResponses,
   type HealthGetResponses,
@@ -157,65 +152,6 @@ class HeyApiRegistry<T> {
 
   set(value: T, key?: string): void {
     this.instances.set(key ?? this.defaultKey, value);
-  }
-}
-
-export class Example extends HeyApiClient {
-  /**
-   * List examples
-   */
-  public list<ThrowOnError extends boolean = false>(options?: Options<never, ThrowOnError>) {
-    return (options?.client ?? this.client).get<ExampleListResponses, unknown, ThrowOnError>({
-      url: "/example",
-      ...options,
-    });
-  }
-
-  /**
-   * Create example
-   */
-  public create<ThrowOnError extends boolean = false>(
-    parameters: {
-      name: string;
-    },
-    options?: Options<never, ThrowOnError>,
-  ) {
-    const params = buildClientParams([parameters], [{ args: [{ in: "body", key: "name" }] }]);
-    return (options?.client ?? this.client).post<
-      ExampleCreateResponses,
-      ExampleCreateErrors,
-      ThrowOnError
-    >({
-      url: "/example",
-      ...options,
-      ...params,
-      headers: {
-        "Content-Type": "application/json",
-        ...options?.headers,
-        ...params.headers,
-      },
-    });
-  }
-
-  /**
-   * Get example by id
-   */
-  public get<ThrowOnError extends boolean = false>(
-    parameters: {
-      id: string;
-    },
-    options?: Options<never, ThrowOnError>,
-  ) {
-    const params = buildClientParams([parameters], [{ args: [{ in: "path", key: "id" }] }]);
-    return (options?.client ?? this.client).get<
-      ExampleGetResponses,
-      ExampleGetErrors,
-      ThrowOnError
-    >({
-      url: "/example/{id}",
-      ...options,
-      ...params,
-    });
   }
 }
 
@@ -1562,11 +1498,6 @@ export class ApiClient extends HeyApiClient {
       PostTestResetErrors,
       ThrowOnError
     >({ url: "/__test__/reset", ...options });
-  }
-
-  private _example?: Example;
-  get example(): Example {
-    return (this._example ??= new Example({ client: this.client }));
   }
 
   private _ai?: Ai;

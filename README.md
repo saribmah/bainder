@@ -43,7 +43,6 @@ packages/
 │   │   ├── highlight/      # type-agnostic highlights (sectionKey + position)
 │   │   ├── progress/       # type-agnostic reading progress
 │   │   ├── user/           # user profile
-│   │   └── example/        # reference feature for new contributors
 │   ├── migrations/         # drizzle SQL migrations
 │   ├── scripts/            # generate-openapi
 │   └── wrangler.jsonc      # Cloudflare config (D1, R2, Workflow bindings)
@@ -57,8 +56,8 @@ packages/
 
 ### Backend pattern (per feature)
 
-Each feature is a self-contained namespace. The example below is the
-reference shape — clone it for new features.
+Each feature is a self-contained namespace. New backend work should follow
+this shape and use the existing feature modules as references.
 
 ```
 src/<feature>/

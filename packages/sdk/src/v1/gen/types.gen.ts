@@ -4,12 +4,6 @@ export type ClientOptions = {
   baseUrl: `${string}://${string}` | (string & {});
 };
 
-export type Example = {
-  id: string;
-  name: string;
-  createdAt: string;
-};
-
 export type AiSearchHit = {
   documentId: string;
   documentTitle: string;
@@ -285,74 +279,6 @@ export type TestModeSignInInput = {
   email: string;
   name?: string;
 };
-
-export type ExampleListData = {
-  body?: never;
-  path?: never;
-  query?: never;
-  url: "/example";
-};
-
-export type ExampleListResponses = {
-  /**
-   * All examples
-   */
-  200: {
-    items: Array<Example>;
-  };
-};
-
-export type ExampleListResponse = ExampleListResponses[keyof ExampleListResponses];
-
-export type ExampleCreateData = {
-  body: {
-    name: string;
-  };
-  path?: never;
-  query?: never;
-  url: "/example";
-};
-
-export type ExampleCreateErrors = {
-  /**
-   * Name already taken
-   */
-  409: unknown;
-};
-
-export type ExampleCreateResponses = {
-  /**
-   * Created
-   */
-  201: Example;
-};
-
-export type ExampleCreateResponse = ExampleCreateResponses[keyof ExampleCreateResponses];
-
-export type ExampleGetData = {
-  body?: never;
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/example/{id}";
-};
-
-export type ExampleGetErrors = {
-  /**
-   * Not found
-   */
-  404: unknown;
-};
-
-export type ExampleGetResponses = {
-  /**
-   * Example
-   */
-  200: Example;
-};
-
-export type ExampleGetResponse = ExampleGetResponses[keyof ExampleGetResponses];
 
 export type AiSearchData = {
   body: AiSearchInput;

@@ -24,8 +24,8 @@ const api = createApiClient({
 
 // Methods are grouped by feature. Each call returns { data, error, response }.
 const health = await api.health.get();
-const examples = await api.example.list();
-const created = await api.example.create({ name: "hello" });
+const user = await api.user.me();
+const documents = await api.document.list();
 ```
 
 ## Regenerate
