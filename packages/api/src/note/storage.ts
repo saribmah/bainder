@@ -1,39 +1,19 @@
-import { and, asc, desc, eq, isNull } from "drizzle-orm";
-import { note } from "../db/schema";
-import { Instance } from "../instance";
+import { Binder } from "../binder/binder";
+import type { NoteRow } from "../binder/binder-store";
 import type { Note } from "./note";
 
-// D1-backed `note` store. All reads/writes are scoped by userId; a row
-// owned by another user is treated identically to a missing row.
+// BinderDO-backed `note` store. UserId scopes to the BinderDO instance
+// (`Binder.require(userId)`); a row owned by another user lives in another
+// DO entirely and is unreachable.
 export namespace NoteStorage {
-  export const entitySelect = {
-    id: note.id,
-    documentId: note.documentId,
-    sectionKey: note.sectionKey,
-    highlightId: note.highlightId,
-    body: note.body,
-    createdAt: note.createdAt,
-    updatedAt: note.updatedAt,
-  } as const;
-
-  export type EntityRow = {
-    id: string;
-    documentId: string;
-    sectionKey: string | null;
-    highlightId: string | null;
-    body: string;
-    createdAt: Date;
-    updatedAt: Date;
-  };
-
-  export const toEntity = (row: EntityRow): Note.Entity => ({
-    id: row.id,
+  const toEntity = (row: NoteRow): Note.Entity => ({
+    id: row.noteId,
     documentId: row.documentId,
     sectionKey: row.sectionKey,
     highlightId: row.highlightId,
     body: row.body,
-    createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
+    createdAt: new Date(row.createdAt).toISOString(),
+    updatedAt: new Date(row.updatedAt).toISOString(),
   });
 
   export type CreateInput = {
@@ -46,18 +26,14 @@ export namespace NoteStorage {
   };
 
   export const create = async (input: CreateInput): Promise<Note.Entity> => {
-    const now = new Date();
-    const row: EntityRow & { userId: string } = {
-      id: input.id,
-      userId: input.userId,
+    const binder = Binder.require(input.userId);
+    const row = await binder.createNote({
+      noteId: input.id,
       documentId: input.documentId,
       sectionKey: input.sectionKey,
       highlightId: input.highlightId,
       body: input.body,
-      createdAt: now,
-      updatedAt: now,
-    };
-    await Instance.db.insert(note).values(row);
+    });
     return toEntity(row);
   };
 
@@ -69,53 +45,35 @@ export namespace NoteStorage {
   };
 
   export const list = async (userId: string, query: ListQuery): Promise<Note.Entity[]> => {
-    const conds = [eq(note.userId, userId), eq(note.documentId, query.documentId)];
-    if (query.sectionKey !== undefined) {
-      conds.push(eq(note.sectionKey, query.sectionKey));
-    }
-    if (query.highlightId !== undefined) {
-      conds.push(eq(note.highlightId, query.highlightId));
-    }
-    if (query.unanchored === true) {
-      conds.push(isNull(note.sectionKey));
-      conds.push(isNull(note.highlightId));
-    }
-    const rows = await Instance.db
-      .select(entitySelect)
-      .from(note)
-      .where(and(...conds))
-      .orderBy(asc(note.createdAt));
+    const binder = Binder.require(userId);
+    const rows = await binder.listNotes({
+      documentId: query.documentId,
+      sectionKey: query.sectionKey,
+      highlightId: query.highlightId,
+      unanchored: query.unanchored,
+    });
     return rows.map(toEntity);
   };
 
-  // Corpus-wide list. No documentId required; orders by recency so the chat
-  // agent's "what notes did I take recently" queries surface the most useful
-  // rows first. Caller is expected to enforce a sane limit.
+  // Corpus-wide list. Optional documentId filter, optional limit. Caller
+  // is expected to enforce a sane limit; the DO defaults to 50.
   export type ListAllQuery = {
     documentId?: string;
     limit?: number;
   };
 
   export const listAll = async (userId: string, query: ListAllQuery): Promise<Note.Entity[]> => {
-    const conds = [eq(note.userId, userId)];
-    if (query.documentId !== undefined) conds.push(eq(note.documentId, query.documentId));
-    const limit = query.limit ?? 50;
-    const rows = await Instance.db
-      .select(entitySelect)
-      .from(note)
-      .where(and(...conds))
-      .orderBy(desc(note.createdAt))
-      .limit(limit);
+    const binder = Binder.require(userId);
+    const rows = await binder.listNotesAll({
+      documentId: query.documentId,
+      limit: query.limit,
+    });
     return rows.map(toEntity);
   };
 
   export const get = async (id: string, userId: string): Promise<Note.Entity | null> => {
-    const rows = await Instance.db
-      .select(entitySelect)
-      .from(note)
-      .where(and(eq(note.id, id), eq(note.userId, userId)))
-      .limit(1);
-    const row = rows[0];
+    const binder = Binder.require(userId);
+    const row = await binder.getNote(id);
     return row ? toEntity(row) : null;
   };
 
@@ -128,22 +86,13 @@ export namespace NoteStorage {
     userId: string,
     patch: UpdatePatch,
   ): Promise<Note.Entity | null> => {
-    const set: Record<string, unknown> = { updatedAt: new Date() };
-    if (patch.body !== undefined) set["body"] = patch.body;
-    const rows = await Instance.db
-      .update(note)
-      .set(set)
-      .where(and(eq(note.id, id), eq(note.userId, userId)))
-      .returning(entitySelect);
-    const row = rows[0];
+    const binder = Binder.require(userId);
+    const row = await binder.updateNote({ noteId: id, body: patch.body });
     return row ? toEntity(row) : null;
   };
 
   export const remove = async (id: string, userId: string): Promise<boolean> => {
-    const rows = await Instance.db
-      .delete(note)
-      .where(and(eq(note.id, id), eq(note.userId, userId)))
-      .returning({ id: note.id });
-    return rows.length > 0;
+    const binder = Binder.require(userId);
+    return binder.removeNote(id);
   };
 }

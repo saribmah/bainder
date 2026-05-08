@@ -63,13 +63,6 @@ export namespace Conversation {
     return entity;
   };
 
-  // Internal lookup used by ChatAgent: given a conversationId (the DO
-  // instance name), return the owning userId. Returns null if no row
-  // exists. The auth middleware has already verified the caller owns this
-  // conversation, so we don't need to re-scope here.
-  export const ownerOf = async (id: string): Promise<string | null> =>
-    ConversationStorage.ownerOf(id);
-
   export const create = async (userId: string, input: CreateInput): Promise<Entity> => {
     // Confirm the caller owns the doc they're scoping to. Document.get throws
     // DocumentNotFoundError for both missing rows and rows owned by another
@@ -79,12 +72,19 @@ export namespace Conversation {
       await Document.get(userId, input.primaryDocId);
     }
 
-    return ConversationStorage.create({
+    const entity = await ConversationStorage.create({
       id: crypto.randomUUID(),
       userId,
       title: input.title?.trim() || DEFAULT_TITLE,
       primaryDocId: input.primaryDocId ?? null,
     });
+
+    // Persist `(userId, conversationId)` in the chat DO so subsequent
+    // chat turns can resolve the owner from DO storage instead of any
+    // global lookup. See Agent / ChatAgent for the resolveOwner contract.
+    await Agent.init(userId, entity.id);
+
+    return entity;
   };
 
   export const update = async (userId: string, id: string, patch: UpdateInput): Promise<Entity> => {
@@ -94,17 +94,15 @@ export namespace Conversation {
   };
 
   export const remove = async (userId: string, id: string): Promise<void> => {
-    // Confirm ownership before touching the DO. We do the same check
-    // implicitly inside ConversationStorage.remove, but we want a
-    // matching gate before the destroy RPC so we don't accidentally
-    // wipe a stranger's chat DO storage.
+    // Ownership check via BinderDO. The conversation lives in the caller's
+    // own binder, so a foreign row is unreachable — `get` raises
+    // NotFoundError on both missing and cross-user reads.
     await get(userId, id);
 
-    // Destroy the DO's persisted state first. If this fails the D1 row
-    // is still present, so the user can retry. The opposite order
-    // (delete row, then destroy) would orphan storage on a partial
-    // failure.
-    await Agent.destroy(id);
+    // Wipe the chat DO's storage first. If `destroy` fails, the
+    // BinderDO row is still present so the user can retry the delete.
+    // Reverse order would orphan the DO on partial failure.
+    await Agent.destroy(userId, id);
 
     const removed = await ConversationStorage.remove(id, userId);
     if (!removed) throw new NotFoundError({ id });

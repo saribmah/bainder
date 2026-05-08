@@ -51,6 +51,11 @@
 					"binding": "EPUB_PROCESSOR",
 					"name": "baindar-epub-processor-dev",
 					"class_name": "EpubWorkflow"
+				},
+				{
+					"binding": "DELETE_DOCUMENT",
+					"name": "baindar-delete-document-dev",
+					"class_name": "DocumentDeletionWorkflow"
 				}
 			],
 			"durable_objects": {
@@ -62,6 +67,14 @@
 					{
 						"name": "Sandbox",
 						"class_name": "Sandbox"
+					},
+					{
+						"name": "BINDER",
+						"class_name": "BinderDO"
+					},
+					{
+						"name": "DOCUMENT",
+						"class_name": "DocumentDO"
 					}
 				]
 			},
@@ -80,8 +93,9 @@
 			],
 			// v1 created CounterAgent (smoke test). v2 retires it and stands
 			// up the real ChatAgent. v3 stands up the Sandbox container DO.
-			// Migrations are append-only, so retired classes are removed via
-			// `deleted_classes` rather than editing earlier tags.
+			// v4 stands up BinderDO (per-user binder aggregate) and
+			// DocumentDO (per-document content/search/summary actor) per the
+			// AI-layer PRD. Migrations are append-only.
 			"migrations": [
 				{
 					"tag": "v1",
@@ -95,6 +109,10 @@
 				{
 					"tag": "v3",
 					"new_sqlite_classes": ["Sandbox"]
+				},
+				{
+					"tag": "v4",
+					"new_sqlite_classes": ["BinderDO", "DocumentDO"]
 				}
 			],
 			"secrets": {
@@ -166,6 +184,11 @@
 					"binding": "EPUB_PROCESSOR",
 					"name": "baindar-epub-processor",
 					"class_name": "EpubWorkflow"
+				},
+				{
+					"binding": "DELETE_DOCUMENT",
+					"name": "baindar-delete-document",
+					"class_name": "DocumentDeletionWorkflow"
 				}
 			],
 			"durable_objects": {
@@ -177,6 +200,14 @@
 					{
 						"name": "Sandbox",
 						"class_name": "Sandbox"
+					},
+					{
+						"name": "BINDER",
+						"class_name": "BinderDO"
+					},
+					{
+						"name": "DOCUMENT",
+						"class_name": "DocumentDO"
 					}
 				]
 			},
@@ -193,6 +224,7 @@
 			],
 			// v1 created CounterAgent (smoke test). v2 retires it and stands
 			// up the real ChatAgent. v3 stands up the Sandbox container DO.
+			// v4 stands up BinderDO and DocumentDO per the AI-layer PRD.
 			// Migrations are append-only.
 			"migrations": [
 				{
@@ -207,6 +239,10 @@
 				{
 					"tag": "v3",
 					"new_sqlite_classes": ["Sandbox"]
+				},
+				{
+					"tag": "v4",
+					"new_sqlite_classes": ["BinderDO", "DocumentDO"]
 				}
 			],
 			"secrets": {

@@ -114,7 +114,7 @@ describe("Conversation feature", () => {
     });
   });
 
-  it("cascades conversation delete when the primary document is removed", async () => {
+  it("nulls primaryDocId on conversations when the primary document is removed", async () => {
     await runtime.runAs(userA, async () => {
       const doc = await seedDocument(userA);
       const scoped = await Conversation.create(userA, { primaryDocId: doc.id });
@@ -123,20 +123,12 @@ describe("Conversation feature", () => {
       await DocumentStorage.remove(doc.id, userA);
 
       const items = await Conversation.list(userA);
-      expect(items.map((c) => c.id)).toEqual([unscoped.id]);
-      await expect(Conversation.get(userA, scoped.id)).rejects.toMatchObject({
-        name: "ConversationNotFoundError",
-      });
-    });
-  });
+      // Both conversations survive — only `primaryDocId` clears.
+      const ids = items.map((c) => c.id).sort();
+      expect(ids).toEqual([scoped.id, unscoped.id].sort());
 
-  it("ownerOf returns the user_id for an existing row, null otherwise", async () => {
-    const created = await runtime.runAs(userA, () => Conversation.create(userA, {}));
-    // ownerOf is unscoped on purpose — used internally by the chat agent's
-    // DO, where the only handle is the conversationId.
-    await runtime.runAs(userB, async () => {
-      expect(await Conversation.ownerOf(created.id)).toBe(userA);
-      expect(await Conversation.ownerOf("does-not-exist")).toBeNull();
+      const after = await Conversation.get(userA, scoped.id);
+      expect(after.primaryDocId).toBeNull();
     });
   });
 

@@ -37,6 +37,225 @@
           "createdAt"
         ]
       },
+      "AiSearchHit": {
+        "type": "object",
+        "properties": {
+          "documentId": {
+            "type": "string"
+          },
+          "documentTitle": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "sectionKey": {
+            "type": "string"
+          },
+          "sectionTitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "chunkIndex": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "startOffset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "endOffset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "score": {
+            "type": "number"
+          },
+          "snippet": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "documentId",
+          "documentTitle",
+          "kind",
+          "sectionKey",
+          "sectionTitle",
+          "chunkIndex",
+          "startOffset",
+          "endOffset",
+          "score",
+          "snippet"
+        ]
+      },
+      "AiSearchInput": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "documentId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "excludeDocumentId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "excludeSectionKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "AiReadChunk": {
+        "type": "object",
+        "properties": {
+          "sectionKey": {
+            "type": "string"
+          },
+          "sectionTitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "chunkIndex": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "startOffset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "endOffset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "sectionKey",
+          "sectionTitle",
+          "chunkIndex",
+          "startOffset",
+          "endOffset",
+          "text"
+        ]
+      },
+      "AiReadResponse": {
+        "type": "object",
+        "properties": {
+          "documentId": {
+            "type": "string"
+          },
+          "sectionKey": {
+            "type": "string"
+          },
+          "chunks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiReadChunk"
+            }
+          }
+        },
+        "required": [
+          "documentId",
+          "sectionKey",
+          "chunks"
+        ]
+      },
+      "AiReadInput": {
+        "type": "object",
+        "properties": {
+          "documentId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sectionKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          }
+        },
+        "required": [
+          "documentId",
+          "sectionKey"
+        ]
+      },
+      "AiSummarizeInput": {
+        "type": "object",
+        "properties": {
+          "documentId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "targetType": {
+            "type": "string",
+            "enum": [
+              "section",
+              "document"
+            ]
+          },
+          "targetKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "force": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "documentId",
+          "targetType",
+          "targetKey"
+        ]
+      },
       "Conversation": {
         "type": "object",
         "properties": {
@@ -351,6 +570,58 @@
           "updatedAt"
         ]
       },
+      "DocumentManifestProcessor": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "version"
+        ]
+      },
+      "DocumentManifestSource": {
+        "type": "object",
+        "properties": {
+          "original": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "original"
+        ]
+      },
+      "DocumentManifestContentLayout": {
+        "type": "object",
+        "properties": {
+          "basePath": {
+            "type": "string"
+          },
+          "assetsPath": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "basePath",
+          "assetsPath"
+        ]
+      },
+      "DocumentManifestAiLayout": {
+        "type": "object",
+        "properties": {
+          "summariesPath": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "summariesPath"
+        ]
+      },
       "DocumentSectionSummary": {
         "type": "object",
         "properties": {
@@ -516,7 +787,25 @@
         "properties": {
           "schemaVersion": {
             "type": "number",
-            "const": 1
+            "const": 2
+          },
+          "documentId": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "processor": {
+            "$ref": "#/components/schemas/DocumentManifestProcessor"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "contentHash": {
+            "type": "string"
           },
           "title": {
             "type": "string"
@@ -544,6 +833,15 @@
             "minimum": 0,
             "maximum": 9007199254740991
           },
+          "source": {
+            "$ref": "#/components/schemas/DocumentManifestSource"
+          },
+          "content": {
+            "$ref": "#/components/schemas/DocumentManifestContentLayout"
+          },
+          "ai": {
+            "$ref": "#/components/schemas/DocumentManifestAiLayout"
+          },
           "sections": {
             "type": "array",
             "items": {
@@ -566,11 +864,20 @@
         },
         "required": [
           "schemaVersion",
+          "documentId",
+          "userId",
+          "processor",
+          "createdAt",
+          "updatedAt",
+          "contentHash",
           "title",
           "language",
           "coverImage",
           "chapterCount",
           "wordCount",
+          "source",
+          "content",
+          "ai",
           "sections",
           "kind",
           "metadata",
@@ -1000,6 +1307,128 @@
         ]
       }
     },
+    "/ai/search": {
+      "post": {
+        "operationId": "ai.search",
+        "summary": "Lexical search across the binder or within a document",
+        "description": "When `documentId` is omitted, runs a cross-binder FTS5 search and fans out to per-document snippet rendering. When `documentId` is set, runs a per-document search instead. Optional `kind` filters cross-binder hits by document kind (e.g. `epub`, `receipt`); `excludeDocumentId` and `excludeSectionKey` skip results from the supplied scope.",
+        "responses": {
+          "200": {
+            "description": "Ranked search hits with snippets",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AiSearchHit"
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "404": {
+            "description": "Document not found"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiSearchInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/read": {
+      "post": {
+        "operationId": "ai.read",
+        "summary": "Read a section's chunks (paginated)",
+        "description": "Returns ordered chunks for `sectionKey` from the document's per-document store, sliced by `offset` (chunk index) and `limit`. Used by the AI `read_section` tool.",
+        "responses": {
+          "200": {
+            "description": "Section chunks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiReadResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "404": {
+            "description": "Document not found"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiReadInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/summarize": {
+      "post": {
+        "operationId": "ai.summarize",
+        "summary": "Generate or fetch a section/document summary",
+        "description": "Returns a cached summary keyed by `(targetType, targetKey, contentHash)` or generates a fresh one. Stub in v1 — returns 501 until the lazy-summary path lands.",
+        "responses": {
+          "200": {
+            "description": "Summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "501": {
+            "description": "Not implemented"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiSummarizeInput"
+              }
+            }
+          }
+        }
+      }
+    },
     "/conversations": {
       "post": {
         "operationId": "conversation.create",
@@ -1374,9 +1803,10 @@
       "delete": {
         "operationId": "document.delete",
         "summary": "Delete a document",
+        "description": "Triggers asynchronous cleanup via the DELETE_DOCUMENT workflow. The catalog row disappears almost immediately (typically <1s after the call); per-document DO storage + R2 sweep complete in the background.",
         "responses": {
-          "204": {
-            "description": "Deleted"
+          "202": {
+            "description": "Deletion accepted"
           },
           "401": {
             "description": "Not authenticated"

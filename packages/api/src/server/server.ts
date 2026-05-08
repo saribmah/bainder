@@ -3,6 +3,7 @@ import { describeRoute, resolver } from "hono-openapi";
 import type { AppEnv } from "../app/context";
 import { Health } from "../health/health";
 import { createAuth } from "../user/auth";
+import aiRouter from "./routes/ai";
 import conversationRouter from "./routes/conversation";
 import documentRouter from "./routes/document";
 import exampleRouter from "./routes/example";
@@ -21,6 +22,7 @@ server.on(["GET", "POST"], "/auth/*", (c) => createAuth(c.env).handler(c.req.raw
 
 // Mount feature routers here. Match feature path prefixes to feature names.
 server.route("/example", exampleRouter);
+server.route("/ai", aiRouter);
 server.route("/conversations", conversationRouter);
 server.route("/documents", documentRouter);
 server.route("/highlights", highlightRouter);

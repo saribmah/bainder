@@ -1,33 +1,53 @@
 import { tool } from "ai";
 import { z } from "zod";
+import { Ai } from "../ai/ai";
 import { Document } from "../document/document";
 import { Highlight } from "../highlight/highlight";
 import { Note } from "../note/note";
-import { Sandbox } from "../sandbox/sandbox";
 
-// Tools the chat agent can call. Each tool's `execute` runs inside the
-// Instance frame that ChatAgent.onChatMessage already provides — so
+// Typed tools the chat agent can call. Each tool's `execute` runs inside
+// the Instance frame that ChatAgent.onChatMessage already provides — so
 // existing storage modules (which read `Instance.db` from
-// AsyncLocalStorage) work unchanged. The userId is derived from the
-// conversation row in D1 (the DO instance name is the conversationId,
-// not the userId).
+// AsyncLocalStorage) work unchanged. The userId is captured from
+// ChatAgent's DO storage; tools NEVER accept user_id from the model
+// (PRD §14).
+//
+// Output sizes are bounded so a single tool call can't blow the model
+// context budget. See the trim* helpers below.
+
+// Per-tool output caps. The model context budget is the bottleneck — even
+// at 200k tokens a runaway tool can wipe most of it.
+const SNIPPET_CHAR_LIMIT = 600;
+const CHUNK_TEXT_CHAR_LIMIT = 4_000;
+const NOTE_BODY_CHAR_LIMIT = 1_000;
+const HIGHLIGHT_SNIPPET_CHAR_LIMIT = 600;
+const LIST_ITEM_LIMIT_DEFAULT = 50;
+const LIST_ITEM_LIMIT_MAX = 100;
+const SEARCH_LIMIT_DEFAULT = 8;
+const SEARCH_LIMIT_MAX = 20;
+const READ_LIMIT_DEFAULT = 6;
+const READ_LIMIT_MAX = 20;
+
+const truncate = (raw: string, limit: number): string =>
+  raw.length <= limit ? raw : `${raw.slice(0, limit)}…`;
+
 export const buildAgentTools = ({ userId }: { userId: string }) => {
   return {
-    listDocuments: tool({
+    list_documents: tool({
       description:
-        "List documents in the user's binder, ordered by most recent. Use this to find what the user has uploaded before answering questions about specific items.",
+        "List documents in the user's binder, ordered by most recent. Use this to discover what kinds of documents the user has and to look up document_id values by title before calling search_document or read_section.",
       inputSchema: z.object({
         limit: z
           .number()
           .int()
           .min(1)
-          .max(100)
+          .max(LIST_ITEM_LIMIT_MAX)
           .optional()
-          .describe("Max items to return. Defaults to 50."),
+          .describe(`Max items to return. Defaults to ${LIST_ITEM_LIMIT_DEFAULT}.`),
       }),
       execute: async ({ limit }) => {
         const docs = await Document.list(userId);
-        return docs.slice(0, limit ?? 50).map((d) => ({
+        return docs.slice(0, limit ?? LIST_ITEM_LIMIT_DEFAULT).map((d) => ({
           id: d.id,
           title: d.title,
           kind: d.kind,
@@ -37,74 +57,171 @@ export const buildAgentTools = ({ userId }: { userId: string }) => {
       },
     }),
 
-    listNotes: tool({
+    search_document: tool({
       description:
-        "List the user's notes across the binder, most recent first. Optionally scope to one documentId. Notes are short user-authored annotations; the body field holds the actual note text.",
+        "Lexical search WITHIN a single document. Returns ranked snippets matching the query, with section_key + chunk_index pointers usable by read_section. Use when the user asks something specific about one document.",
       inputSchema: z.object({
-        documentId: z
-          .string()
-          .optional()
-          .describe("If set, return only notes attached to this document."),
-        limit: z.number().int().min(1).max(100).optional(),
+        document_id: z.string().min(1),
+        query: z.string().trim().min(1).max(500),
+        limit: z.number().int().min(1).max(SEARCH_LIMIT_MAX).optional(),
       }),
-      execute: async ({ documentId, limit }) => {
-        const notes = await Note.listAll(userId, { documentId, limit });
+      execute: async ({ document_id, query, limit }) => {
+        const items = await Ai.search(userId, {
+          documentId: document_id,
+          query,
+          limit: limit ?? SEARCH_LIMIT_DEFAULT,
+        });
+        return items.map((h) => ({
+          documentId: h.documentId,
+          documentTitle: h.documentTitle,
+          sectionKey: h.sectionKey,
+          sectionTitle: h.sectionTitle,
+          chunkIndex: h.chunkIndex,
+          score: h.score,
+          snippet: truncate(h.snippet, SNIPPET_CHAR_LIMIT),
+        }));
+      },
+    }),
+
+    search_binder: tool({
+      description:
+        "Lexical search ACROSS the entire binder. Returns ranked snippets joined to document title + kind. Use this for cross-document questions ('find my Apple receipt'). Set `kind` when the user clearly asks about a specific document type (discover values from list_documents). `exclude_document_id` / `exclude_section_key` skip results from a known scope.",
+      inputSchema: z.object({
+        query: z.string().trim().min(1).max(500),
+        kind: z.string().min(1).max(64).optional(),
+        exclude_document_id: z.string().min(1).optional(),
+        exclude_section_key: z.string().min(1).max(200).optional(),
+        limit: z.number().int().min(1).max(SEARCH_LIMIT_MAX).optional(),
+      }),
+      execute: async ({ query, kind, exclude_document_id, exclude_section_key, limit }) => {
+        const items = await Ai.search(userId, {
+          query,
+          kind,
+          excludeDocumentId: exclude_document_id,
+          excludeSectionKey: exclude_section_key,
+          limit: limit ?? SEARCH_LIMIT_DEFAULT,
+        });
+        return items.map((h) => ({
+          documentId: h.documentId,
+          documentTitle: h.documentTitle,
+          kind: h.kind,
+          sectionKey: h.sectionKey,
+          sectionTitle: h.sectionTitle,
+          chunkIndex: h.chunkIndex,
+          score: h.score,
+          snippet: truncate(h.snippet, SNIPPET_CHAR_LIMIT),
+        }));
+      },
+    }),
+
+    read_section: tool({
+      description:
+        "Read a section's chunks in order. Use after search_document/search_binder to read surrounding context, or after a MessageReference points the user to a specific section. `offset` and `limit` are chunk indices; default reads the first 6 chunks.",
+      inputSchema: z.object({
+        document_id: z.string().min(1),
+        section_key: z.string().min(1).max(200),
+        offset: z.number().int().nonnegative().optional(),
+        limit: z.number().int().min(1).max(READ_LIMIT_MAX).optional(),
+      }),
+      execute: async ({ document_id, section_key, offset, limit }) => {
+        const result = await Ai.read(userId, {
+          documentId: document_id,
+          sectionKey: section_key,
+          offset,
+          limit: limit ?? READ_LIMIT_DEFAULT,
+        });
+        return {
+          documentId: result.documentId,
+          sectionKey: result.sectionKey,
+          chunks: result.chunks.map((c) => ({
+            sectionKey: c.sectionKey,
+            sectionTitle: c.sectionTitle,
+            chunkIndex: c.chunkIndex,
+            startOffset: c.startOffset,
+            endOffset: c.endOffset,
+            text: truncate(c.text, CHUNK_TEXT_CHAR_LIMIT),
+          })),
+        };
+      },
+    }),
+
+    list_notes: tool({
+      description:
+        "List the user's notes across the binder, most recent first. Optionally scope to one document_id. Notes are short user-authored annotations; the body field holds the text.",
+      inputSchema: z.object({
+        document_id: z.string().min(1).optional(),
+        limit: z.number().int().min(1).max(LIST_ITEM_LIMIT_MAX).optional(),
+      }),
+      execute: async ({ document_id, limit }) => {
+        const notes = await Note.listAll(userId, {
+          documentId: document_id,
+          limit: limit ?? LIST_ITEM_LIMIT_DEFAULT,
+        });
         return notes.map((n) => ({
           id: n.id,
           documentId: n.documentId,
           sectionKey: n.sectionKey,
           highlightId: n.highlightId,
-          body: n.body,
+          body: truncate(n.body, NOTE_BODY_CHAR_LIMIT),
           createdAt: n.createdAt,
         }));
       },
     }),
 
-    listHighlights: tool({
+    list_highlights: tool({
       description:
-        "List the user's highlights across the binder, most recent first. Optionally scope to one documentId. The textSnippet field holds the highlighted passage.",
+        "List the user's highlights across the binder, most recent first. Optionally scope to one document_id. The textSnippet field holds the highlighted passage.",
       inputSchema: z.object({
-        documentId: z
-          .string()
-          .optional()
-          .describe("If set, return only highlights from this document."),
-        limit: z.number().int().min(1).max(100).optional(),
+        document_id: z.string().min(1).optional(),
+        limit: z.number().int().min(1).max(LIST_ITEM_LIMIT_MAX).optional(),
       }),
-      execute: async ({ documentId, limit }) => {
-        const highlights = await Highlight.listAll(userId, { documentId, limit });
+      execute: async ({ document_id, limit }) => {
+        const highlights = await Highlight.listAll(userId, {
+          documentId: document_id,
+          limit: limit ?? LIST_ITEM_LIMIT_DEFAULT,
+        });
         return highlights.map((h) => ({
           id: h.id,
           documentId: h.documentId,
           sectionKey: h.sectionKey,
-          textSnippet: h.textSnippet,
+          textSnippet: truncate(h.textSnippet, HIGHLIGHT_SNIPPET_CHAR_LIMIT),
           color: h.color,
           createdAt: h.createdAt,
         }));
       },
     }),
 
-    runBash: tool({
+    get_summary: tool({
       description:
-        "Run bash in the user's prepared Linux sandbox. The user's document R2 prefix is mounted read-only at /mnt/baindar/documents. Use listDocuments first; each document id is the directory name under /mnt/baindar/documents/{documentId}. Use rg, find, jq, cat/head, and Python heredocs for document search and analysis.",
+        "Fetch a cached summary for a section or whole document. Use BEFORE reading long passages so the user gets a concise overview. STUB IN v1 — currently returns 'not_implemented'; Phase 6 wires the real path.",
       inputSchema: z.object({
-        description: z
-          .string()
-          .trim()
-          .min(3)
-          .max(64)
-          .describe(
-            'Required 3-4 word, user-facing description of the command intent. This is shown in the UI, so avoid shell syntax. Example: "Search lease terms".',
-          ),
-        command: z
-          .string()
-          .min(1)
-          .max(12_000)
-          .describe(
-            "Bash command or script body. Write useful results to stdout. Prefer processed content/*.txt and manifest.json before raw originals.",
-          ),
-        timeoutMs: z.number().int().min(1_000).max(120_000).optional(),
+        document_id: z.string().min(1),
+        target_type: z.enum(["section", "document"]),
+        target_key: z.string().min(1).max(200),
+        force: z.boolean().optional(),
       }),
-      execute: async (input) => Sandbox.runBash(userId, input),
+      execute: async () => {
+        return {
+          status: "not_implemented" as const,
+          message:
+            "get_summary is not yet available. Use search_document + read_section to gather context instead.",
+        };
+      },
+    }),
+
+    expand_query: tool({
+      description:
+        "Expand a concept-style query into related search terms. Use ONLY after an empty or weak lexical search to discover phrasings the user might have used. STUB IN v1 — currently returns 'not_implemented'; Phase 7 wires the real path.",
+      inputSchema: z.object({
+        original_query: z.string().trim().min(1).max(500),
+      }),
+      execute: async () => {
+        return {
+          status: "not_implemented" as const,
+          message:
+            "expand_query is not yet available. Try alternate phrasings yourself or rely on search_binder/search_document directly.",
+        };
+      },
     }),
   };
 };

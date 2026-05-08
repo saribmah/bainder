@@ -9,7 +9,7 @@ import {
 } from "ai";
 import type { AuthContext, RuntimeEnv } from "../app/context";
 import { Conversation } from "../conversation/conversation";
-import { createDb, type Db } from "../db/db";
+import { createDb } from "../db/db";
 import { Instance } from "../instance";
 import {
   referenceDataPartToModelPart,
@@ -19,28 +19,54 @@ import {
 import { SYSTEM_PROMPT } from "./prompt";
 import { buildAgentTools } from "./tools";
 
+// ChatAgent — per-conversation Durable Object. Identity is composite:
+// `idFromName(\`${userId}:${conversationId}\`)` so reverse-resolving owner
+// from instance name is just a string split. `init({userId, conversationId})`
+// is called once at conversation creation; persists the pair to DO storage
+// so resolveUserId() survives DO restarts without ever needing a global
+// lookup. Storage parsing of `this.name` is the cold-start fallback.
+//
+// Tools: typed and bounded. The model can never supply userId — it's
+// captured from DO storage and passed into `buildAgentTools`. See
+// `.agents/ai-layer-prd.md` §11 + §14.
 export class ChatAgent extends AIChatAgent<RuntimeEnv> {
-  // Cached after the first D1 lookup. The DO's instance name is the
-  // conversationId; the userId is whoever owns that conversation row.
-  // Stable for the lifetime of the DO instance — the conversation can't
-  // change owners, and the DO is deleted when the conversation is.
+  // Cache the userId + conversationId for the lifetime of this DO
+  // instance. Reads from DO storage on first miss; falls back to parsing
+  // the composite instance name.
   private cachedUserId: string | null = null;
+  private cachedConversationId: string | null = null;
+
+  // Persist `(userId, conversationId)` so subsequent restarts don't need
+  // to re-parse `this.name`. Idempotent — the conversation can't change
+  // owners, and the route layer calls this once at create time.
+  async init(input: { userId: string; conversationId: string }): Promise<void> {
+    await this.ctx.storage.put("userId", input.userId);
+    await this.ctx.storage.put("conversationId", input.conversationId);
+    this.cachedUserId = input.userId;
+    this.cachedConversationId = input.conversationId;
+  }
+
+  // Wipe DO storage. Mirrors AIChatAgent's `destroy()` which the agents
+  // framework provides; we override to clear our owner-tracking keys
+  // before delegating. Safe under repeated calls — DELETE handler may
+  // hit this on an already-cleared instance.
+  override async destroy(): Promise<void> {
+    this.cachedUserId = null;
+    this.cachedConversationId = null;
+    await super.destroy();
+  }
 
   override async onChatMessage(
     onFinish: StreamTextOnFinishCallback<ToolSet>,
     options?: { abortSignal?: AbortSignal },
   ): Promise<Response | undefined> {
     const db = createDb(this.env);
-    const userId = await this.resolveUserId(db);
-    if (!userId) {
-      // The auth middleware blocks unauthorized callers from reaching the
-      // DO, so a missing row here implies the conversation was deleted
-      // mid-request. Bail without persisting a turn.
+    const { userId, conversationId } = await this.resolveOwner();
+    if (!userId || !conversationId) {
       return new Response("Conversation not found", { status: 404 });
     }
 
     return Instance.provide({ auth: agentAuth(userId), env: this.env, db }, async () => {
-      const conversationId = this.name;
       const messages = this.messages as BaindarAgentMessage[];
       const referenceValidation = validateReferenceDataParts(messages);
       if (!referenceValidation.ok) {
@@ -64,30 +90,53 @@ export class ChatAgent extends AIChatAgent<RuntimeEnv> {
         }),
         abortSignal: options?.abortSignal,
         tools,
-        // Allow up to 8 model→tool→model loops per turn so the agent can chain
-        // (e.g. listDocuments → match by title → listNotes for that document).
-        stopWhen: stepCountIs(20),
+        // Cap the model→tool→model loop. Typed tools (Phase 5) finish in
+        // 1–3 rounds for most queries; 12 leaves headroom for chained
+        // search→read→search-followup flows without runaway loops.
+        stopWhen: stepCountIs(12),
         onFinish,
       });
       return result.toUIMessageStreamResponse();
     });
   }
 
-  private async resolveUserId(db: Db): Promise<string | null> {
-    if (this.cachedUserId) return this.cachedUserId;
-    const userId = await Instance.provide({ auth: anonymousAuth, env: this.env, db }, () =>
-      Conversation.ownerOf(this.name),
-    );
+  private async resolveOwner(): Promise<{
+    userId: string | null;
+    conversationId: string | null;
+  }> {
+    if (this.cachedUserId && this.cachedConversationId) {
+      return { userId: this.cachedUserId, conversationId: this.cachedConversationId };
+    }
+    const stored = await Promise.all([
+      this.ctx.storage.get<string>("userId"),
+      this.ctx.storage.get<string>("conversationId"),
+    ]);
+    let userId = stored[0] ?? null;
+    let conversationId = stored[1] ?? null;
+    // Cold-start fallback: parse the composite DO name. Production
+    // populates storage via `init()` so this branch only fires for
+    // DOs activated before the first init call (e.g. a stray request
+    // race after BinderDO.createConversation but before Agent.init).
+    if (!userId || !conversationId) {
+      const parsed = parseComposite(this.name);
+      if (parsed) {
+        userId = userId ?? parsed.userId;
+        conversationId = conversationId ?? parsed.conversationId;
+      }
+    }
     if (userId) this.cachedUserId = userId;
-    return userId;
+    if (conversationId) this.cachedConversationId = conversationId;
+    return { userId, conversationId };
   }
 }
 
-const anonymousAuth: AuthContext = {
-  isAuthenticated: false,
-  userId: null,
-  user: null,
-  authMethod: null,
+const parseComposite = (name: string): { userId: string; conversationId: string } | null => {
+  const colon = name.indexOf(":");
+  if (colon <= 0 || colon === name.length - 1) return null;
+  return {
+    userId: name.slice(0, colon),
+    conversationId: name.slice(colon + 1),
+  };
 };
 
 const agentAuth = (userId: string): AuthContext => ({

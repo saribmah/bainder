@@ -7,6 +7,7 @@ export { openApiDocumentation } from "./app/app";
 // wrangler.jsonc. One Workflow class per document kind; `Processor.trigger`
 // dispatches uploads to the matching binding.
 export { EpubWorkflow } from "./document/formats/epub/workflow";
+export { DocumentDeletionWorkflow } from "./document/processing/deletion-workflow";
 
 // Agent (Durable Object) class exports so wrangler can locate them via
 // `class_name` in wrangler.jsonc → durable_objects.bindings.
@@ -18,6 +19,12 @@ export { ChatAgent } from "./agent/chat";
 // only the binding and the per-user instance addressing inside the
 // chat agent's runPython tool.
 export { Sandbox } from "@cloudflare/sandbox";
+
+// Per-user binder aggregate and per-document content actor. See
+// `.agents/ai-layer-prd.md` §9–§10. Re-exported here so wrangler can
+// locate them via `class_name` in wrangler.jsonc → durable_objects.bindings.
+export { BinderDO } from "./binder/binder-do";
+export { DocumentDO } from "./document/document-do";
 
 const hostnameOf = (value: string | null | undefined): string | null => {
   if (!value) return null;

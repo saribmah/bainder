@@ -1,0 +1,481 @@
+// Pure SQL implementation of DocumentDO. No `cloudflare:workers` dep so the
+// bun-based test runtime can exercise it against an in-memory sqlite shim.
+// The DO class (`./document-do.ts`) is a thin wrapper that constructs this
+// store with `this.ctx.storage.sql`. See PRD §10.
+
+type Migration = {
+  readonly id: number;
+  readonly sql: string;
+};
+
+const MIGRATIONS: readonly Migration[] = [
+  {
+    id: 1,
+    sql: `
+      CREATE TABLE document_meta (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      );
+
+      CREATE TABLE sections (
+        section_key TEXT PRIMARY KEY,
+        section_order INTEGER NOT NULL,
+        title TEXT,
+        word_count INTEGER,
+        text_path TEXT NOT NULL
+      );
+      CREATE INDEX idx_sections_order ON sections(section_order);
+
+      CREATE TABLE chunks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        section_key TEXT NOT NULL,
+        section_order INTEGER NOT NULL,
+        section_title TEXT,
+        chunk_index INTEGER NOT NULL,
+        start_offset INTEGER NOT NULL,
+        end_offset INTEGER NOT NULL,
+        text_path TEXT NOT NULL,
+        text TEXT NOT NULL
+      );
+      CREATE UNIQUE INDEX idx_chunks_unique ON chunks(section_key, chunk_index);
+      CREATE INDEX idx_chunks_section ON chunks(section_key);
+
+      CREATE VIRTUAL TABLE chunks_fts USING fts5(
+        section_title,
+        text,
+        content='chunks',
+        content_rowid='id',
+        tokenize='porter unicode61 remove_diacritics 2'
+      );
+
+      CREATE TABLE summaries (
+        target_type TEXT NOT NULL,
+        target_key TEXT NOT NULL,
+        content_hash TEXT NOT NULL,
+        summary TEXT NOT NULL,
+        model TEXT NOT NULL,
+        r2_key TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        PRIMARY KEY (target_type, target_key, content_hash)
+      );
+    `,
+  },
+];
+
+export type InitInput = {
+  documentId: string;
+  userId: string;
+  kind: string;
+  manifestKey: string;
+  contentHash: string;
+};
+
+export type SectionInput = {
+  sectionKey: string;
+  sectionOrder: number;
+  title: string | null;
+  wordCount: number;
+  textPath: string;
+};
+
+export type ChunkInput = {
+  sectionKey: string;
+  sectionOrder: number;
+  sectionTitle: string | null;
+  chunkIndex: number;
+  startOffset: number;
+  endOffset: number;
+  textPath: string;
+  text: string;
+};
+
+export type IndexChunksInput = {
+  sections: SectionInput[];
+  chunks: ChunkInput[];
+};
+
+export type ChunkSnippet = {
+  sectionKey: string;
+  sectionTitle: string | null;
+  chunkIndex: number;
+  startOffset: number;
+  endOffset: number;
+  text: string;
+};
+
+// Single ranked hit from `DocumentStore.search`. `score` is the raw bm25
+// rank — smaller is better-ranked (FTS5 returns negative bm25 by default).
+// `snippet` carries the FTS5-rendered snippet around the matched terms,
+// with `<mark>` / `</mark>` wrapping the matches.
+export type DocumentSearchHit = {
+  sectionKey: string;
+  sectionTitle: string | null;
+  chunkIndex: number;
+  startOffset: number;
+  endOffset: number;
+  score: number;
+  snippet: string;
+};
+
+export type DocumentMeta = {
+  documentId: string | null;
+  userId: string | null;
+  kind: string | null;
+  manifestKey: string | null;
+  contentHash: string | null;
+};
+
+export class DocumentStore {
+  constructor(private readonly sql: SqlStorage) {
+    this.#runMigrations();
+  }
+
+  // Initialise (or re-affirm) the document's meta row. Idempotent.
+  init(input: InitInput): void {
+    const sql = this.sql;
+    const upsert = (key: string, value: string) =>
+      sql.exec(
+        `INSERT INTO document_meta(key, value) VALUES (?, ?)
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
+        key,
+        value,
+      );
+    upsert("documentId", input.documentId);
+    upsert("userId", input.userId);
+    upsert("kind", input.kind);
+    upsert("manifestKey", input.manifestKey);
+    upsert("contentHash", input.contentHash);
+  }
+
+  getMeta(): DocumentMeta {
+    const rows = this.sql
+      .exec<{ key: string; value: string }>(`SELECT key, value FROM document_meta`)
+      .toArray();
+    const map = new Map<string, string>();
+    for (const r of rows) map.set(r.key, r.value);
+    return {
+      documentId: map.get("documentId") ?? null,
+      userId: map.get("userId") ?? null,
+      kind: map.get("kind") ?? null,
+      manifestKey: map.get("manifestKey") ?? null,
+      contentHash: map.get("contentHash") ?? null,
+    };
+  }
+
+  // UPSERT chunks by (section_key, chunk_index) so workflow step replays
+  // don't duplicate. Sections are upserted by section_key. The contentless-
+  // looking write to chunks_fts uses an external-content FTS5 table backed
+  // by `chunks`, so we explicitly DELETE+INSERT the matching FTS rows by
+  // rowid to keep the index consistent under repeated indexChunks calls.
+  indexChunks(input: IndexChunksInput): void {
+    const sql = this.sql;
+    sql.exec("BEGIN");
+    try {
+      for (const section of input.sections) {
+        sql.exec(
+          `INSERT INTO sections(section_key, section_order, title, word_count, text_path)
+           VALUES (?, ?, ?, ?, ?)
+           ON CONFLICT(section_key) DO UPDATE SET
+             section_order = excluded.section_order,
+             title = excluded.title,
+             word_count = excluded.word_count,
+             text_path = excluded.text_path`,
+          section.sectionKey,
+          section.sectionOrder,
+          section.title,
+          section.wordCount,
+          section.textPath,
+        );
+      }
+      for (const chunk of input.chunks) {
+        // Look up the existing rowid for FTS sync (so we DELETE the right
+        // FTS row before re-inserting).
+        const existingRowid = this.sql
+          .exec<{ id: number }>(
+            `SELECT id FROM chunks WHERE section_key = ? AND chunk_index = ?`,
+            chunk.sectionKey,
+            chunk.chunkIndex,
+          )
+          .toArray()[0]?.id;
+
+        sql.exec(
+          `INSERT INTO chunks(
+             section_key, section_order, section_title, chunk_index,
+             start_offset, end_offset, text_path, text
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+           ON CONFLICT(section_key, chunk_index) DO UPDATE SET
+             section_order = excluded.section_order,
+             section_title = excluded.section_title,
+             start_offset = excluded.start_offset,
+             end_offset = excluded.end_offset,
+             text_path = excluded.text_path,
+             text = excluded.text`,
+          chunk.sectionKey,
+          chunk.sectionOrder,
+          chunk.sectionTitle,
+          chunk.chunkIndex,
+          chunk.startOffset,
+          chunk.endOffset,
+          chunk.textPath,
+          chunk.text,
+        );
+
+        const newRowid = this.sql
+          .exec<{ id: number }>(
+            `SELECT id FROM chunks WHERE section_key = ? AND chunk_index = ?`,
+            chunk.sectionKey,
+            chunk.chunkIndex,
+          )
+          .toArray()[0]?.id;
+        if (newRowid === undefined) continue;
+
+        if (existingRowid !== undefined) {
+          sql.exec(`DELETE FROM chunks_fts WHERE rowid = ?`, existingRowid);
+        }
+        sql.exec(
+          `INSERT INTO chunks_fts(rowid, section_title, text) VALUES (?, ?, ?)`,
+          newRowid,
+          chunk.sectionTitle,
+          chunk.text,
+        );
+      }
+      sql.exec("COMMIT");
+    } catch (e) {
+      sql.exec("ROLLBACK");
+      throw e;
+    }
+  }
+
+  // Returns ordered chunks for a section (or all sections if sectionKey is
+  // null), sliced by offset/limit. Used by the AI read tool for offset
+  // paging through long sections.
+  readSection(input: { sectionKey: string; offset?: number; limit?: number }): {
+    sectionKey: string;
+    chunks: ChunkSnippet[];
+  } {
+    const offset = input.offset ?? 0;
+    const limit = input.limit ?? 50;
+    const rows = this.sql
+      .exec<{
+        section_key: string;
+        section_title: string | null;
+        chunk_index: number;
+        start_offset: number;
+        end_offset: number;
+        text: string;
+      }>(
+        `SELECT section_key, section_title, chunk_index, start_offset, end_offset, text
+         FROM chunks
+         WHERE section_key = ?
+         ORDER BY chunk_index ASC
+         LIMIT ? OFFSET ?`,
+        input.sectionKey,
+        limit,
+        offset,
+      )
+      .toArray();
+    return {
+      sectionKey: input.sectionKey,
+      chunks: rows.map((r) => ({
+        sectionKey: r.section_key,
+        sectionTitle: r.section_title,
+        chunkIndex: r.chunk_index,
+        startOffset: r.start_offset,
+        endOffset: r.end_offset,
+        text: r.text,
+      })),
+    };
+  }
+
+  // When `terms` are supplied, the returned `text` is an FTS5-rendered
+  // snippet around the matched terms (highlighted with `<mark>`). Without
+  // terms, the full chunk text is returned verbatim. The snippet builds an
+  // OR query out of the supplied terms and runs it against `chunks_fts` for
+  // the single (section_key, chunk_index) row.
+  getChunkSnippet(input: {
+    sectionKey: string;
+    chunkIndex: number;
+    terms?: string[];
+  }): ChunkSnippet | null {
+    const ftsQuery = input.terms ? compileFtsOrQuery(input.terms) : null;
+    if (ftsQuery) {
+      const rows = this.sql
+        .exec<{
+          section_key: string;
+          section_title: string | null;
+          chunk_index: number;
+          start_offset: number;
+          end_offset: number;
+          snippet: string;
+        }>(
+          `SELECT c.section_key, c.section_title, c.chunk_index, c.start_offset, c.end_offset,
+                  snippet(chunks_fts, 1, '<mark>', '</mark>', '…', 32) AS snippet
+           FROM chunks_fts
+           INNER JOIN chunks c ON c.id = chunks_fts.rowid
+           WHERE chunks_fts MATCH ?
+             AND c.section_key = ?
+             AND c.chunk_index = ?`,
+          ftsQuery,
+          input.sectionKey,
+          input.chunkIndex,
+        )
+        .toArray();
+      const r = rows[0];
+      if (r) {
+        return {
+          sectionKey: r.section_key,
+          sectionTitle: r.section_title,
+          chunkIndex: r.chunk_index,
+          startOffset: r.start_offset,
+          endOffset: r.end_offset,
+          text: r.snippet,
+        };
+      }
+      // Fall through to plain text if the chunk didn't match the supplied
+      // terms — caller still gets the chunk's text without highlighting.
+    }
+    const rows = this.sql
+      .exec<{
+        section_key: string;
+        section_title: string | null;
+        chunk_index: number;
+        start_offset: number;
+        end_offset: number;
+        text: string;
+      }>(
+        `SELECT section_key, section_title, chunk_index, start_offset, end_offset, text
+         FROM chunks WHERE section_key = ? AND chunk_index = ?`,
+        input.sectionKey,
+        input.chunkIndex,
+      )
+      .toArray();
+    const r = rows[0];
+    if (!r) return null;
+    return {
+      sectionKey: r.section_key,
+      sectionTitle: r.section_title,
+      chunkIndex: r.chunk_index,
+      startOffset: r.start_offset,
+      endOffset: r.end_offset,
+      text: r.text,
+    };
+  }
+
+  // Lexical search over the per-document FTS index. Returns hits ordered by
+  // bm25 ascending (best match first); negative bm25 is FTS5's default
+  // sort. `query` is the raw user input — callers don't need to know FTS5
+  // syntax, the helper sanitises it into a phrase + OR-of-terms expression.
+  search(input: { query: string; limit?: number }): DocumentSearchHit[] {
+    const ftsQuery = compileFtsQuery(input.query);
+    if (!ftsQuery) return [];
+    const limit = input.limit ?? 10;
+    const rows = this.sql
+      .exec<{
+        section_key: string;
+        section_title: string | null;
+        chunk_index: number;
+        start_offset: number;
+        end_offset: number;
+        score: number;
+        snippet: string;
+      }>(
+        `SELECT c.section_key, c.section_title, c.chunk_index, c.start_offset, c.end_offset,
+                bm25(chunks_fts) AS score,
+                snippet(chunks_fts, 1, '<mark>', '</mark>', '…', 32) AS snippet
+         FROM chunks_fts
+         INNER JOIN chunks c ON c.id = chunks_fts.rowid
+         WHERE chunks_fts MATCH ?
+         ORDER BY bm25(chunks_fts) ASC
+         LIMIT ?`,
+        ftsQuery,
+        limit,
+      )
+      .toArray();
+    return rows.map((r) => ({
+      sectionKey: r.section_key,
+      sectionTitle: r.section_title,
+      chunkIndex: r.chunk_index,
+      startOffset: r.start_offset,
+      endOffset: r.end_offset,
+      score: r.score,
+      snippet: r.snippet,
+    }));
+  }
+
+  #runMigrations(): void {
+    this.sql.exec(`
+      CREATE TABLE IF NOT EXISTS _sql_schema_migrations (
+        id INTEGER PRIMARY KEY,
+        applied_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+    `);
+    const applied = new Set<number>();
+    for (const row of this.sql.exec<{ id: number }>("SELECT id FROM _sql_schema_migrations")) {
+      applied.add(row.id);
+    }
+    for (const migration of MIGRATIONS) {
+      if (applied.has(migration.id)) continue;
+      this.sql.exec(migration.sql);
+      this.sql.exec("INSERT INTO _sql_schema_migrations(id) VALUES (?)", migration.id);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// FTS5 query compilation. Public so `BinderStore` can use the same parser.
+//
+// FTS5 has a strict mini-language (phrases, AND/OR/NOT, prefix `*`, column
+// filters). Raw user input shouldn't be passed through — punctuation and
+// reserved words break the parser. The helpers below split the input into
+// alphanumeric tokens and re-assemble:
+//
+//   compileFtsQuery   -> exact phrase + OR-of-tokens, prefix-matched
+//   compileFtsOrQuery -> simple OR-of-tokens, no prefix (used for snippet
+//                        rendering against a known chunk)
+//
+// Returns null when the input has no tokens (caller should treat as "no
+// hits" instead of issuing a MATCH that errors out).
+// ---------------------------------------------------------------------------
+
+const TOKEN_RE = /[\p{L}\p{N}]+/gu;
+
+export const tokenizeQuery = (raw: string): string[] => {
+  const matches = raw.match(TOKEN_RE);
+  if (!matches) return [];
+  // Strip duplicates while preserving order so the OR clause stays small.
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const tok of matches) {
+    const lower = tok.toLowerCase();
+    if (seen.has(lower)) continue;
+    seen.add(lower);
+    out.push(lower);
+  }
+  return out;
+};
+
+export const compileFtsQuery = (raw: string): string | null => {
+  const tokens = tokenizeQuery(raw);
+  if (tokens.length === 0) return null;
+  const orPart = tokens.map((t) => `"${t}"*`).join(" OR ");
+  if (tokens.length === 1) return orPart;
+  // Phrase match earns higher rank than token-OR via FTS5's bm25, so we
+  // include both and let bm25 rank phrase-matching rows above token hits.
+  const phrase = `"${tokens.join(" ")}"`;
+  return `${phrase} OR ${orPart}`;
+};
+
+export const compileFtsOrQuery = (terms: string[]): string | null => {
+  const seen = new Set<string>();
+  const cleaned: string[] = [];
+  for (const term of terms) {
+    const tokens = tokenizeQuery(term);
+    for (const tok of tokens) {
+      if (seen.has(tok)) continue;
+      seen.add(tok);
+      cleaned.push(tok);
+    }
+  }
+  if (cleaned.length === 0) return null;
+  return cleaned.map((t) => `"${t}"`).join(" OR ");
+};

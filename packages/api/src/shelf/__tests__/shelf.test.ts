@@ -1,20 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { document, progress } from "../../db/schema";
+import { DocumentStorage } from "../../document/storage";
 import { createTestRuntime } from "../../document/__tests__/test-db";
-import { Instance } from "../../instance";
+import { ProgressStorage } from "../../progress/storage";
 import { Shelf } from "../shelf";
 
-// Inserts a document row directly without going through the EPUB pipeline.
-// We reuse the document/__tests__ runtime for migrations + the Instance
-// frame; shelves only need a `document` row to point at, not parsed
-// content. Avoiding the EPUB processor keeps these tests fast.
+// Seed a document row via the canonical DocumentStorage.create path so it
+// lands in BOTH BinderDO (read source) and D1 (FK-compat mirror). Shelf
+// tests only need the row to exist with the right userId; no parsing /
+// R2 work is required to exercise shelf CRUD.
 const seedDocument = async (
   userId: string,
   opts: { id?: string; title?: string } = {},
 ): Promise<string> => {
   const id = opts.id ?? crypto.randomUUID();
-  const now = new Date();
-  await Instance.db.insert(document).values({
+  await DocumentStorage.create({
     id,
     userId,
     kind: "epub",
@@ -25,12 +24,7 @@ const seedDocument = async (
     title: opts.title ?? `Seed ${id.slice(0, 8)}`,
     sensitive: false,
     status: "processed",
-    errorReason: null,
-    coverImage: null,
-    sourceUrl: null,
     r2KeyOriginal: `users/${userId}/documents/${id}/original.epub`,
-    createdAt: now,
-    updatedAt: now,
   });
   return id;
 };
@@ -40,15 +34,12 @@ const seedProgress = async (
   documentId: string,
   progressPercent: number | null,
 ): Promise<void> => {
-  const now = new Date();
-  await Instance.db.insert(progress).values({
+  await ProgressStorage.upsert({
     userId,
     documentId,
     sectionKey: "epub:section:0",
     position: null,
     progressPercent,
-    createdAt: now,
-    updatedAt: now,
   });
 };
 

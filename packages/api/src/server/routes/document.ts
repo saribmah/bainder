@@ -207,9 +207,11 @@ documentRouter.delete(
   "/:id",
   describeRoute({
     summary: "Delete a document",
+    description:
+      "Triggers asynchronous cleanup via the DELETE_DOCUMENT workflow. The catalog row disappears almost immediately (typically <1s after the call); per-document DO storage + R2 sweep complete in the background.",
     operationId: "document.delete",
     responses: {
-      204: { description: "Deleted" },
+      202: { description: "Deletion accepted" },
       401: { description: "Not authenticated" },
       404: { description: "Not found" },
     },
@@ -220,7 +222,7 @@ documentRouter.delete(
     const mapError = createErrorMapper([{ error: Document.NotFoundError, status: 404 }]);
     try {
       await Document.remove(Instance.userId, id);
-      return c.body(null, 204);
+      return c.body(null, 202);
     } catch (error) {
       const mapped = mapError(error);
       if (!mapped) throw error;

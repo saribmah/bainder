@@ -9,6 +9,15 @@ import {
 } from "./client";
 import { client } from "./client.gen";
 import {
+  type AiReadErrors,
+  type AiReadInput,
+  type AiReadResponses,
+  type AiSearchErrors,
+  type AiSearchInput,
+  type AiSearchResponses,
+  type AiSummarizeErrors,
+  type AiSummarizeInput,
+  type AiSummarizeResponses,
   type ConversationCreateErrors,
   type ConversationCreateResponses,
   type ConversationDeleteErrors,
@@ -210,6 +219,93 @@ export class Example extends HeyApiClient {
   }
 }
 
+export class Ai extends HeyApiClient {
+  /**
+   * Lexical search across the binder or within a document
+   *
+   * When `documentId` is omitted, runs a cross-binder FTS5 search and fans out to per-document snippet rendering. When `documentId` is set, runs a per-document search instead. Optional `kind` filters cross-binder hits by document kind (e.g. `epub`, `receipt`); `excludeDocumentId` and `excludeSectionKey` skip results from the supplied scope.
+   */
+  public search<ThrowOnError extends boolean = false>(
+    parameters: {
+      aiSearchInput: AiSearchInput;
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [{ args: [{ key: "aiSearchInput", map: "body" }] }],
+    );
+    return (options?.client ?? this.client).post<AiSearchResponses, AiSearchErrors, ThrowOnError>({
+      url: "/ai/search",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    });
+  }
+
+  /**
+   * Read a section's chunks (paginated)
+   *
+   * Returns ordered chunks for `sectionKey` from the document's per-document store, sliced by `offset` (chunk index) and `limit`. Used by the AI `read_section` tool.
+   */
+  public read<ThrowOnError extends boolean = false>(
+    parameters: {
+      aiReadInput: AiReadInput;
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [{ args: [{ key: "aiReadInput", map: "body" }] }],
+    );
+    return (options?.client ?? this.client).post<AiReadResponses, AiReadErrors, ThrowOnError>({
+      url: "/ai/read",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    });
+  }
+
+  /**
+   * Generate or fetch a section/document summary
+   *
+   * Returns a cached summary keyed by `(targetType, targetKey, contentHash)` or generates a fresh one. Stub in v1 — returns 501 until the lazy-summary path lands.
+   */
+  public summarize<ThrowOnError extends boolean = false>(
+    parameters: {
+      aiSummarizeInput: AiSummarizeInput;
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [{ args: [{ key: "aiSummarizeInput", map: "body" }] }],
+    );
+    return (options?.client ?? this.client).post<
+      AiSummarizeResponses,
+      AiSummarizeErrors,
+      ThrowOnError
+    >({
+      url: "/ai/summarize",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    });
+  }
+}
+
 export class Conversation extends HeyApiClient {
   /**
    * List the caller's conversations
@@ -399,6 +495,8 @@ export class Document extends HeyApiClient {
 
   /**
    * Delete a document
+   *
+   * Triggers asynchronous cleanup via the DELETE_DOCUMENT workflow. The catalog row disappears almost immediately (typically <1s after the call); per-document DO storage + R2 sweep complete in the background.
    */
   public delete<ThrowOnError extends boolean = false>(
     parameters: {
@@ -1469,6 +1567,11 @@ export class ApiClient extends HeyApiClient {
   private _example?: Example;
   get example(): Example {
     return (this._example ??= new Example({ client: this.client }));
+  }
+
+  private _ai?: Ai;
+  get ai(): Ai {
+    return (this._ai ??= new Ai({ client: this.client }));
   }
 
   private _conversation?: Conversation;

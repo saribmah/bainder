@@ -3,6 +3,7 @@ import { NamedError } from "../utils/error";
 import { DocumentAssetStore } from "./asset-store";
 import { Epub } from "./formats/epub/epub";
 import { detectFormat } from "./processing/detect";
+import { DocumentDeletion } from "./processing/deletion-steps";
 import { Processor } from "./processing/processor";
 import { DocumentStorage } from "./storage";
 
@@ -149,17 +150,65 @@ export namespace Document {
     .meta({ ref: "DocumentSectionSummary" });
   export type SectionSummary = z.infer<typeof SectionSummary>;
 
+  // Per-format processor identity, baked into the manifest so consumers can
+  // tell which pipeline rendered a document and at which version. Useful when
+  // we add reprocess flows or need to invalidate manifests produced by buggy
+  // older processors.
+  export const ManifestProcessor = z
+    .object({
+      name: z.string(),
+      version: z.string(),
+    })
+    .meta({ ref: "DocumentManifestProcessor" });
+  export type ManifestProcessor = z.infer<typeof ManifestProcessor>;
+
+  export const ManifestSource = z
+    .object({
+      original: z.string(),
+    })
+    .meta({ ref: "DocumentManifestSource" });
+  export type ManifestSource = z.infer<typeof ManifestSource>;
+
+  export const ManifestContentLayout = z
+    .object({
+      basePath: z.string(),
+      assetsPath: z.string(),
+    })
+    .meta({ ref: "DocumentManifestContentLayout" });
+  export type ManifestContentLayout = z.infer<typeof ManifestContentLayout>;
+
+  export const ManifestAiLayout = z
+    .object({
+      summariesPath: z.string(),
+    })
+    .meta({ ref: "DocumentManifestAiLayout" });
+  export type ManifestAiLayout = z.infer<typeof ManifestAiLayout>;
+
   // Discriminated union by `kind`. Today there's only one arm (EPUB);
   // adding `article`/`pdf` is one more arm + a new pipeline. Reader code
   // reads base fields without branching and only branches on `kind` when
   // it cares about format-specific metadata.
+  //
+  // schemaVersion 2 adds: documentId, userId, processor identity,
+  // createdAt/updatedAt, contentHash (sha256 of original bytes; invalidates
+  // derived indexes + summaries), source.original (R2 key), content
+  // basePath/assetsPath, ai.summariesPath. See PRD §8.
   const ManifestBase = z.object({
-    schemaVersion: z.literal(1),
+    schemaVersion: z.literal(2),
+    documentId: z.string(),
+    userId: z.string(),
+    processor: ManifestProcessor,
+    createdAt: z.string(),
+    updatedAt: z.string(),
+    contentHash: z.string(),
     title: z.string(),
     language: z.string(),
     coverImage: z.string().nullable(),
     chapterCount: z.number().int().nonnegative(),
     wordCount: z.number().int().nonnegative(),
+    source: ManifestSource,
+    content: ManifestContentLayout,
+    ai: ManifestAiLayout,
     sections: z.array(SectionSummary),
   });
 
@@ -230,12 +279,16 @@ export namespace Document {
     }
 
     try {
-      await Processor.trigger(detection.kind, id);
+      await Processor.trigger(detection.kind, { userId: input.userId, documentId: id });
     } catch (e) {
       // Workflow trigger failed (e.g. binding misconfigured). Leave the row
       // and blob so a manual reprocess is possible, but surface the failure
       // as the document's recorded error.
-      await DocumentStorage.markFailed(id, `Failed to start processing: ${(e as Error).message}`);
+      await DocumentStorage.markFailed(
+        input.userId,
+        id,
+        `Failed to start processing: ${(e as Error).message}`,
+      );
     }
 
     return entity;
@@ -258,10 +311,12 @@ export namespace Document {
   export const remove = async (userId: string, id: string): Promise<void> => {
     const entity = await DocumentStorage.get(id, userId);
     if (!entity) throw new NotFoundError({ id });
-    // R2 first so a failed asset cleanup doesn't orphan blobs we can no
-    // longer find. The D1 row can always be re-deleted.
-    await DocumentAssetStore.removeAll(userId, id);
-    await DocumentStorage.remove(id, userId);
+    // Async workflow: BinderDO row + DocumentDO storage + R2 sweep run as
+    // separate idempotent steps so a failure replays just that step. The
+    // BinderDO catalog row vanishes inside the first step (typically <1s),
+    // so list/get reads stop returning the doc almost immediately. The
+    // route returns 202 to reflect the async semantics.
+    await DocumentDeletion.trigger({ userId, documentId: id });
   };
 
   export const update = async (userId: string, id: string, input: UpdateInput): Promise<Entity> => {
