@@ -1,4 +1,4 @@
-import { compileFtsQuery, tokenizeQuery } from "../document/document-store";
+import { compileFtsQuery, tokenizeQuery } from "../document/processing/fts-query";
 import type { BinderSearchHit, BinderSearchInput } from "./tables";
 
 export type { BinderSearchHit, BinderSearchInput } from "./tables";
