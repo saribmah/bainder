@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { Binder } from "../binder/binder";
-import type { HighlightRow } from "../binder/binder-store";
 import { Document } from "../document/document";
 import { NamedError } from "../utils/error";
+import type { HighlightRow } from "./table";
 
 // Text-anchored colour overlays a user paints onto a document. A highlight
 // only carries selection + colour. Free-form thoughts about the highlight

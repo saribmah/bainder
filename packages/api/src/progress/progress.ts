@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { Binder } from "../binder/binder";
-import type { ProgressRow } from "../binder/binder-store";
 import { Document } from "../document/document";
+import type { ProgressRow } from "./table";
 
 // Per-user reading state for a document. Type-agnostic across formats:
 // `sectionKey` ties the row to a section in the document's manifest, and

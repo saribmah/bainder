@@ -1,9 +1,9 @@
 import { z } from "zod";
 import { Binder } from "../binder/binder";
-import type { NoteRow } from "../binder/binder-store";
 import { Document } from "../document/document";
 import { Highlight } from "../highlight/highlight";
 import { NamedError } from "../utils/error";
+import type { NoteRow } from "./table";
 
 // Free-form text the user attaches to a document. A note is conceptually
 // distinct from a highlight: highlights mark a span of text, notes carry

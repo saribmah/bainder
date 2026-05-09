@@ -1,8 +1,9 @@
 import { z } from "zod";
 import { Binder } from "../binder/binder";
-import type { DocumentWithProgressRow, ShelfRowWithCount } from "../binder/binder-store";
+import type { DocumentWithProgressRow } from "../document/binder-table";
 import { Document } from "../document/document";
 import { NamedError } from "../utils/error";
+import type { ShelfRowWithCount } from "./table";
 
 // User-created tag-style grouping of documents, plus two smart shelves
 // derived from reading progress (`smart:reading`, `smart:finished`).

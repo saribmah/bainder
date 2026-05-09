@@ -1,9 +1,9 @@
 import { z } from "zod";
 import { Agent } from "../agent/agent";
 import { Binder } from "../binder/binder";
-import type { ConversationRow } from "../binder/binder-store";
 import { Document } from "../document/document";
 import { NamedError } from "../utils/error";
+import type { ConversationRow } from "./table";
 
 // User-owned chat thread. `id` is the conversation identifier exposed in
 // route paths. `agentName` is the opaque ChatAgent Durable Object routing

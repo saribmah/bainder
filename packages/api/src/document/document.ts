@@ -1,11 +1,8 @@
 import { z } from "zod";
 import { Binder } from "../binder/binder";
-import type {
-  DocumentRow as BinderDocumentRow,
-  DocumentWithProgressRow,
-} from "../binder/binder-store";
 import { NamedError } from "../utils/error";
 import { DocumentAssetStore } from "./asset-store";
+import type { DocumentRow as BinderDocumentRow, DocumentWithProgressRow } from "./binder-table";
 import { Epub } from "./formats/epub/epub";
 import { detectFormat } from "./processing/detect";
 import { DocumentDeletion } from "./processing/deletion-steps";
