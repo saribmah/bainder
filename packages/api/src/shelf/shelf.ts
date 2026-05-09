@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { Binder } from "../binder/binder";
-import type { DocumentWithProgressRow } from "../document/binder-table";
 import { Document } from "../document/document";
 import { NamedError } from "../utils/error";
 import type { ShelfRowWithCount } from "./table";
@@ -142,45 +141,6 @@ export namespace Shelf {
     updatedAt: new Date(row.updatedAt).toISOString(),
   });
 
-  // Document projection mirrors `Document.toEntity` (kept inline because
-  // shelves surface document rows from BinderDO joins; importing Document's
-  // private mapper would couple the modules).
-  const parseDocumentKind = (raw: string): Document.Entity["kind"] => {
-    if (raw === "epub") return raw;
-    throw new Error(`Unexpected document.kind value: ${raw}`);
-  };
-
-  const parseDocumentStatus = (raw: string): Document.Entity["status"] => {
-    if (raw === "uploading" || raw === "processing" || raw === "processed" || raw === "failed") {
-      return raw;
-    }
-    return "failed";
-  };
-
-  const toDocumentEntity = (row: DocumentWithProgressRow): Document.Entity => ({
-    id: row.documentId,
-    kind: parseDocumentKind(row.kind),
-    mimeType: row.mimeType,
-    originalFilename: row.originalFilename,
-    sizeBytes: row.sizeBytes,
-    sha256: row.contentHash,
-    title: row.title,
-    sensitive: row.sensitive,
-    status: parseDocumentStatus(row.status),
-    errorReason: row.errorReason,
-    coverImage: row.coverImage,
-    sourceUrl: row.sourceUrl,
-    progress: row.progress
-      ? {
-          sectionKey: row.progress.sectionKey,
-          progressPercent: row.progress.progressPercent,
-          updatedAt: new Date(row.progress.updatedAt).toISOString(),
-        }
-      : null,
-    createdAt: new Date(row.createdAt).toISOString(),
-    updatedAt: new Date(row.updatedAt).toISOString(),
-  });
-
   // ---- Operations -------------------------------------------------------
   export const list = async (userId: string): Promise<Entity[]> => {
     const binder = Binder.require(userId);
@@ -262,13 +222,13 @@ export namespace Shelf {
     const smartType = parseSmartId(id);
     if (smartType) {
       const rows = await binder.smartDocuments(smartType);
-      return rows.map(toDocumentEntity);
+      return rows.map(Document.fromBinderRow);
     }
 
     const owned = await binder.shelfExists(id);
     if (!owned) throw new NotFoundError({ id });
     const rows = await binder.listShelfDocuments(id);
-    return rows.map(toDocumentEntity);
+    return rows.map(Document.fromBinderRow);
   };
 
   export const addDocument = async (

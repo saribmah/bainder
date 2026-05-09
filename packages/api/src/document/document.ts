@@ -2,7 +2,7 @@ import { z } from "zod";
 import { Binder } from "../binder/binder";
 import { NamedError } from "../utils/error";
 import { DocumentAssetStore } from "./asset-store";
-import type { DocumentRow as BinderDocumentRow, DocumentWithProgressRow } from "./binder-table";
+import type { DocumentWithProgressRow } from "./binder-table";
 import { Epub } from "./formats/epub/epub";
 import { detectFormat } from "./processing/detect";
 import { DocumentDeletion } from "./processing/deletion-steps";
@@ -227,35 +227,10 @@ export namespace Document {
 
   // ---- Row → Entity mapping ---------------------------------------------
   // BinderDO returns the catalog row with progress joined; this projects it
-  // onto the user-facing Document.Entity and, where needed, re-attaches the
-  // R2 key for callers inside the feature module.
-  type EntityWithKey = Entity & { r2KeyOriginal: string };
-
-  const parseKind = (raw: string): Kind => {
-    if (raw === "epub") return raw;
-    throw new Error(`Unexpected document.kind value: ${raw}`);
-  };
-
-  const parseStatus = (raw: string): Status => {
-    if (raw === "uploading" || raw === "processing" || raw === "processed" || raw === "failed") {
-      return raw;
-    }
-    return "failed";
-  };
-
-  const progressSnapshotFromRow = (row: DocumentWithProgressRow): ProgressSnapshot | null =>
-    row.progress
-      ? {
-          sectionKey: row.progress.sectionKey,
-          progressPercent: row.progress.progressPercent,
-          updatedAt: new Date(row.progress.updatedAt).toISOString(),
-        }
-      : null;
-
-  const binderRowToEntity = (
-    row: BinderDocumentRow,
-    progress: ProgressSnapshot | null,
-  ): EntityWithKey => ({
+  // onto the user-facing Document.Entity. Exported so peer features (e.g.
+  // Shelf, which surfaces the same document rows from its own joins) can
+  // share a single canonical projection instead of duplicating it.
+  export const fromBinderRow = (row: DocumentWithProgressRow): Entity => ({
     id: row.documentId,
     kind: parseKind(row.kind),
     mimeType: row.mimeType,
@@ -268,16 +243,27 @@ export namespace Document {
     errorReason: row.errorReason,
     coverImage: row.coverImage,
     sourceUrl: row.sourceUrl,
-    progress,
-    r2KeyOriginal: row.originalKey,
+    progress: row.progress
+      ? {
+          sectionKey: row.progress.sectionKey,
+          progressPercent: row.progress.progressPercent,
+          updatedAt: new Date(row.progress.updatedAt).toISOString(),
+        }
+      : null,
     createdAt: new Date(row.createdAt).toISOString(),
     updatedAt: new Date(row.updatedAt).toISOString(),
   });
 
-  // Strip the internal-only `r2KeyOriginal` before exposing to routes / SDK.
-  const projectEntity = (entity: EntityWithKey): Entity => {
-    const { r2KeyOriginal: _r2, ...rest } = entity;
-    return rest;
+  const parseKind = (raw: string): Kind => {
+    if (raw === "epub") return raw;
+    throw new Error(`Unexpected document.kind value: ${raw}`);
+  };
+
+  const parseStatus = (raw: string): Status => {
+    if (raw === "uploading" || raw === "processing" || raw === "processed" || raw === "failed") {
+      return raw;
+    }
+    return "failed";
   };
 
   // ---- Operations -------------------------------------------------------
@@ -327,7 +313,7 @@ export namespace Document {
         status: "processing",
         originalKey: r2KeyOriginal,
       });
-      entity = projectEntity(binderRowToEntity(row, null));
+      entity = fromBinderRow({ ...row, progress: null });
     } catch (e) {
       // Rollback the R2 write so a half-created document doesn't sit in the
       // bucket — the user retries cleanly.
@@ -352,13 +338,13 @@ export namespace Document {
 
   export const list = async (userId: string): Promise<Entity[]> => {
     const rows = await Binder.require(userId).listDocumentsWithProgress();
-    return rows.map((row) => projectEntity(binderRowToEntity(row, progressSnapshotFromRow(row))));
+    return rows.map(fromBinderRow);
   };
 
   export const get = async (userId: string, id: string): Promise<Entity> => {
     const row = await Binder.require(userId).getDocumentWithProgress(id);
     if (!row) throw new NotFoundError({ id });
-    return projectEntity(binderRowToEntity(row, progressSnapshotFromRow(row)));
+    return fromBinderRow(row);
   };
 
   export const getStatus = async (userId: string, id: string): Promise<StatusPayload> => {
