@@ -130,14 +130,6 @@ export function Highlights() {
               </div>
             ))}
           </div>
-
-          <div className="t-label-s mb-3 mt-8 text-bd-fg-muted">Export</div>
-          <button className="bd-btn bd-btn-rounded bd-btn-secondary bd-btn-sm mb-2 w-full">
-            Export to Markdown
-          </button>
-          <button className="bd-btn bd-btn-rounded bd-btn-secondary bd-btn-sm w-full">
-            Sync to Readwise
-          </button>
         </aside>
       </section>
     </main>

@@ -1,11 +1,15 @@
-import { useState } from "react";
-import { ChatConversationListItem, ChipButton, Icons, Skeleton, Toast } from "@baindar/ui";
+import { useEffect, useRef, useState } from "react";
+import { Button, ChatConversationListItem, ChipButton, Icons, Skeleton, Toast } from "@baindar/ui";
 import type { Conversation, Document } from "@baindar/sdk";
 import { useProfileName } from "../../profile";
 import { AppSidebar } from "../../library/components/AppSidebar";
 import { useLibraryDocuments } from "../../library/hooks/useLibraryDocuments";
 import { useLibraryShelves } from "../../library/hooks/useLibraryShelves";
 import { ConversationChatPane } from "../components/ConversationChatPane";
+import {
+  ConversationDeleteDialog,
+  ConversationRenameDialog,
+} from "../components/ConversationDialogs";
 import { useConversations } from "../hooks/useConversations";
 
 export function ConversationsPage() {
@@ -14,6 +18,8 @@ export function ConversationsPage() {
   const { shelves } = useLibraryShelves(documents);
   const [filter, setFilter] = useState<"all" | "reader" | "binder">("all");
   const [menuId, setMenuId] = useState<string | null>(null);
+  const [renameTarget, setRenameTarget] = useState<Conversation | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Conversation | null>(null);
   const { conversations, selected, selectedId, status, error, select, create, rename, remove } =
     useConversations();
 
@@ -32,69 +38,61 @@ export function ConversationsPage() {
         shelves={shelves}
       />
 
-      <section className="min-w-0 flex-1 overflow-hidden px-6 pb-8 pt-16 lg:px-12 lg:py-8">
-        <div className="mx-auto flex h-full max-w-7xl flex-col">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <div className="t-label-s text-bd-fg-muted">
-                Conversations · {conversations.length} · across your binder
+      <section className="flex min-w-0 flex-1 overflow-hidden">
+        <div
+          className={[
+            "min-w-0 flex-1 overflow-y-auto px-6 pb-8 pt-16 lg:px-12 lg:py-8",
+            selected ? "hidden xl:block" : "",
+          ].join(" ")}
+        >
+          <div className="mx-auto flex h-full max-w-5xl flex-col">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <div className="t-label-s text-bd-fg-muted">
+                  Conversations · {conversations.length} · across your binder
+                </div>
+                <h1 className="mt-1 font-display text-[clamp(34px,5vw,48px)] font-normal leading-[1.05] tracking-[0]">
+                  What you've talked through.
+                </h1>
               </div>
-              <h1 className="mt-1 font-display text-[clamp(34px,5vw,48px)] font-normal leading-[1.05] tracking-[0]">
-                What you've talked through.
-              </h1>
+              <button
+                type="button"
+                className="bd-btn bd-btn-pill bd-btn-primary bd-btn-md"
+                onClick={() => void create()}
+              >
+                <Icons.Plus size={14} />
+                New conversation
+              </button>
             </div>
-            <button
-              type="button"
-              className="bd-btn bd-btn-pill bd-btn-primary bd-btn-md"
-              onClick={() => void create()}
-            >
-              <Icons.Plus size={14} />
-              New conversation
-            </button>
-          </div>
 
-          <div className="mt-6 flex items-center gap-2 overflow-x-auto pb-1">
-            <ChipButton
-              variant={filter === "all" ? "active" : "filled"}
-              onClick={() => setFilter("all")}
-            >
-              All · {conversations.length}
-            </ChipButton>
-            <ChipButton
-              variant={filter === "reader" ? "active" : "outline"}
-              onClick={() => setFilter("reader")}
-            >
-              From a passage · {conversations.filter((item) => item.primaryDocId).length}
-            </ChipButton>
-            <ChipButton
-              variant={filter === "binder" ? "active" : "outline"}
-              onClick={() => setFilter("binder")}
-            >
-              Whole binder · {conversations.filter((item) => !item.primaryDocId).length}
-            </ChipButton>
-          </div>
+            <div className="mt-6 flex items-center gap-2 overflow-x-auto pb-1">
+              <ChipButton
+                variant={filter === "all" ? "active" : "filled"}
+                onClick={() => setFilter("all")}
+              >
+                All · {conversations.length}
+              </ChipButton>
+              <ChipButton
+                variant={filter === "reader" ? "active" : "outline"}
+                onClick={() => setFilter("reader")}
+              >
+                From a passage · {conversations.filter((item) => item.primaryDocId).length}
+              </ChipButton>
+              <ChipButton
+                variant={filter === "binder" ? "active" : "outline"}
+                onClick={() => setFilter("binder")}
+              >
+                Whole binder · {conversations.filter((item) => !item.primaryDocId).length}
+              </ChipButton>
+            </div>
 
-          {error && (
-            <p className="t-body-s mt-4 rounded-md bg-bd-surface-hover px-4 py-3 text-error">
-              {error}
-            </p>
-          )}
+            {error && (
+              <p className="t-body-s mt-4 rounded-md bg-bd-surface-hover px-4 py-3 text-error">
+                {error}
+              </p>
+            )}
 
-          <div
-            className={[
-              "mt-6 grid min-h-0 flex-1 overflow-hidden",
-              selected
-                ? "grid-cols-1 rounded-[18px] border border-bd-border lg:grid-cols-[minmax(360px,0.8fr)_minmax(0,1.2fr)]"
-                : "grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-10",
-            ].join(" ")}
-          >
-            <div
-              className={
-                selected
-                  ? "min-h-0 overflow-y-auto px-5 py-4"
-                  : "min-h-0 overflow-y-auto pr-0 lg:pr-5"
-              }
-            >
+            <div className="mt-6 min-h-0 flex-1 overflow-y-auto">
               {status === "loading" ? (
                 <ConversationSkeleton />
               ) : visible.length === 0 ? (
@@ -113,33 +111,65 @@ export function ConversationsPage() {
                     onMore={() =>
                       setMenuId((current) => (current === conversation.id ? null : conversation.id))
                     }
-                    onRename={(title) => void rename(conversation.id, title)}
-                    onDelete={() => void remove(conversation.id)}
+                    onRename={() => {
+                      setMenuId(null);
+                      setRenameTarget(conversation);
+                    }}
+                    onDelete={() => {
+                      setMenuId(null);
+                      setDeleteTarget(conversation);
+                    }}
                     onCloseMenu={() => setMenuId(null)}
                   />
                 ))
               )}
             </div>
-
-            {selected ? (
-              <div className="hidden min-h-0 border-l border-bd-border lg:flex">
-                <ConversationChatPane key={selected.id} conversation={selected} />
-              </div>
-            ) : (
-              <ConversationInsights
-                conversations={conversations}
-                documents={documents}
-                onCreate={() => void create()}
-              />
-            )}
           </div>
         </div>
+
+        {selected ? (
+          <div className="flex min-h-0 w-full shrink-0 overflow-hidden xl:w-[55%] xl:border-l xl:border-bd-border">
+            <ConversationChatPane
+              key={selected.id}
+              conversation={selected}
+              onClose={() => select(null)}
+            />
+          </div>
+        ) : (
+          <ConversationInsights
+            conversations={conversations}
+            documents={documents}
+            onCreate={() => void create()}
+          />
+        )}
       </section>
 
       {toast && (
         <div className="fixed bottom-8 left-1/2 z-40 -translate-x-1/2">
           <Toast iconStart={<Icons.Check size={18} color="var(--success)" />}>{toast}</Toast>
         </div>
+      )}
+
+      {renameTarget && (
+        <ConversationRenameDialog
+          conversation={renameTarget}
+          onCancel={() => setRenameTarget(null)}
+          onSave={async (title) => {
+            await rename(renameTarget.id, title);
+            setRenameTarget(null);
+          }}
+        />
+      )}
+
+      {deleteTarget && (
+        <ConversationDeleteDialog
+          conversation={deleteTarget}
+          onCancel={() => setDeleteTarget(null)}
+          onConfirm={async () => {
+            await remove(deleteTarget.id);
+            setDeleteTarget(null);
+          }}
+        />
       )}
     </main>
   );
@@ -160,7 +190,7 @@ function ConversationRow({
   menuOpen: boolean;
   onSelect: () => void;
   onMore: () => void;
-  onRename: (title: string) => void;
+  onRename: () => void;
   onDelete: () => void;
   onCloseMenu: () => void;
 }) {
@@ -182,12 +212,7 @@ function ConversationRow({
         onMore={onMore}
       />
       {menuOpen && (
-        <ConversationActionsMenu
-          conversation={conversation}
-          onClose={onCloseMenu}
-          onRename={onRename}
-          onDelete={onDelete}
-        />
+        <ConversationActionsMenu onClose={onCloseMenu} onRename={onRename} onDelete={onDelete} />
       )}
     </div>
   );
@@ -240,68 +265,86 @@ function ConversationInsights({
   const suggestionSource = sources[0]?.title ?? "your binder";
 
   return (
-    <aside className="hidden min-h-0 border-l border-bd-border pl-8 lg:block">
-      <div className="t-label-s text-bd-fg-muted">By source</div>
-      <div className="mt-5 space-y-5">
+    <aside className="hidden w-[300px] shrink-0 overflow-y-auto border-l border-bd-border px-7 py-8 xl:block">
+      <div className="t-label-s mb-3 text-bd-fg-muted">By source</div>
+      <div className="flex flex-col gap-1">
         {sources.map((source) => (
-          <div key={source.id} className="flex items-baseline justify-between gap-4">
-            <span className="t-body-m min-w-0 truncate text-bd-fg">{source.title}</span>
-            <span className="t-label-s text-bd-fg-muted">{source.count}</span>
+          <div key={source.id} className="flex items-center gap-3 rounded-md px-3 py-2">
+            <span className="t-body-m min-w-0 flex-1 truncate text-bd-fg-subtle">
+              {source.title}
+            </span>
+            <span className="font-mono text-[11px] text-bd-fg-muted">{source.count}</span>
           </div>
         ))}
       </div>
 
-      <div className="t-label-s mt-12 text-bd-fg-muted">Suggestions</div>
-      <div className="mt-4 rounded-[12px] bg-bd-surface-raised p-4">
-        <p className="t-body-s text-bd-fg-subtle">
+      <div className="t-label-s mb-3 mt-8 text-bd-fg-muted">Suggestions</div>
+      <div className="rounded-xl bg-bd-surface-raised px-4 py-3.5">
+        <p className="t-body-s m-0 leading-6 text-bd-fg-subtle">
           Start from {suggestionSource}, or ask a binder-wide question across your sources.
         </p>
-        <button
-          type="button"
-          className="bd-btn bd-btn-pill bd-btn-secondary bd-btn-sm mt-4 w-full"
+        <Button
+          size="sm"
+          variant="secondary"
+          iconStart={<Icons.Plus size={12} />}
+          className="mt-3 w-full"
           onClick={onCreate}
         >
           Start a conversation
-        </button>
+        </Button>
       </div>
     </aside>
   );
 }
 
 function ConversationActionsMenu({
-  conversation,
   onClose,
   onRename,
   onDelete,
 }: {
-  conversation: Conversation;
   onClose: () => void;
-  onRename: (title: string) => void;
+  onRename: () => void;
   onDelete: () => void;
 }) {
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node | null;
+      if (!menuRef.current || !target) return;
+      if (menuRef.current.contains(target)) return;
+      const moreButton =
+        target instanceof Element ? target.closest('[aria-label^="Actions for"]') : null;
+      if (moreButton) return;
+      onClose();
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose]);
+
   return (
-    <div className="absolute right-0 top-12 z-20 w-40 rounded-[12px] border border-bd-border bg-bd-bg p-1 shadow-[var(--sh-md)]">
+    <div
+      ref={menuRef}
+      className="absolute right-2 top-full z-20 mt-1 w-40 rounded-[12px] border border-bd-border bg-bd-bg p-1 shadow-[var(--sh-md)]"
+    >
       <button
         type="button"
         className="t-body-s flex w-full items-center gap-2 rounded-[10px] px-3 py-2 text-left text-bd-fg hover:bg-bd-surface-hover"
-        onClick={() => {
-          const title = window.prompt("Rename conversation", conversation.title);
-          if (title?.trim()) onRename(title.trim());
-          onClose();
-        }}
+        onClick={onRename}
       >
         Rename
       </button>
       <button
         type="button"
         className="t-body-s flex w-full items-center gap-2 rounded-[10px] px-3 py-2 text-left text-error hover:bg-bd-surface-hover"
-        onClick={() => {
-          const confirmed = window.confirm(
-            `Delete "${conversation.title}"? This cannot be undone.`,
-          );
-          if (confirmed) onDelete();
-          onClose();
-        }}
+        onClick={onDelete}
       >
         Delete
       </button>
