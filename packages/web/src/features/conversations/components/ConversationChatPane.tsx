@@ -10,6 +10,7 @@ import {
   ChatThread,
   ChatToolCard,
   ChatUserTurn,
+  IconButton,
   Icons,
   useSmoothText,
   type ChatAction,
@@ -164,14 +165,9 @@ export function ConversationChatPane({
             Clear
           </button>
           {onClose && (
-            <button
-              type="button"
-              className="bd-btn bd-btn-pill bd-btn-ghost bd-btn-sm text-bd-fg-subtle"
-              onClick={onClose}
-            >
-              <Icons.Close size={12} />
-              Close
-            </button>
+            <IconButton aria-label="Close" size="sm" onClick={onClose}>
+              <Icons.Close size={14} />
+            </IconButton>
           )}
         </div>
       </div>
