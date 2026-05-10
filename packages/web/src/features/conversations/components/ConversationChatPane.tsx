@@ -157,13 +157,15 @@ export function ConversationChatPane({
               {conversation.title}
             </h1>
           </div>
-          <button
-            type="button"
-            className="bd-btn bd-btn-pill bd-btn-ghost bd-btn-sm text-bd-fg-subtle"
-            onClick={clear}
-          >
-            Clear
-          </button>
+          {onClear && (
+            <button
+              type="button"
+              className="bd-btn bd-btn-pill bd-btn-ghost bd-btn-sm text-bd-fg-subtle"
+              onClick={clear}
+            >
+              Clear
+            </button>
+          )}
           {onClose && (
             <IconButton aria-label="Close" size="sm" onClick={onClose}>
               <Icons.Close size={14} />

@@ -9,6 +9,7 @@ import {
   ChatThread,
   ChatToolCard,
   ChatUserTurn,
+  IconButton,
   Icons,
   useSmoothText,
   type ChatAction,
@@ -22,9 +23,10 @@ const agentsHost = import.meta.env.VITE_AGENTS_HOST || undefined;
 type Props = {
   conversation: Conversation;
   onClear?: () => void;
+  onClose?: () => void;
 };
 
-export function ConversationChatPane({ conversation, onClear }: Props) {
+export function ConversationChatPane({ conversation, onClear, onClose }: Props) {
   const [draft, setDraft] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const stickToBottomRef = useRef(true);
@@ -80,13 +82,20 @@ export function ConversationChatPane({ conversation, onClear }: Props) {
               {conversation.title}
             </h1>
           </div>
-          <button
-            type="button"
-            className="bd-btn bd-btn-pill bd-btn-ghost bd-btn-sm text-bd-fg-subtle"
-            onClick={clear}
-          >
-            Clear
-          </button>
+          {onClear && (
+            <button
+              type="button"
+              className="bd-btn bd-btn-pill bd-btn-ghost bd-btn-sm text-bd-fg-subtle"
+              onClick={clear}
+            >
+              Clear
+            </button>
+          )}
+          {onClose && (
+            <IconButton aria-label="Close" size="sm" onClick={onClose}>
+              <Icons.Close size={14} />
+            </IconButton>
+          )}
         </div>
       </div>
 

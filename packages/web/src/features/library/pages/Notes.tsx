@@ -1,6 +1,6 @@
 import { useMemo, useState, type ComponentType } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button, ChipButton, Icons, Skeleton } from "@baindar/ui";
+import { ChipButton, Icons, Skeleton } from "@baindar/ui";
 import type { Document, Highlight, Note } from "@baindar/sdk";
 import { useProfileName } from "../../profile";
 import { AppSidebar } from "../components/AppSidebar";
@@ -38,7 +38,7 @@ export function Notes() {
   const { highlights } = useLibraryHighlights(documents);
   const { notes, error, refresh } = useLibraryNotes(documents);
   const [filter, setFilter] = useState<NoteFilter>("all");
-  const [editor, setEditor] = useState<Note | "new" | null>(null);
+  const [editor, setEditor] = useState<Note | null>(null);
   const [operationError, setOperationError] = useState<string | null>(null);
 
   const highlightsById = useMemo(() => {
@@ -85,20 +85,16 @@ export function Notes() {
   );
 
   const saveNote = async (draft: NoteDialogDraft) => {
+    if (!editor) return;
     setOperationError(null);
-    if (editor && editor !== "new") {
-      const res = await client.note.update({ id: editor.id, body: draft.body });
-      if (!res.data) throw new Error("Could not update note");
-    } else {
-      const res = await client.note.create({ documentId: draft.documentId, body: draft.body });
-      if (!res.data) throw new Error("Could not create note");
-    }
+    const res = await client.note.update({ id: editor.id, body: draft.body });
+    if (!res.data) throw new Error("Could not update note");
     setEditor(null);
     await refresh();
   };
 
   const deleteNote = async () => {
-    if (!editor || editor === "new") return;
+    if (!editor) return;
     setOperationError(null);
     const res = await client.note.delete({ id: editor.id });
     if (res.error) throw new Error("Could not delete note");
@@ -118,23 +114,14 @@ export function Notes() {
       <section className="flex min-w-0 flex-1 overflow-hidden">
         <div className="min-w-0 flex-1 overflow-y-auto px-6 pb-8 pt-16 lg:px-12 lg:py-8">
           <div className="mx-auto max-w-5xl">
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <div className="t-label-s text-bd-fg-muted">
-                  Notes · {countsByFilter.all} across {sourceCounts.length} sources ·{" "}
-                  {countsByFilter.standalone} standalone
-                </div>
-                <h1 className="mt-1 max-w-2xl font-display text-[clamp(34px,5vw,48px)] font-normal leading-[1.05]">
-                  What you've thought about.
-                </h1>
+            <div>
+              <div className="t-label-s text-bd-fg-muted">
+                Notes · {countsByFilter.all} across {sourceCounts.length} sources ·{" "}
+                {countsByFilter.standalone} standalone
               </div>
-              <Button
-                iconStart={<Icons.Plus size={14} />}
-                disabled={readyDocuments.length === 0}
-                onClick={() => setEditor("new")}
-              >
-                New note
-              </Button>
+              <h1 className="mt-1 max-w-2xl font-display text-[clamp(34px,5vw,48px)] font-normal leading-[1.05]">
+                What you've thought about.
+              </h1>
             </div>
 
             <div className="mt-6 flex flex-wrap items-center gap-2">
@@ -197,44 +184,18 @@ export function Notes() {
               </div>
             ))}
           </div>
-
-          <div className="t-label-s mb-3 mt-8 text-bd-fg-muted">Standalone notes</div>
-          <div className="rounded-xl bg-bd-surface-raised px-4 py-3.5">
-            <p className="t-body-s m-0 leading-6 text-bd-fg-subtle">
-              Notes that aren't tied to a highlight: chapter-level reflections, quick thoughts, and
-              whole-book reminders.
-            </p>
-            <Button
-              size="sm"
-              variant="secondary"
-              iconStart={<Icons.Plus size={12} />}
-              disabled={readyDocuments.length === 0}
-              className="mt-3 w-full"
-              onClick={() => setEditor("new")}
-            >
-              New standalone note
-            </Button>
-          </div>
-
-          <div className="t-label-s mb-3 mt-8 text-bd-fg-muted">Export</div>
-          <button className="bd-btn bd-btn-rounded bd-btn-secondary bd-btn-sm mb-2 w-full">
-            Export to Markdown
-          </button>
-          <button className="bd-btn bd-btn-rounded bd-btn-secondary bd-btn-sm w-full">
-            Send to Notion
-          </button>
         </aside>
       </section>
 
       {editor && (
         <NoteDialog
-          title={editor === "new" ? "Capture a thought." : "Keep the thought clear."}
+          title="Keep the thought clear."
           documents={readyDocuments}
-          note={editor === "new" ? null : editor}
-          initialDocumentId={editor === "new" ? readyDocuments[0]?.id : editor.documentId}
+          note={editor}
+          initialDocumentId={editor.documentId}
           onCancel={() => setEditor(null)}
           onSave={saveNote}
-          onDelete={editor === "new" ? undefined : deleteNote}
+          onDelete={deleteNote}
         />
       )}
     </main>
