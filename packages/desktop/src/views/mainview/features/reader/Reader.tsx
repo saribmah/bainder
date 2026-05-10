@@ -217,6 +217,22 @@ function ReaderState({ children }: { children: ReactNode }) {
   );
 }
 
+function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia(query).matches;
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mql = window.matchMedia(query);
+    const handleChange = (event: MediaQueryListEvent) => setMatches(event.matches);
+    setMatches(mql.matches);
+    mql.addEventListener("change", handleChange);
+    return () => mql.removeEventListener("change", handleChange);
+  }, [query]);
+  return matches;
+}
+
 function ReaderShell({
   doc,
   onClose,
@@ -232,9 +248,18 @@ function ReaderShell({
   const { toc } = useReaderToc();
   const refresh = useReaderHighlights();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [tocOpen, setTocOpen] = useState(false);
-  const [notesOpen, setNotesOpen] = useState(false);
+  const isLg = useMediaQuery("(min-width: 1024px)");
+  const isXl = useMediaQuery("(min-width: 1280px)");
+  const [tocOpen, setTocOpen] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(min-width: 1024px)").matches;
+  });
+  const [notesOpen, setNotesOpen] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(min-width: 1280px)").matches;
+  });
   const [aiOpen, setAiOpen] = useState(false);
+  const rightOpen = aiOpen || notesOpen;
   const [askDraft, setAskDraft] = useState("");
   const [lastPrompt, setLastPrompt] = useState("");
   const [aiQuote, setAiQuote] = useState<string | null>(null);
@@ -264,6 +289,16 @@ function ReaderShell({
   const toggleFontScale = useCallback(() => {
     setFontScale((curr) => (curr === "standard" ? "large" : "standard"));
   }, []);
+
+  useEffect(() => {
+    if (!isLg) setTocOpen(false);
+  }, [isLg]);
+  useEffect(() => {
+    if (!isXl) {
+      setNotesOpen(false);
+      setAiOpen(false);
+    }
+  }, [isXl]);
 
   const jumpToReaderTarget = useCallback(
     (order: number, highlightId?: string | null) => {
@@ -320,49 +355,43 @@ function ReaderShell({
               {progressLabel}
             </div>
           )}
-
-          <div className="hidden items-center gap-1 md:flex">
-            <IconButton
-              aria-label={
-                fontScale === "standard" ? "Use larger reader type" : "Use standard reader type"
-              }
-              size="sm"
-              onClick={toggleFontScale}
-            >
-              <Icons.Type size={16} />
-            </IconButton>
-            <IconButton aria-label={`Theme: ${theme}`} size="sm" onClick={cycleTheme}>
-              {theme === "dark" ? <Icons.Sun size={16} /> : <Icons.Moon size={16} />}
-            </IconButton>
-            <IconButton aria-label="Open notes" size="sm" onClick={() => setNotesOpen(true)}>
-              <Icons.Settings size={16} />
-            </IconButton>
-          </div>
         </header>
 
         <div
-          className={[
-            "grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[240px_minmax(0,1fr)]",
-            aiOpen
-              ? "xl:grid-cols-[240px_minmax(0,1fr)_460px]"
-              : "xl:grid-cols-[240px_minmax(0,1fr)_240px]",
-          ].join(" ")}
+          className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden"
+          style={{
+            gridTemplateColumns: isXl
+              ? `${tocOpen ? "240px " : ""}minmax(0,1fr)${rightOpen ? (aiOpen ? " 460px" : " 240px") : ""}`
+              : isLg
+                ? `${tocOpen ? "240px " : ""}minmax(0,1fr)`
+                : undefined,
+          }}
         >
-          <aside
-            className="hidden min-h-0 overflow-hidden border-r px-6 py-8 lg:block"
-            style={{ borderColor: "var(--bd-border)" }}
-          >
-            {toc ? (
-              <ContentsRail
-                toc={toc.toc}
-                sections={toc.sections}
-                currentOrder={toc.currentOrder}
-                onJump={toc.onJump}
-              />
-            ) : (
-              <RailSkeleton label="Contents" />
-            )}
-          </aside>
+          {isLg && tocOpen && (
+            <aside
+              className="relative min-h-0 overflow-hidden border-r px-6 py-8"
+              style={{ borderColor: "var(--bd-border)" }}
+            >
+              <IconButton
+                aria-label="Close contents"
+                size="sm"
+                onClick={() => setTocOpen(false)}
+                className="absolute right-3 top-3 z-10"
+              >
+                <Icons.Close size={14} />
+              </IconButton>
+              {toc ? (
+                <ContentsRail
+                  toc={toc.toc}
+                  sections={toc.sections}
+                  currentOrder={toc.currentOrder}
+                  onJump={toc.onJump}
+                />
+              ) : (
+                <RailSkeleton label="Contents" />
+              )}
+            </aside>
+          )}
 
           <section
             data-reader-scroll
@@ -373,44 +402,52 @@ function ReaderShell({
             </article>
           </section>
 
-          <aside
-            className="hidden min-h-0 overflow-hidden border-l xl:block"
-            style={{ borderColor: "var(--bd-border)" }}
-          >
-            {aiOpen ? (
-              <ReaderChatPanel
-                title={doc.title}
-                chapterLabel={
-                  meta
-                    ? `Chapter ${meta.chapterOrder + 1} · ${meta.chapterTitle}`
-                    : "Current chapter"
-                }
-                quote={aiQuote ?? meta?.quote}
-                prompt={lastPrompt}
-                draft={askDraft}
-                onDraftChange={setAskDraft}
-                onSubmit={handleAskSubmit}
-                onClose={() => setAiOpen(false)}
-              />
-            ) : (
-              <div className="h-full px-6 py-8">
-                <NotesRail
-                  documentId={doc.id}
-                  sections={toc?.sections}
-                  currentOrder={currentOrder}
-                  refreshToken={refresh?.refreshToken ?? 0}
-                  onJumpToTarget={jumpToReaderTarget}
+          {isXl && rightOpen && (
+            <aside
+              className="relative min-h-0 overflow-hidden border-l"
+              style={{ borderColor: "var(--bd-border)" }}
+            >
+              {aiOpen ? (
+                <ReaderChatPanel
+                  title={doc.title}
+                  chapterLabel={
+                    meta
+                      ? `Chapter ${meta.chapterOrder + 1} · ${meta.chapterTitle}`
+                      : "Current chapter"
+                  }
+                  quote={aiQuote ?? meta?.quote}
+                  prompt={lastPrompt}
+                  draft={askDraft}
+                  onDraftChange={setAskDraft}
+                  onSubmit={handleAskSubmit}
+                  onClose={() => setAiOpen(false)}
                 />
-              </div>
-            )}
-          </aside>
+              ) : (
+                <div className="h-full px-6 py-8">
+                  <IconButton
+                    aria-label="Close notes"
+                    size="sm"
+                    onClick={() => setNotesOpen(false)}
+                    className="absolute right-3 top-3 z-10"
+                  >
+                    <Icons.Close size={14} />
+                  </IconButton>
+                  <NotesRail
+                    documentId={doc.id}
+                    sections={toc?.sections}
+                    currentOrder={currentOrder}
+                    refreshToken={refresh?.refreshToken ?? 0}
+                    onJumpToTarget={jumpToReaderTarget}
+                  />
+                </div>
+              )}
+            </aside>
+          )}
         </div>
 
-        <AskBaindarBar draft={askDraft} onDraftChange={setAskDraft} onSubmit={handleAskSubmit} />
-
-        <div className="fixed bottom-5 left-1/2 z-10 -translate-x-1/2 md:hidden">
+        <div className="fixed bottom-5 left-1/2 z-10 -translate-x-1/2">
           <FloatingToolbar>
-            {toc && (
+            {toc && (!isLg || !tocOpen) && (
               <FloatingToolbarButton
                 aria-label="Table of contents"
                 onClick={() => setTocOpen(true)}
@@ -418,9 +455,11 @@ function ReaderShell({
                 <Icons.BookOpen size={20} />
               </FloatingToolbarButton>
             )}
-            <FloatingToolbarButton aria-label="Ask Baindar" onClick={() => openAsk()}>
-              <Icons.Sparkles size={20} />
-            </FloatingToolbarButton>
+            {(!isXl || !aiOpen) && (
+              <FloatingToolbarButton aria-label="Ask Baindar" onClick={() => openAsk()}>
+                <Icons.Sparkles size={20} />
+              </FloatingToolbarButton>
+            )}
             <FloatingToolbarButton
               aria-label={
                 fontScale === "standard" ? "Use larger reader type" : "Use standard reader type"
@@ -432,13 +471,21 @@ function ReaderShell({
             <FloatingToolbarButton aria-label={`Theme: ${theme}`} onClick={cycleTheme}>
               {theme === "dark" ? <Icons.Sun size={20} /> : <Icons.Moon size={20} />}
             </FloatingToolbarButton>
-            <FloatingToolbarButton aria-label="Notes" onClick={() => setNotesOpen(true)}>
-              <Icons.Note size={20} />
-            </FloatingToolbarButton>
+            {(!isXl || !notesOpen || aiOpen) && (
+              <FloatingToolbarButton
+                aria-label="Notes"
+                onClick={() => {
+                  setNotesOpen(true);
+                  if (isXl) setAiOpen(false);
+                }}
+              >
+                <Icons.Note size={20} />
+              </FloatingToolbarButton>
+            )}
           </FloatingToolbar>
         </div>
 
-        {toc && tocOpen && (
+        {!isLg && toc && tocOpen && (
           <TocSheet
             toc={toc.toc}
             sections={toc.sections}
@@ -451,7 +498,7 @@ function ReaderShell({
           />
         )}
 
-        {notesOpen && (
+        {!isXl && notesOpen && (
           <NotesSheet
             documentId={doc.id}
             sections={toc?.sections}
@@ -791,30 +838,6 @@ function RailSkeleton({ label }: { label: string }) {
         <Skeleton width="95%" height={16} />
         <Skeleton width="72%" height={16} />
       </div>
-    </div>
-  );
-}
-
-function AskBaindarBar({
-  draft,
-  onDraftChange,
-  onSubmit,
-}: {
-  draft: string;
-  onDraftChange: (value: string) => void;
-  onSubmit: (value: string) => void;
-}) {
-  return (
-    <div
-      className="hidden shrink-0 border-t px-7 py-3 md:block"
-      style={{ background: "var(--bd-bg)", borderColor: "var(--bd-border)" }}
-    >
-      <ChatComposer
-        value={draft}
-        onValueChange={onDraftChange}
-        onSubmit={onSubmit}
-        placeholder="Ask anything about this chapter..."
-      />
     </div>
   );
 }
