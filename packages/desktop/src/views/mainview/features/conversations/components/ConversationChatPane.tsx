@@ -133,7 +133,7 @@ export function ConversationChatPane({ conversation, onClear, onClose }: Props) 
             suggestions={
               messages.length === 0
                 ? ["Find my latest receipt", "Summarize recent notes", "What needs my attention?"]
-                : ["Show sources", "Save this answer", "Compare with another document"]
+                : undefined
             }
             onSuggestionPress={setDraft}
           />
@@ -186,8 +186,6 @@ function MessageTurn({
           icon: <Icons.Copy size={12} />,
           onPress: () => void navigator.clipboard?.writeText(text),
         },
-        { label: "Quote", icon: <Icons.Reply size={12} /> },
-        { label: "Share", icon: <Icons.Share size={12} /> },
       ]
     : [];
 

@@ -318,6 +318,25 @@ function ReaderShell({
     return promise;
   }, [client, doc.id, doc.title, readerConversation]);
 
+  const startNewReaderConversation = useCallback(async (): Promise<Conversation | null> => {
+    try {
+      setConversationError(null);
+      const created = await client.conversation.create({
+        title: doc.title,
+        primaryDocId: doc.id,
+      });
+      if (!created.data) throw new Error("Could not start a reader conversation");
+      setReaderConversation(created.data);
+      setPendingReferences([]);
+      setDraftSeed("");
+      setDraftSeedKey(String(Date.now()));
+      return created.data;
+    } catch (error) {
+      setConversationError(error instanceof Error ? error.message : String(error));
+      return null;
+    }
+  }, [client, doc.id, doc.title]);
+
   const contextReference = useMemo<MessageReference>(() => {
     if (meta) {
       return makeChapterReference({
@@ -468,6 +487,7 @@ function ReaderShell({
                   draftSeedKey={draftSeedKey}
                   onPendingReferencesChange={setPendingReferences}
                   onClose={() => setAiOpen(false)}
+                  onNewConversation={() => void startNewReaderConversation()}
                 />
               ) : (
                 <div className="h-full px-6 py-6">
@@ -572,6 +592,7 @@ function ReaderShell({
             draftSeedKey={draftSeedKey}
             onPendingReferencesChange={setPendingReferences}
             onClose={() => setAiOpen(false)}
+            onNewConversation={() => void startNewReaderConversation()}
           />
         )}
       </main>
@@ -987,6 +1008,7 @@ function ReaderChatPanel({
   draftSeedKey,
   onPendingReferencesChange,
   onClose,
+  onNewConversation,
 }: {
   conversation: Conversation | null;
   error: string | null;
@@ -996,6 +1018,7 @@ function ReaderChatPanel({
   draftSeedKey?: string;
   onPendingReferencesChange: (references: MessageReference[]) => void;
   onClose: () => void;
+  onNewConversation?: () => void;
 }) {
   if (error) {
     return (
@@ -1023,6 +1046,7 @@ function ReaderChatPanel({
       draftSeedKey={draftSeedKey}
       onPendingReferencesChange={onPendingReferencesChange}
       onClose={onClose}
+      onNewConversation={onNewConversation}
     />
   );
 }
@@ -1037,6 +1061,7 @@ function ReaderChatOverlay({
   draftSeedKey,
   onPendingReferencesChange,
   onClose,
+  onNewConversation,
 }: {
   theme: Theme;
   conversation: Conversation | null;
@@ -1047,6 +1072,7 @@ function ReaderChatOverlay({
   draftSeedKey?: string;
   onPendingReferencesChange: (references: MessageReference[]) => void;
   onClose: () => void;
+  onNewConversation?: () => void;
 }) {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -1089,6 +1115,7 @@ function ReaderChatOverlay({
           draftSeedKey={draftSeedKey}
           onPendingReferencesChange={onPendingReferencesChange}
           onClose={onClose}
+          onNewConversation={onNewConversation}
         />
       </section>
     </div>

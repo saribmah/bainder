@@ -40,6 +40,7 @@ type Props = {
   draftSeedKey?: string;
   onClear?: () => void;
   onClose?: () => void;
+  onNewConversation?: () => void;
   onPendingReferencesChange?: (references: MessageReference[]) => void;
 };
 
@@ -51,6 +52,7 @@ export function ConversationChatPane({
   draftSeedKey,
   onClear,
   onClose,
+  onNewConversation,
   onPendingReferencesChange,
 }: Props) {
   const navigate = useNavigate();
@@ -166,6 +168,11 @@ export function ConversationChatPane({
               Clear
             </button>
           )}
+          {onNewConversation && (
+            <IconButton aria-label="Start new conversation" size="sm" onClick={onNewConversation}>
+              <Icons.Plus size={14} />
+            </IconButton>
+          )}
           {onClose && (
             <IconButton aria-label="Close" size="sm" onClick={onClose}>
               <Icons.Close size={14} />
@@ -215,7 +222,7 @@ export function ConversationChatPane({
             suggestions={
               messages.length === 0
                 ? ["Find my latest receipt", "Summarize recent notes", "What needs my attention?"]
-                : ["Show sources", "Save this answer", "Compare with another document"]
+                : undefined
             }
             onSuggestionPress={setDraft}
           />
@@ -273,8 +280,6 @@ function MessageTurn({
           icon: <Icons.Copy size={12} />,
           onPress: () => void navigator.clipboard?.writeText(text),
         },
-        { label: "Quote", icon: <Icons.Reply size={12} /> },
-        { label: "Share", icon: <Icons.Share size={12} /> },
       ]
     : [];
 
