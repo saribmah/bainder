@@ -11,7 +11,12 @@ const navItems = [
   { label: "Pricing", target: "pricing" },
 ] as const;
 
-const formats = ["EPUB", "PDF", "Articles", "Web links"];
+const formats = [
+  { label: "EPUB", status: "Available now", available: true },
+  { label: "PDF", status: "Coming soon", available: false },
+  { label: "Articles", status: "Coming soon", available: false },
+  { label: "Web links", status: "Coming soon", available: false },
+] as const;
 
 const valueCards = [
   {
@@ -174,11 +179,27 @@ function HeroSection({ onSignUp, onSeeHow }: { onSignUp: () => void; onSeeHow: (
           </Button>
         </div>
 
-        <div className="mt-7 flex flex-wrap items-center gap-x-7 gap-y-3">
+        <div className="mt-7 flex flex-wrap items-center gap-2.5">
           <span className="t-body-s text-bd-fg-muted">Works with</span>
           {formats.map((format) => (
-            <span key={format} className="t-label-m text-bd-fg">
-              {format}
+            <span
+              key={format.label}
+              className={[
+                "inline-flex min-h-8 items-center gap-2 rounded-full border px-3",
+                format.available
+                  ? "border-bd-border-strong bg-bd-fg text-bd-bg"
+                  : "border-bd-border bg-bd-surface-raised text-bd-fg",
+              ].join(" ")}
+            >
+              <span className="t-label-m">{format.label}</span>
+              <span
+                className={[
+                  "font-ui text-[10px] font-medium",
+                  format.available ? "text-bd-bg/70" : "text-bd-fg-muted",
+                ].join(" ")}
+              >
+                {format.status}
+              </span>
             </span>
           ))}
         </div>
