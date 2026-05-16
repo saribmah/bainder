@@ -1549,6 +1549,58 @@
         }
       }
     },
+    "/billing/checkout/{plan}": {
+      "get": {
+        "operationId": "billing.checkout",
+        "summary": "Start a Polar checkout session for a plan",
+        "description": "Creates a Polar checkout session for the named plan and 302-redirects the browser to the hosted checkout. The signed-in user is passed to Polar as `externalCustomerId` so the eventual webhook can resolve back to our user row.",
+        "responses": {
+          "302": {
+            "description": "Redirect to Polar checkout"
+          },
+          "400": {
+            "description": "Unknown plan or plan not configured"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "500": {
+            "description": "Polar not configured"
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "plan",
+            "required": true
+          }
+        ]
+      }
+    },
+    "/billing/portal": {
+      "get": {
+        "operationId": "billing.portal",
+        "summary": "Open the Polar customer portal",
+        "description": "Creates a Polar customer-session and 302-redirects the browser to the portal URL. The session is scoped to the signed-in user via `externalCustomerId`.",
+        "responses": {
+          "302": {
+            "description": "Redirect to Polar customer portal"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "404": {
+            "description": "User has no Polar customer yet (free plan)"
+          },
+          "500": {
+            "description": "Polar not configured"
+          }
+        }
+      }
+    },
     "/conversations": {
       "post": {
         "operationId": "conversation.create",

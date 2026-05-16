@@ -18,8 +18,10 @@ import {
   type AiSummarizeErrors,
   type AiSummarizeInput,
   type AiSummarizeResponses,
+  type BillingCheckoutErrors,
   type BillingMeErrors,
   type BillingMeResponses,
+  type BillingPortalErrors,
   type ConversationCreateErrors,
   type ConversationCreateResponses,
   type ConversationDeleteErrors,
@@ -253,6 +255,37 @@ export class Billing extends HeyApiClient {
   public me<ThrowOnError extends boolean = false>(options?: Options<never, ThrowOnError>) {
     return (options?.client ?? this.client).get<BillingMeResponses, BillingMeErrors, ThrowOnError>({
       url: "/billing/me",
+      ...options,
+    });
+  }
+
+  /**
+   * Start a Polar checkout session for a plan
+   *
+   * Creates a Polar checkout session for the named plan and 302-redirects the browser to the hosted checkout. The signed-in user is passed to Polar as `externalCustomerId` so the eventual webhook can resolve back to our user row.
+   */
+  public checkout<ThrowOnError extends boolean = false>(
+    parameters: {
+      plan: string;
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams([parameters], [{ args: [{ in: "path", key: "plan" }] }]);
+    return (options?.client ?? this.client).get<unknown, BillingCheckoutErrors, ThrowOnError>({
+      url: "/billing/checkout/{plan}",
+      ...options,
+      ...params,
+    });
+  }
+
+  /**
+   * Open the Polar customer portal
+   *
+   * Creates a Polar customer-session and 302-redirects the browser to the portal URL. The session is scoped to the signed-in user via `externalCustomerId`.
+   */
+  public portal<ThrowOnError extends boolean = false>(options?: Options<never, ThrowOnError>) {
+    return (options?.client ?? this.client).get<unknown, BillingPortalErrors, ThrowOnError>({
+      url: "/billing/portal",
       ...options,
     });
   }

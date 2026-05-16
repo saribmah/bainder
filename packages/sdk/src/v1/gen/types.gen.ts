@@ -469,6 +469,52 @@ export type BillingMeResponses = {
 
 export type BillingMeResponse = BillingMeResponses[keyof BillingMeResponses];
 
+export type BillingCheckoutData = {
+  body?: never;
+  path: {
+    plan: string;
+  };
+  query?: never;
+  url: "/billing/checkout/{plan}";
+};
+
+export type BillingCheckoutErrors = {
+  /**
+   * Unknown plan or plan not configured
+   */
+  400: unknown;
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * Polar not configured
+   */
+  500: unknown;
+};
+
+export type BillingPortalData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/billing/portal";
+};
+
+export type BillingPortalErrors = {
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * User has no Polar customer yet (free plan)
+   */
+  404: unknown;
+  /**
+   * Polar not configured
+   */
+  500: unknown;
+};
+
 export type ConversationListData = {
   body?: never;
   path?: never;

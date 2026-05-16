@@ -189,13 +189,17 @@ export namespace Billing {
     }
     const baseUrl = apiHost.replace(/\/$/, "");
     const products = Config.getPolarProducts();
+    // Our own GET wrappers (`/api/billing/checkout/:plan`, `/api/billing/portal`)
+    // do the POST to Polar internally and 302 the browser onward. We expose
+    // GETs so web/desktop anchors + mobile `Linking.openURL` all work
+    // identically without per-platform JS to wrangle a POST.
     const upgradeOptions = products
       .filter((p) => p.plan !== currentPlan)
-      .map((p) => ({ plan: p.plan as Plan, checkoutUrl: `${baseUrl}/auth/checkout/${p.plan}` }));
+      .map((p) => ({ plan: p.plan as Plan, checkoutUrl: `${baseUrl}/billing/checkout/${p.plan}` }));
     // Portal route only makes sense once the user has a real Polar
     // subscription on file. Free-plan users (no providerSubscriptionId)
     // have nothing to manage yet.
-    const portalUrl = providerSubscriptionId ? `${baseUrl}/auth/customer/portal` : null;
+    const portalUrl = providerSubscriptionId ? `${baseUrl}/billing/portal` : null;
     return { upgradeOptions, portalUrl };
   };
 

@@ -10,8 +10,8 @@
 		"dev": {
 			"name": "baindar-dev",
 			"vars": {
-				"API_PUBLIC_HOST": "",
-				"WEB_PUBLIC_HOST": "",
+				"API_PUBLIC_HOST": "http://localhost:8787",
+				"WEB_PUBLIC_HOST": "http://localhost:5173",
 				"WORKER_URL": "http://localhost:8787",
 				"BETTER_AUTH_URL": "http://localhost:8787",
 				"TRUSTED_ORIGINS": "http://localhost:3002,http://localhost:3003",
@@ -29,11 +29,11 @@
 				// live in vars; credentials live in `secrets.required` below.
 				// `POLAR_SERVER` is either `sandbox` (default) or `production`.
 				"POLAR_SERVER": "sandbox",
-				"POLAR_ORGANIZATION_ID": "",
-				"POLAR_PRODUCT_PERSONAL": "",
-				"POLAR_PRODUCT_PRO": "",
-				"POLAR_PRODUCT_BYOK": "",
-				"POLAR_SUCCESS_URL": ""
+				"POLAR_ORGANIZATION_ID": "5ad00a27-5ff0-4458-89dc-030ad429b5c2",
+				"POLAR_PRODUCT_PERSONAL": "8f309b6c-de59-484c-9a09-1f5efbec8ae2",
+				"POLAR_PRODUCT_PRO": "216812ca-6a01-4928-b761-d1885405f5e3",
+				"POLAR_PRODUCT_BYOK": "de231956-3284-4611-804a-11d260832979",
+				"POLAR_SUCCESS_URL": "/settings"
 			},
 			"d1_databases": [
 				{

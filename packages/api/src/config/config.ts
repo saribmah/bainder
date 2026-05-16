@@ -95,14 +95,39 @@ export namespace Config {
     if (!accessToken || !webhookSecret || !organizationId) return null;
     const server: "sandbox" | "production" =
       (env.POLAR_SERVER as string) === "production" ? "production" : "sandbox";
-    const successUrl = (env.POLAR_SUCCESS_URL as string) || "/settings?checkout=success";
+    // Polar requires absolute URLs for success_url. We resolve a configured
+    // path against WEB_PUBLIC_HOST so devs can keep `/settings` in config
+    // and have the right host slot in per environment.
+    const successUrl = resolvePolarSuccessUrl(
+      (env.POLAR_SUCCESS_URL as string) || "/settings?checkout=success",
+      (env.WEB_PUBLIC_HOST as string) || "",
+    );
     return { accessToken, webhookSecret, organizationId, server, successUrl };
+  };
+
+  const resolvePolarSuccessUrl = (configured: string, webHost: string): string => {
+    if (/^https?:\/\//i.test(configured)) return configured;
+    const host = webHost.replace(/\/$/, "");
+    const path = configured.startsWith("/") ? configured : `/${configured}`;
+    return host ? `${host}${path}` : configured;
   };
 
   export const requirePolar = (): PolarConfig => {
     const config = getPolar();
     if (!config) throw new PolarNotConfiguredError({});
     return config;
+  };
+
+  // Reverse mapping: plan slug → Polar product ID. Used by the GET
+  // checkout wrapper so a user clicking "Upgrade to Pro" knows which
+  // product to send to Polar's checkout.create. Returns null when the
+  // plan isn't configured (e.g. BYOK not yet rolled out).
+  export const getPolarProductForPlan = (plan: "personal" | "pro" | "byok"): string | null => {
+    const env = Instance.env;
+    if (plan === "personal") return (env.POLAR_PRODUCT_PERSONAL as string) || null;
+    if (plan === "pro") return (env.POLAR_PRODUCT_PRO as string) || null;
+    if (plan === "byok") return (env.POLAR_PRODUCT_BYOK as string) || null;
+    return null;
   };
 
   // Maps a Polar product ID to our internal Plan enum. Returns null for
