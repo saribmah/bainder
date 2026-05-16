@@ -98,6 +98,11 @@ export type BillingUsagePeriod = {
   costUsdMicros: number;
 };
 
+export type BillingUpgradeOption = {
+  plan: BillingPlan;
+  checkoutUrl: string;
+};
+
 export type BillingStatus = {
   plan: BillingPlan;
   status: BillingSubscriptionStatus;
@@ -105,6 +110,8 @@ export type BillingStatus = {
   currentPeriod: BillingUsagePeriod;
   periodResetAt: string;
   cancelAtPeriodEnd: boolean;
+  upgradeOptions: Array<BillingUpgradeOption>;
+  portalUrl: string | null;
 };
 
 export type Conversation = {
@@ -413,6 +420,10 @@ export type AiSummarizeErrors = {
    */
   401: unknown;
   /**
+   * Out of summary quota for the current period
+   */
+  402: unknown;
+  /**
    * Document or summary target not found
    */
   404: unknown;
@@ -457,6 +468,52 @@ export type BillingMeResponses = {
 };
 
 export type BillingMeResponse = BillingMeResponses[keyof BillingMeResponses];
+
+export type BillingCheckoutData = {
+  body?: never;
+  path: {
+    plan: string;
+  };
+  query?: never;
+  url: "/billing/checkout/{plan}";
+};
+
+export type BillingCheckoutErrors = {
+  /**
+   * Unknown plan or plan not configured
+   */
+  400: unknown;
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * Polar not configured
+   */
+  500: unknown;
+};
+
+export type BillingPortalData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/billing/portal";
+};
+
+export type BillingPortalErrors = {
+  /**
+   * Not authenticated
+   */
+  401: unknown;
+  /**
+   * User has no Polar customer yet (free plan)
+   */
+  404: unknown;
+  /**
+   * Polar not configured
+   */
+  500: unknown;
+};
 
 export type ConversationListData = {
   body?: never;

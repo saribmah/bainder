@@ -10,8 +10,8 @@
 		"dev": {
 			"name": "baindar-dev",
 			"vars": {
-				"API_PUBLIC_HOST": "",
-				"WEB_PUBLIC_HOST": "",
+				"API_PUBLIC_HOST": "http://localhost:8787",
+				"WEB_PUBLIC_HOST": "http://localhost:5173",
 				"WORKER_URL": "http://localhost:8787",
 				"BETTER_AUTH_URL": "http://localhost:8787",
 				"TRUSTED_ORIGINS": "http://localhost:3002,http://localhost:3003",
@@ -23,7 +23,17 @@
 				// `@ai-sdk/anthropic` default (the official API). Override per env
 				// to point at a proxy or alternative provider.
 				"ANTHROPIC_BASE_URL": "https://opencode.ai/zen/go/v1",
-				"ANTHROPIC_MODEL": "minimax-m2.7"
+				"ANTHROPIC_MODEL": "minimax-m2.7",
+				// Polar (billing) — set per-environment. Product IDs are not
+				// secrets (they identify SKUs in Polar's dashboard) so they
+				// live in vars; credentials live in `secrets.required` below.
+				// `POLAR_SERVER` is either `sandbox` (default) or `production`.
+				"POLAR_SERVER": "sandbox",
+				"POLAR_ORGANIZATION_ID": "5ad00a27-5ff0-4458-89dc-030ad429b5c2",
+				"POLAR_PRODUCT_PERSONAL": "8f309b6c-de59-484c-9a09-1f5efbec8ae2",
+				"POLAR_PRODUCT_PRO": "216812ca-6a01-4928-b761-d1885405f5e3",
+				"POLAR_PRODUCT_BYOK": "de231956-3284-4611-804a-11d260832979",
+				"POLAR_SUCCESS_URL": "/settings"
 			},
 			"d1_databases": [
 				{
@@ -102,7 +112,9 @@
 					"GOOGLE_CLIENT_SECRET",
 					"APPLE_CLIENT_ID",
 					"APPLE_CLIENT_SECRET",
-					"ANTHROPIC_API_KEY"
+					"ANTHROPIC_API_KEY",
+					"POLAR_ACCESS_TOKEN",
+					"POLAR_WEBHOOK_SECRET"
 				]
 			}
 		},
@@ -136,7 +148,17 @@
 				// Chat agent model. Empty `ANTHROPIC_BASE_URL` uses the SDK's
 				// default (the official Anthropic API).
 				"ANTHROPIC_BASE_URL": "https://opencode.ai/zen/go/v1",
-				"ANTHROPIC_MODEL": "minimax-m2.7"
+				"ANTHROPIC_MODEL": "minimax-m2.7",
+				// Polar (billing) — set per-environment. Product IDs are not
+				// secrets (they identify SKUs in Polar's dashboard) so they
+				// live in vars; credentials live in `secrets.required` below.
+				// `POLAR_SERVER` is either `sandbox` (default) or `production`.
+				"POLAR_SERVER": "production",
+				"POLAR_ORGANIZATION_ID": "82e66247-f975-4954-965c-73f5e6111016",
+				"POLAR_PRODUCT_PERSONAL": "3ac26a55-76db-4d4a-89e3-0429b4ec5d91",
+				"POLAR_PRODUCT_PRO": "978f57d1-71ce-4dd3-8f66-d7a3a0a70cf7",
+				"POLAR_PRODUCT_BYOK": "dbf8e67b-46cd-41c3-b886-0ef2cbb69163",
+				"POLAR_SUCCESS_URL": "/settings"
 			},
 			"d1_databases": [
 				{
@@ -214,7 +236,9 @@
 					"GOOGLE_CLIENT_SECRET",
 					"APPLE_CLIENT_ID",
 					"APPLE_CLIENT_SECRET",
-					"ANTHROPIC_API_KEY"
+					"ANTHROPIC_API_KEY",
+					"POLAR_ACCESS_TOKEN",
+					"POLAR_WEBHOOK_SECRET"
 				]
 			}
 		}
