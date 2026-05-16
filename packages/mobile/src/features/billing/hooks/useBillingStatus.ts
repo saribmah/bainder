@@ -1,37 +1,10 @@
-import { useEffect, useState } from "react";
-import type { BillingStatus } from "@baindar/sdk";
-import { useSdk } from "../../../sdk/sdk.provider";
+import { useBilling } from "../BillingProvider";
 
-// Mirrors the web/desktop useBillingStatus. Vanilla useState + useEffect +
-// cancellation flag — matches every other data hook in this package. No
-// React Query / SWR in the mobile codebase.
+// Thin reader over the BillingProvider context. Kept as a hook so existing
+// call sites (SettingsScreen UsageMeter, BillingGroup) don't have to learn
+// about the context type; they just see `{ billing, error, loading }` as
+// before, except now the value stays fresh via the provider's polling.
 export function useBillingStatus() {
-  const { client } = useSdk();
-  const [billing, setBilling] = useState<BillingStatus | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    client.billing
-      .me()
-      .then((res) => {
-        if (cancelled) return;
-        if (res.data) {
-          setBilling(res.data);
-          setError(null);
-        }
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) setError(String(err));
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [client]);
-
+  const { billing, error, loading } = useBilling();
   return { billing, error, loading };
 }
