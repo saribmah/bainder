@@ -39,6 +39,7 @@ import {
 } from "../EpubHtmlBody.tsx";
 import type { AssetCache } from "../inlineAssets.ts";
 import { NotesSheet } from "../NotesSheet.tsx";
+import { useReaderConversation } from "../useReaderConversation.ts";
 import { useReaderHighlights } from "../useReaderHighlights.ts";
 import { useProfile } from "../../profile";
 import {
@@ -156,6 +157,12 @@ function ReaderShell({ doc, onClose }: { doc: Document; onClose: () => void }) {
   const [selection, setSelection] = useState<SelectionState | null>(null);
   const { profile } = useProfile();
   const defaultColor: HighlightColor = profile?.defaultHighlightColor ?? "pink";
+  const {
+    conversation: readerConversation,
+    error: readerConversationError,
+    ensure: ensureReaderConversation,
+    reset: resetReaderConversation,
+  } = useReaderConversation(doc.id, doc.title);
   const currentAskSection = useMemo(() => {
     const sections = tocState?.sections ?? notesState?.sections;
     const order = tocState?.currentOrder ?? notesState?.currentOrder;
@@ -163,9 +170,13 @@ function ReaderShell({ doc, onClose }: { doc: Document; onClose: () => void }) {
     return sections.find((section) => section.order === order) ?? null;
   }, [notesState, tocState]);
 
-  const openAsk = useCallback((references: MessageReference[], prompt = "") => {
-    setAskState({ references, prompt, seedKey: String(Date.now()) });
-  }, []);
+  const openAsk = useCallback(
+    (references: MessageReference[], prompt = "") => {
+      setAskState({ references, prompt, seedKey: String(Date.now()) });
+      void ensureReaderConversation();
+    },
+    [ensureReaderConversation],
+  );
 
   const openCurrentAsk = useCallback(() => {
     if (currentAskSection) {
@@ -329,9 +340,11 @@ function ReaderShell({ doc, onClose }: { doc: Document; onClose: () => void }) {
       <ReaderAiSheet
         visible={askState !== null}
         onClose={() => setAskState(null)}
-        doc={doc}
         palette={palette}
         askState={askState}
+        conversation={readerConversation}
+        error={readerConversationError}
+        onNewConversation={() => void resetReaderConversation()}
       />
     </View>
   );
@@ -821,91 +834,49 @@ function TocSheet({
 function ReaderAiSheet({
   visible,
   onClose,
-  doc,
   palette,
   askState,
+  conversation,
+  error,
+  onNewConversation,
 }: {
   visible: boolean;
   onClose: () => void;
-  doc: Document;
   palette: ThemeColors;
   askState: ReaderAskState | null;
+  conversation: Conversation | null;
+  error: string | null;
+  onNewConversation: () => void;
 }) {
   return (
     <Sheet visible={visible} onClose={onClose} style={readerAiStyles.sheet}>
-      <ReaderAiSheetBody onClose={onClose} doc={doc} palette={palette} askState={askState} />
+      <ReaderAiSheetBody
+        onClose={onClose}
+        palette={palette}
+        askState={askState}
+        conversation={conversation}
+        error={error}
+        onNewConversation={onNewConversation}
+      />
     </Sheet>
   );
 }
 
 function ReaderAiSheetBody({
   onClose,
-  doc,
   palette,
   askState,
+  conversation,
+  error,
+  onNewConversation,
 }: {
   onClose: () => void;
-  doc: Document;
   palette: ThemeColors;
   askState: ReaderAskState | null;
+  conversation: Conversation | null;
+  error: string | null;
+  onNewConversation: () => void;
 }) {
-  const { client } = useSdk();
-  const conversationPromiseRef = useRef<Promise<Conversation | null> | null>(null);
-  const [conversation, setConversation] = useState<Conversation | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const ensureConversation = useCallback(async (): Promise<Conversation | null> => {
-    if (conversation) return conversation;
-    if (conversationPromiseRef.current) return conversationPromiseRef.current;
-
-    const promise = (async () => {
-      try {
-        setError(null);
-        const list = await client.conversation.list();
-        const existing = list.data?.items.find((item) => item.primaryDocId === doc.id) ?? null;
-        if (existing) {
-          setConversation(existing);
-          return existing;
-        }
-
-        const created = await client.conversation.create({
-          title: doc.title,
-          primaryDocId: doc.id,
-        });
-        if (!created.data) throw new Error("Could not start a reader conversation");
-        setConversation(created.data);
-        return created.data;
-      } catch (err) {
-        setError(err instanceof Error ? err.message : String(err));
-        return null;
-      } finally {
-        conversationPromiseRef.current = null;
-      }
-    })();
-
-    conversationPromiseRef.current = promise;
-    return promise;
-  }, [client, conversation, doc.id, doc.title]);
-
-  const startNewConversation = useCallback(async () => {
-    try {
-      setError(null);
-      const created = await client.conversation.create({
-        title: doc.title,
-        primaryDocId: doc.id,
-      });
-      if (!created.data) throw new Error("Could not start a reader conversation");
-      setConversation(created.data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    }
-  }, [client, doc.id, doc.title]);
-
-  useEffect(() => {
-    if (!askState) return;
-    void ensureConversation();
-  }, [askState, ensureConversation]);
-
   if (error) {
     return (
       <View style={readerAiStyles.body}>
@@ -937,12 +908,13 @@ function ReaderAiSheetBody({
   return (
     <View style={readerAiStyles.body}>
       <ConversationChatPane
+        key={conversation.id}
         conversation={conversation}
         pendingReferences={askState.references}
         draftSeed={askState.prompt}
         draftSeedKey={askState.seedKey}
         onClose={onClose}
-        onNewConversation={() => void startNewConversation()}
+        onNewConversation={onNewConversation}
       />
     </View>
   );
