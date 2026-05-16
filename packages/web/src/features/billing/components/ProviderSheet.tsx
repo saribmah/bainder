@@ -120,11 +120,8 @@ export function ProviderSheet({ state, onClose }: { state: ProviderState; onClos
                   key={option}
                   type="button"
                   onClick={() => onSpecChange(option)}
-                  className={
-                    active
-                      ? "bd-chip bd-chip-outline border-wine-600 bg-wine-600/10 text-wine-700"
-                      : "bd-chip bd-chip-outline"
-                  }
+                  aria-pressed={active}
+                  className={active ? "bd-chip bd-chip-active" : "bd-chip bd-chip-outline"}
                 >
                   {SPEC_PRESETS[option].label}
                 </button>
