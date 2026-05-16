@@ -1,14 +1,5 @@
 import type { ReactNode } from "react";
-import {
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  View,
-  type StyleProp,
-  type ViewStyle,
-} from "react-native";
+import { Modal, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 import { useTheme } from "../theme/ThemeProvider.native.tsx";
 import { radius } from "../tokens/radius.ts";
 
@@ -28,33 +19,25 @@ export function Sheet({ visible, onClose, showHandle = true, children, style }: 
   const backdropColor = theme === "dark" ? BACKDROP_DARK : BACKDROP_LIGHT;
   return (
     <Modal animationType="slide" transparent visible={visible} onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <View style={styles.backdrop}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Close sheet"
-            style={[StyleSheet.absoluteFill, { backgroundColor: backdropColor }]}
-            onPress={onClose}
-          />
-          <View style={[styles.sheet, { backgroundColor: palette.surface }, style]}>
-            {showHandle && (
-              <View style={[styles.handle, { backgroundColor: palette.borderStrong }]} />
-            )}
-            {children}
-          </View>
+      <View style={styles.backdrop}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Close sheet"
+          style={[StyleSheet.absoluteFill, { backgroundColor: backdropColor }]}
+          onPress={onClose}
+        />
+        <View style={[styles.sheet, { backgroundColor: palette.surface }, style]}>
+          {showHandle && (
+            <View style={[styles.handle, { backgroundColor: palette.borderStrong }]} />
+          )}
+          {children}
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
-  },
   backdrop: {
     flex: 1,
     justifyContent: "flex-end",
